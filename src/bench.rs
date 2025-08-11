@@ -141,6 +141,28 @@ fn random_mix<H: Heap, const K: usize>(n: T) {
     black_box(h);
 }
 
+fn increasing_random_mix<H: Heap, const K: usize>(n: T) {
+    let mut h = H::default();
+    let mut rng = fastrand::Rng::new();
+    let mut l = 0;
+    const C: u32 = 1000;
+    for _ in 0..n {
+        h.push(rng.u32(l..l + C));
+        for _ in 0..K {
+            l = h.pop().unwrap();
+            h.push(rng.u32(l..l + C));
+        }
+    }
+    for _ in 0..n {
+        l = h.pop().unwrap();
+        for _ in 0..K {
+            h.push(rng.u32(l..l + C));
+            l = h.pop().unwrap();
+        }
+    }
+    black_box(h);
+}
+
 fn natural<H: Heap>(n: T) {
     let mut h = H::default();
     let mut rng = fastrand::Rng::new();
@@ -160,53 +182,48 @@ fn natural<H: Heap>(n: T) {
 }
 
 pub fn time(n: T, f: impl Fn(T)) -> f64 {
-    const REPEATS: usize = 2;
+    const REPEATS: usize = 1;
     let mut ts = vec![];
     for _ in 0..REPEATS {
         let start = std::time::Instant::now();
         f(n);
         ts.push(start.elapsed());
     }
-    // eprintln!("ts: {ts:?}");
     let t = ts.iter().min().unwrap();
     (t.as_secs_f64() / n as f64) * 1e9f64
 }
 
-pub fn bench<H: Heap>() {
-    let ns: Vec<_> = (10..=22)
-        // .rev()
-        .step_by(2)
-        .map(|i| (2 as T).pow(i))
-        .collect();
-
-    // let ns = [1 << 20];
+pub fn bench<H: Heap>(increasing: bool) {
+    let minpow = 10;
+    // let maxpow = 28;
+    let maxpow = 26;
+    let ns: Vec<_> = (minpow..=maxpow).map(|i| (2 as T).pow(i)).collect();
 
     for n in ns {
-        let ts = [
-            push_linear::<H> as fn(_),
-            linear::<H> as fn(_),
-            push_linear_rev::<H> as fn(_),
-            linear_rev::<H> as fn(_),
-            push_random::<H> as fn(_),
-            // push_real_random::<H>(n) as fn(_),
-            natural::<H> as fn(_),
-            random::<H> as fn(_),
-            random_alternate::<H> as fn(_),
-            natural::<H> as fn(_),
-            linear_mix::<H, 0> as fn(_),
-            linear_mix::<H, 1> as fn(_),
-            linear_mix::<H, 4> as fn(_),
-            random_mix::<H, 0> as fn(_),
-            random_mix::<H, 1> as fn(_),
-            random_mix::<H, 4> as fn(_),
-            // linear_rev_mix::<H> as fn(_),
-        ];
-        eprint!("{:<70}  {n:>10}", type_name::<H>());
+        let ts = if increasing {
+            [
+                increasing_random_mix::<H, 0> as fn(_),
+                // increasing_random_mix::<H, 1> as fn(_),
+                // increasing_random_mix::<H, 2> as fn(_),
+                increasing_random_mix::<H, 4> as fn(_),
+            ]
+        } else {
+            [
+                random_mix::<H, 0> as fn(_),
+                // random_mix::<H, 1> as fn(_),
+                // random_mix::<H, 2> as fn(_),
+                random_mix::<H, 4> as fn(_),
+            ]
+        };
+        eprint!("{:<70} {increasing:<6}  {n:>10}", type_name::<H>());
+        print!("{}\t{increasing}\t{n}", type_name::<H>());
         for t in ts {
             let t = time(n, t);
             eprint!("{t:>9.2}");
+            print!("\t{t:>.2}");
         }
         eprintln!();
+        println!();
     }
     eprintln!();
 }

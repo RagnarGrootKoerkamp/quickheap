@@ -20,6 +20,7 @@ impl<H0: Heap, H1: Heap> Heap for TestHeap<H0, H1> {
 
 #[test]
 fn bucketheap() {
-    bench::bench::<TestHeap<BucketHeap<8, 3>, BinaryHeap<Reverse<T>>>>();
-    bench::bench::<TestHeap<BucketHeap<1, 1>, BinaryHeap<Reverse<T>>>>();
+    use impls::*;
+    bench::bench::<TestHeap<BucketHeap<8, 3>, BinaryHeap<Reverse<T>>>>(false);
+    bench::bench::<TestHeap<BucketHeap<1, 1>, BinaryHeap<Reverse<T>>>>(false);
 }

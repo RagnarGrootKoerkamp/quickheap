@@ -1,9 +1,54 @@
-use fibonacci_heap::FibonacciHeap;
-use orx_priority_queue::PriorityQueue;
+pub use fibonacci_heap::FibonacciHeap;
+pub use orx_priority_queue::{DaryHeap, PriorityQueue};
+pub use pheap::PairingHeap;
+pub use radix_heap::RadixHeapMap;
+pub use std::collections::{BTreeSet, BinaryHeap};
 
 use super::*;
 
-impl<const N: usize> Heap for orx_priority_queue::DaryHeap<(), T, N> {
+impl Heap for BinaryHeap<Reverse<T>> {
+    fn default() -> Self {
+        BinaryHeap::with_capacity(1 << 20)
+    }
+    #[inline(always)]
+    fn push(&mut self, t: T) {
+        self.push(Reverse(t));
+    }
+    #[inline(always)]
+    fn pop(&mut self) -> Option<T> {
+        Some(self.pop()?.0)
+    }
+}
+
+impl Heap for BTreeSet<T> {
+    fn default() -> Self {
+        Default::default()
+    }
+    #[inline(always)]
+    fn push(&mut self, t: T) {
+        self.insert(t);
+    }
+    #[inline(always)]
+    fn pop(&mut self) -> Option<T> {
+        self.pop_first()
+    }
+}
+
+impl Heap for BTreeSet<Reverse<T>> {
+    fn default() -> Self {
+        Default::default()
+    }
+    #[inline(always)]
+    fn push(&mut self, t: T) {
+        self.insert(Reverse(t));
+    }
+    #[inline(always)]
+    fn pop(&mut self) -> Option<T> {
+        Some(self.pop_last()?.0)
+    }
+}
+
+impl<const N: usize> Heap for DaryHeap<(), T, N> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -20,7 +65,7 @@ impl<const N: usize> Heap for orx_priority_queue::DaryHeap<(), T, N> {
     }
 }
 
-impl Heap for fibonacci_heap::FibonacciHeap {
+impl Heap for FibonacciHeap {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -37,7 +82,7 @@ impl Heap for fibonacci_heap::FibonacciHeap {
     }
 }
 
-impl Heap for pheap::PairingHeap<(), T> {
+impl Heap for PairingHeap<(), T> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -54,7 +99,7 @@ impl Heap for pheap::PairingHeap<(), T> {
     }
 }
 
-impl Heap for radix_heap::RadixHeapMap<T, ()> {
+impl Heap for RadixHeapMap<Reverse<T>, ()> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -62,12 +107,12 @@ impl Heap for radix_heap::RadixHeapMap<T, ()> {
 
     #[inline(always)]
     fn push(&mut self, t: T) {
-        self.push(t, ());
+        self.push(Reverse(t), ());
     }
 
     #[inline(always)]
     fn pop(&mut self) -> Option<T> {
-        self.pop().map(|(k, _v)| k)
+        self.pop().map(|(k, _v)| k.0)
     }
 }
 
