@@ -1,4 +1,4 @@
-use crate::{L, S, T};
+use crate::{L, S, T, T_U32};
 use std::{array::from_fn, mem::transmute, simd::cmp::SimdPartialOrd};
 
 /// Dedup adjacent `new` values (starting with the last element of `old`).
@@ -36,7 +36,7 @@ pub fn partition(
         let vals = transmute(vals);
 
         // write large to v
-        let val = if L == 8 {
+        let val = if T_U32 {
             let key = transmute(UNIQSHUF32[(!(large as u8)) as usize]);
             _mm256_permutevar8x32_epi32(vals, key)
         } else {
@@ -47,7 +47,7 @@ pub fn partition(
         *v_idx += large.count_ones() as usize;
 
         // write small to w
-        let val = if L == 8 {
+        let val = if T_U32 {
             let key = transmute(UNIQSHUF32[(!(small as u8)) as usize]);
             _mm256_permutevar8x32_epi32(vals, key)
         } else {

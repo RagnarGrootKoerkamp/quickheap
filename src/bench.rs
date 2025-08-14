@@ -149,7 +149,7 @@ fn increasing_random_mix<H: Heap, const K: usize>(n: T) {
     let mut h = H::default();
     let mut rng = fastrand::Rng::new();
     let mut l = 0;
-    const C: u64 = if L == 4 { 1 << 32 } else { 1000 };
+    const C: u64 = if !T_U32 { 1 << 32 } else { 1000 };
     for _ in 0..n {
         h.push(rng.u64(l..l + C) as T);
         for _ in 0..K {

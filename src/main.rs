@@ -11,15 +11,19 @@ use itertools::Itertools;
 use rand::seq::SliceRandom;
 
 #[cfg(not(feature = "u64"))]
+const T_U32: bool = true;
+#[cfg(not(feature = "u64"))]
 type T = u32;
 #[cfg(not(feature = "u64"))]
-const L: usize = 8;
+const L: usize = 16;
 #[cfg(not(feature = "u64"))]
 type S = std::simd::u32x8;
 #[cfg(feature = "u64")]
+const T_U32: bool = false;
+#[cfg(feature = "u64")]
 type T = u64;
 #[cfg(feature = "u64")]
-const L: usize = 4;
+const L: usize = 8;
 #[cfg(feature = "u64")]
 type S = std::simd::u64x4;
 
