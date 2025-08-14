@@ -176,8 +176,15 @@ fn main() {
     use impls::*;
 
     eprintln!("QUICKHEAP");
+    // bench::bench::<QuickHeap<4, 1>>(false);
+    // bench::bench::<QuickHeap<8, 1>>(false);
     // bench::bench::<QuickHeap<8, 3>>(false);
-    bench::bench::<QuickHeap<16, 3>>(false);
+    bench::bench::<QuickHeap<16, 1>>(false);
+    // bench::bench::<QuickHeap<16, 3>>(false);
+    // bench::bench::<QuickHeap<32, 1>>(false);
+    // bench::bench::<QuickHeap<32, 3>>(false);
+    // bench::bench::<QuickHeap<64, 3>>(false);
+
     // bench::bench::<QuickHeap<32, 3>>(false);
     // bench::bench::<QuickHeap<64, 3>>(false);
 
