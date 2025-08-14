@@ -15,7 +15,7 @@ const T_U32: bool = true;
 #[cfg(not(feature = "u64"))]
 type T = u32;
 #[cfg(not(feature = "u64"))]
-const L: usize = 16;
+const L: usize = 8;
 #[cfg(not(feature = "u64"))]
 type S = std::simd::u32x8;
 #[cfg(feature = "u64")]
@@ -23,7 +23,7 @@ const T_U32: bool = false;
 #[cfg(feature = "u64")]
 type T = u64;
 #[cfg(feature = "u64")]
-const L: usize = 8;
+const L: usize = 4;
 #[cfg(feature = "u64")]
 type S = std::simd::u64x4;
 
@@ -60,7 +60,7 @@ impl<const N: usize, const M: usize> Heap for QuickHeap<N, M> {
     #[inline(always)]
     fn push(&mut self, t: T) {
         let mut target_layer = 0;
-        for &th in &self.pivots[1..1 + self.layer.next_multiple_of(8)] {
+        for &th in &self.pivots[1..1 + self.layer.next_multiple_of(L)] {
             if t < th {
                 target_layer += 1;
             }
@@ -99,10 +99,10 @@ impl<const N: usize, const M: usize> QuickHeap<N, M> {
         //     self.buckets[self.layer].len()
         // );
 
-        // Reserve space for an additional 8 layers when needed.
+        // Reserve space for an additional L layers when needed.
         if self.layer + 2 == self.pivots.len() {
-            self.pivots.extend(repeat_n(0, 8));
-            self.buckets.extend(repeat_n(vec![], 8));
+            self.pivots.extend(repeat_n(0, L));
+            self.buckets.extend(repeat_n(vec![], L));
         }
         // Alias the current layer (to be split) and the next layer.
         let [cur_layer, next_layer] = &mut self.buckets[self.layer..=self.layer + 1] else {
@@ -125,8 +125,8 @@ impl<const N: usize, const M: usize> QuickHeap<N, M> {
 
         // Reserve space in the next layer,
         // and make sure the current layer can hold a spare SIMD register.
-        next_layer.resize(n + 8, 0);
-        cur_layer.resize(n + 8, 0);
+        next_layer.resize(n + L, 0);
+        cur_layer.resize(n + L, 0);
 
         // Partition a list into two using SIMD.
         let mut cur_len = 0;
