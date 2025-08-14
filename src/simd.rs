@@ -16,7 +16,7 @@ pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
     let t = S::splat(t);
 
     let mut target_layer = 0;
-    for c in v.array_chunks::<L>() {
+    for c in v.as_chunks::<L>().0 {
         let vals = S::from_array(*c);
         let mask = t.simd_le(vals);
         target_layer += mask.to_bitmask().count_ones() as usize;
@@ -31,7 +31,7 @@ pub fn position_min(v: &mut Vec<T>) -> usize {
 
     let mut min_pos = [0; 2];
     let mut min_val = [T::MAX; 2];
-    for (i, &[l, r]) in v.array_chunks::<2>().enumerate() {
+    for (i, &[l, r]) in v.as_chunks::<2>().0.iter().enumerate() {
         if l < min_val[0] {
             min_val[0] = l;
             min_pos[0] = i * 2;

@@ -1,4 +1,4 @@
-#![feature(iter_partition_in_place, portable_simd, slice_as_array, array_chunks)]
+#![feature(iter_partition_in_place, portable_simd, slice_as_array)]
 #![allow(unused)]
 mod bench;
 mod impls;
