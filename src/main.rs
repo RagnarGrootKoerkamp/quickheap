@@ -1,4 +1,4 @@
-#![feature(iter_partition_in_place, portable_simd, slice_as_array)]
+#![feature(iter_partition_in_place, portable_simd, slice_as_array, array_chunks)]
 #![allow(unused)]
 mod bench;
 mod impls;
@@ -59,12 +59,9 @@ impl<const N: usize, const M: usize> Heap for QuickHeap<N, M> {
     }
     #[inline(always)]
     fn push(&mut self, t: T) {
-        let mut target_layer = 0;
-        for &th in &self.pivots[1..1 + self.layer.next_multiple_of(L)] {
-            if t < th {
-                target_layer += 1;
-            }
-        }
+        let target_layer = simd::push_position(&self.pivots, self.layer, t);
+
+        self.buckets[target_layer].reserve(L + 1);
         self.buckets[target_layer].push(t);
     }
     #[inline(always)]

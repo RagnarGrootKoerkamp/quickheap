@@ -1,5 +1,29 @@
+use itertools::Itertools;
+
 use crate::{L, S, T, T_U32};
-use std::{array::from_fn, mem::transmute, simd::cmp::SimdPartialOrd};
+use std::{
+    array::from_fn,
+    mem::transmute,
+    simd::cmp::{SimdOrd, SimdPartialOrd},
+};
+
+pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
+    // Baseline:
+    // return v.iter().map(|x| (t <= **x) as usize).sum::<usize>();
+
+    let v = &v[1..1 + (layer).next_multiple_of(L)];
+
+    let t = S::splat(t);
+
+    let mut target_layer = 0;
+    for c in v.array_chunks::<L>() {
+        let vals = S::from_array(*c);
+        let mask = t.simd_le(vals);
+        target_layer += mask.to_bitmask().count_ones() as usize;
+    }
+
+    target_layer
+}
 
 /// Dedup adjacent `new` values (starting with the last element of `old`).
 /// If an element is different from the preceding element, append the corresponding element of `vals` to `v[write_idx]`.
