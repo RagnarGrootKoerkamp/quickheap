@@ -209,7 +209,7 @@ fn natural<H: Heap>(n: T) {
 }
 
 pub fn time(n: T, f: impl Fn(T)) -> f64 {
-    const REPEATS: usize = 1;
+    const REPEATS: usize = 2;
     let mut ts = vec![];
     for _ in 0..REPEATS {
         let start = std::time::Instant::now();
@@ -226,12 +226,13 @@ pub fn bench<H: Heap>(increasing: bool) {
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2 as T).pow(i)).collect();
 
     let mut ts = vec![
-        (9, increasing_linear_mix::<H, 4> as fn(_)),
-        (9, increasing_random_mix::<H, 4> as fn(_)),
+        (9, increasing_linear_mix::<H, 1> as fn(_)),
+        (9, increasing_random_mix::<H, 1> as fn(_)),
         (1, random_mix::<H, 0> as fn(_)),
     ];
     if !increasing {
-        ts.extend_from_slice(&[(9, random_mix::<H, 4> as fn(_))]);
+        ts.extend_from_slice(&[(1, random_mix::<H, 0> as fn(_))]);
+        ts.extend_from_slice(&[(3, random_mix::<H, 1> as fn(_))]);
     }
 
     let mut ok = vec![true; ts.len()];
@@ -255,5 +256,4 @@ pub fn bench<H: Heap>(increasing: bool) {
         eprintln!();
         println!();
     }
-    eprintln!();
 }
