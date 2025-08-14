@@ -76,7 +76,7 @@ impl<const N: usize, const M: usize> Heap for QuickHeap<N, M> {
         }
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.layer];
-        let min_pos = layer.iter().position_min().unwrap();
+        let min_pos = simd::position_min(layer);
         let min = layer.swap_remove(min_pos);
 
         // Update the active layer.

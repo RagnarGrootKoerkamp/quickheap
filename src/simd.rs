@@ -25,6 +25,38 @@ pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
     target_layer
 }
 
+pub fn position_min(v: &mut Vec<T>) -> usize {
+    // Baseline:
+    // return v.iter().position_min().unwrap();
+
+    let mut min_pos = [0; 2];
+    let mut min_val = [T::MAX; 2];
+    for (i, &[l, r]) in v.array_chunks::<2>().enumerate() {
+        if l < min_val[0] {
+            min_val[0] = l;
+            min_pos[0] = i * 2;
+        }
+        if r < min_val[1] {
+            min_val[1] = r;
+            min_pos[1] = i * 2 + 1;
+        }
+    }
+    if v.len() % 2 == 1 {
+        let l = *v.last().unwrap();
+        if l < min_val[0] {
+            min_val[0] = l;
+            min_pos[0] = v.len() - 1;
+        }
+    }
+    if min_val[0] <= min_val[1] {
+        return min_pos[0];
+    } else {
+        return min_pos[1];
+    }
+
+    return v.iter().position_min().unwrap();
+}
+
 /// Dedup adjacent `new` values (starting with the last element of `old`).
 /// If an element is different from the preceding element, append the corresponding element of `vals` to `v[write_idx]`.
 ///
