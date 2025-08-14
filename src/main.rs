@@ -57,14 +57,14 @@ impl<const N: usize, const M: usize> Heap for QuickHeap<N, M> {
             buckets: vec![vec![]; 128],
         }
     }
-    #[inline(always)]
+    #[inline(never)]
     fn push(&mut self, t: T) {
         let target_layer = simd::push_position(&self.pivots, self.layer, t);
 
         self.buckets[target_layer].reserve(L + 1);
         self.buckets[target_layer].push(t);
     }
-    #[inline(always)]
+    #[inline(never)]
     fn pop(&mut self) -> Option<T> {
         // Only the top layer can be empty.
         if self.buckets[self.layer].len() == 0 {
@@ -89,6 +89,7 @@ impl<const N: usize, const M: usize> Heap for QuickHeap<N, M> {
 }
 
 impl<const N: usize, const M: usize> QuickHeap<N, M> {
+    #[inline(never)]
     fn partition(&mut self) {
         // eprintln!(
         //     "Partitioning layer {} of size {}",

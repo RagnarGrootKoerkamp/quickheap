@@ -7,6 +7,7 @@ use std::{
     simd::cmp::{SimdOrd, SimdPartialOrd},
 };
 
+#[inline(never)]
 pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
     // Baseline:
     // return v.iter().map(|x| (t <= **x) as usize).sum::<usize>();
@@ -25,6 +26,7 @@ pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
     target_layer
 }
 
+#[inline(never)]
 pub fn position_min(v: &mut Vec<T>) -> usize {
     // Baseline:
     // return v.iter().position_min().unwrap();
