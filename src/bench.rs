@@ -246,7 +246,7 @@ pub fn bench<H: Heap>(increasing: bool) {
                 print!("\t");
                 continue;
             }
-            let t = time(n, t) / cnt as f64;
+            let t = time(n, t) / (2 * cnt) as f64 / (n as f64).log2();
             eprint!("{t:>9.2}");
             print!("\t{t:>.2}");
             if t > 100.0 {
