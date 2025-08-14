@@ -32,11 +32,15 @@ fn push_linear_rev<H: Heap>(n: T) {
     black_box(h);
 }
 
+fn get(rng: &mut fastrand::Rng) -> T {
+    rng.u64(..) as T
+}
+
 fn push_random<H: Heap>(n: T) {
     let mut h = H::default();
     let mut rng = fastrand::Rng::new();
     for i in 0..n {
-        h.push(rng.u32(..));
+        h.push(get(&mut rng));
     }
     black_box(h);
 }
@@ -100,7 +104,7 @@ fn random<H: Heap>(n: T) {
     let mut h = H::default();
     let mut rng = fastrand::Rng::new();
     for i in 0..n {
-        h.push(rng.u32(..));
+        h.push(get(&mut rng));
     }
     for _i in 0..n {
         h.pop();
@@ -112,10 +116,10 @@ fn random_alternate<H: Heap>(n: T) {
     let mut h = H::default();
     let mut rng = fastrand::Rng::new();
     for i in 0..n {
-        h.push(rng.u32(..));
+        h.push(get(&mut rng));
     }
     for i in n..2 * n {
-        h.push(rng.u32(..));
+        h.push(get(&mut rng));
         h.pop();
     }
     black_box(h);
@@ -125,16 +129,16 @@ fn random_mix<H: Heap, const K: usize>(n: T) {
     let mut h = H::default();
     let mut rng = fastrand::Rng::new();
     for _ in 0..n {
-        h.push(rng.u32(..));
+        h.push(get(&mut rng));
         for _ in 0..K {
             h.pop();
-            h.push(rng.u32(..));
+            h.push(get(&mut rng));
         }
     }
     for _ in 0..n {
         h.pop();
         for _ in 0..K {
-            h.push(rng.u32(..));
+            h.push(get(&mut rng));
             h.pop();
         }
     }
@@ -145,19 +149,42 @@ fn increasing_random_mix<H: Heap, const K: usize>(n: T) {
     let mut h = H::default();
     let mut rng = fastrand::Rng::new();
     let mut l = 0;
-    const C: u32 = 1000;
+    const C: u64 = if L == 4 { 1 << 32 } else { 1000 };
     for _ in 0..n {
-        h.push(rng.u32(l..l + C));
+        h.push(rng.u64(l..l + C) as T);
         for _ in 0..K {
-            l = h.pop().unwrap();
-            h.push(rng.u32(l..l + C));
+            l = h.pop().unwrap() as u64;
+            h.push(rng.u64(l..l + C) as T);
         }
     }
     for _ in 0..n {
-        l = h.pop().unwrap();
+        l = h.pop().unwrap() as u64;
         for _ in 0..K {
-            h.push(rng.u32(l..l + C));
-            l = h.pop().unwrap();
+            h.push(rng.u64(l..l + C) as T);
+            l = h.pop().unwrap() as u64;
+        }
+    }
+    black_box(h);
+}
+
+fn increasing_linear_mix<H: Heap, const K: usize>(n: T) {
+    let mut h = H::default();
+    let mut l = 0;
+    for _ in 0..n {
+        h.push(l);
+        l += 1;
+        for _ in 0..K {
+            h.pop().unwrap() as u64;
+            h.push(l);
+            l += 1;
+        }
+    }
+    for _ in 0..n {
+        h.pop().unwrap() as u64;
+        for _ in 0..K {
+            h.push(l);
+            l += 1;
+            h.pop().unwrap() as u64;
         }
     }
     black_box(h);
@@ -173,7 +200,7 @@ fn natural<H: Heap>(n: T) {
             if j < i {
                 h.pop();
             } else {
-                h.push(rng.u32(..));
+                h.push(get(&mut rng));
             }
         }
     }
@@ -195,32 +222,35 @@ pub fn time(n: T, f: impl Fn(T)) -> f64 {
 
 pub fn bench<H: Heap>(increasing: bool) {
     let minpow = 10;
-    // let maxpow = 28;
-    let maxpow = 26;
+    let maxpow = 25;
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2 as T).pow(i)).collect();
 
+    let mut ts = vec![
+        (9, increasing_linear_mix::<H, 4> as fn(_)),
+        (9, increasing_random_mix::<H, 4> as fn(_)),
+        (1, random_mix::<H, 0> as fn(_)),
+    ];
+    if !increasing {
+        ts.extend_from_slice(&[(9, random_mix::<H, 4> as fn(_))]);
+    }
+
+    let mut ok = vec![true; ts.len()];
+
     for n in ns {
-        let ts = if increasing {
-            [
-                increasing_random_mix::<H, 0> as fn(_),
-                // increasing_random_mix::<H, 1> as fn(_),
-                // increasing_random_mix::<H, 2> as fn(_),
-                increasing_random_mix::<H, 4> as fn(_),
-            ]
-        } else {
-            [
-                random_mix::<H, 0> as fn(_),
-                // random_mix::<H, 1> as fn(_),
-                // random_mix::<H, 2> as fn(_),
-                random_mix::<H, 4> as fn(_),
-            ]
-        };
-        eprint!("{:<70} {increasing:<6}  {n:>10}", type_name::<H>());
-        print!("{}\t{increasing}\t{n}", type_name::<H>());
-        for t in ts {
-            let t = time(n, t);
+        eprint!("{:<70} {} {n:>10}", type_name::<H>(), type_name::<T>());
+        print!("{}\t{}\t{n}", type_name::<H>(), type_name::<T>());
+        for (&(cnt, t), ok) in std::iter::zip(&ts, &mut ok) {
+            if !*ok {
+                eprint!("{:>9}", "");
+                print!("\t");
+                continue;
+            }
+            let t = time(n, t) / cnt as f64;
             eprint!("{t:>9.2}");
             print!("\t{t:>.2}");
+            if t > 100.0 {
+                *ok = false;
+            }
         }
         eprintln!();
         println!();

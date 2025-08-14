@@ -138,6 +138,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "quickheap"
+version = "0.1.0"
+dependencies = [
+ "dary_heap",
+ "fastrand",
+ "fibonacci_heap",
+ "indexset",
+ "itertools",
+ "orx-priority-queue",
+ "pheap",
+ "radix-heap",
+ "rand",
+ "random",
+ "wide",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -220,23 +237,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "simd-heap"
-version = "0.1.0"
-dependencies = [
- "dary_heap",
- "fastrand",
- "fibonacci_heap",
- "indexset",
- "itertools",
- "orx-priority-queue",
- "pheap",
- "radix-heap",
- "rand",
- "random",
- "wide",
 ]
 
 [[package]]

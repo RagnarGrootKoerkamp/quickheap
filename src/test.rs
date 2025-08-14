@@ -19,8 +19,15 @@ impl<H0: Heap, H1: Heap> Heap for TestHeap<H0, H1> {
 }
 
 #[test]
-fn bucketheap() {
+fn quickheap() {
     use impls::*;
-    bench::bench::<TestHeap<BucketHeap<8, 3>, BinaryHeap<Reverse<T>>>>(false);
-    bench::bench::<TestHeap<BucketHeap<1, 1>, BinaryHeap<Reverse<T>>>>(false);
+    // bench::bench::<TestHeap<QuickHeap<8, 3>, BinaryHeap<Reverse<T>>>>(false);
+    // bench::bench::<TestHeap<QuickHeap<1, 1>, BinaryHeap<Reverse<T>>>>(false);
+    // bench::bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 2>, BinaryHeap<Reverse<T>>>>(false);
+    // bench::bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 4>, BinaryHeap<Reverse<T>>>>(false);
+    // bench::bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 8>, BinaryHeap<Reverse<T>>>>(false);
+    // bench::bench::<TestHeap<DaryHeap<(), T, 2>, BinaryHeap<Reverse<T>>>>(false);
+    // bench::bench::<TestHeap<DaryHeap<(), T, 4>, BinaryHeap<Reverse<T>>>>(false);
+    // bench::bench::<TestHeap<DaryHeap<(), T, 8>, BinaryHeap<Reverse<T>>>>(false);
+    bench::bench::<TestHeap<RadixHeapMap<Reverse<T>, ()>, BinaryHeap<Reverse<T>>>>(true);
 }

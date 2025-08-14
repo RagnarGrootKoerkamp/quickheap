@@ -1,5 +1,5 @@
-pub type S = std::simd::u32x8;
-use std::{mem::transmute, simd::cmp::SimdPartialOrd};
+use crate::{L, S, T};
+use std::{array::from_fn, mem::transmute, simd::cmp::SimdPartialOrd};
 
 /// Dedup adjacent `new` values (starting with the last element of `old`).
 /// If an element is different from the preceding element, append the corresponding element of `vals` to `v[write_idx]`.
@@ -12,10 +12,10 @@ use std::{mem::transmute, simd::cmp::SimdPartialOrd};
 pub fn partition(
     vals: S,
     len: usize,
-    threshold: u32,
-    v: &mut [u32],
+    threshold: T,
+    v: &mut [T],
     v_idx: &mut usize,
-    w: &mut [u32],
+    w: &mut [T],
     w_idx: &mut usize,
 ) {
     unsafe {
@@ -25,8 +25,8 @@ pub fn partition(
         let mut small = vals.simd_lt(threshold).to_bitmask();
         let mut large = vals.simd_ge(threshold).to_bitmask();
 
-        let idx = S::from_array([0, 1, 2, 3, 4, 5, 6, 7]);
-        let in_range = (S::splat(len as u32).simd_gt(idx)).to_bitmask();
+        let idx = S::from_array(from_fn(|i| i as T));
+        let in_range = (S::splat(len as T).simd_gt(idx)).to_bitmask();
         small &= in_range;
         large &= in_range;
         // eprintln!("{large:>032b}");
@@ -36,14 +36,24 @@ pub fn partition(
         let vals = transmute(vals);
 
         // write large to v
-        let key = transmute(UNIQSHUF[(!(large as u8)) as usize]);
-        let val = _mm256_permutevar8x32_epi32(vals, key);
+        let val = if L == 8 {
+            let key = transmute(UNIQSHUF32[(!(large as u8)) as usize]);
+            _mm256_permutevar8x32_epi32(vals, key)
+        } else {
+            let key = transmute(UNIQSHUF64[large as usize ^ 0xF]);
+            _mm256_permutevar8x32_epi32(vals, key)
+        };
         _mm256_storeu_si256(v.as_mut_ptr().add(*v_idx) as *mut __m256i, val);
         *v_idx += large.count_ones() as usize;
 
         // write small to w
-        let key = transmute(UNIQSHUF[(!(small as u8)) as usize]);
-        let val = _mm256_permutevar8x32_epi32(vals, key);
+        let val = if L == 8 {
+            let key = transmute(UNIQSHUF32[(!(small as u8)) as usize]);
+            _mm256_permutevar8x32_epi32(vals, key)
+        } else {
+            let key = transmute(UNIQSHUF64[small as usize ^ 0xF]);
+            _mm256_permutevar8x32_epi32(vals, key)
+        };
         _mm256_storeu_si256(w.as_mut_ptr().add(*w_idx) as *mut __m256i, val);
         *w_idx += small.count_ones() as usize;
     }
@@ -52,7 +62,7 @@ pub fn partition(
 /// For each of 256 masks of which elements are different than their predecessor,
 /// a shuffle that sends those new elements to the beginning.
 #[rustfmt::skip]
-const UNIQSHUF: [S; 256] = unsafe {transmute([
+const UNIQSHUF32: [S; 256] = unsafe {transmute([
 0,1,2,3,4,5,6,7,
 1,2,3,4,5,6,7,0,
 0,2,3,4,5,6,7,0,
@@ -310,3 +320,25 @@ const UNIQSHUF: [S; 256] = unsafe {transmute([
 0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,
 ])};
+
+#[rustfmt::skip]
+const UNIQSHUF64: [S; 16] = unsafe {
+transmute([
+0, 1, 2, 3, 4, 5, 6, 7, //0000
+2, 3, 4, 5, 6, 7, 0, 0, //1000
+0, 1, 4, 5, 6, 7, 0, 0, //0100
+4, 5, 6, 7, 0, 0, 0, 0, //1100
+0, 1, 2, 3, 6, 7, 0, 0, //0010
+2, 3, 6, 7, 0, 0, 0, 0, //1010
+0, 1, 6, 7, 0, 0, 0, 0, //0110
+6, 7, 0, 0, 0, 0, 0, 0, //1110
+0, 1, 2, 3, 4, 5, 0, 0, //0001
+2, 3, 4, 5, 0, 0, 0, 0, //1001
+0, 1, 4, 5, 0, 0, 0, 0, //0101
+4, 5, 0, 0, 0, 0, 0, 0, //1101
+0, 1, 2, 3, 0, 0, 0, 0, //0011
+2, 3, 0, 0, 0, 0, 0, 0, //1011
+0, 1, 0, 0, 0, 0, 0, 0, //0111
+0, 0, 0, 0, 0, 0, 0, 0, //1111
+])
+};

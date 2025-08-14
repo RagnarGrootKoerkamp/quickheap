@@ -116,7 +116,7 @@ impl Heap for RadixHeapMap<Reverse<T>, ()> {
     }
 }
 
-impl<const N: usize> Heap for dary_heap::DaryHeap<T, N> {
+impl<const N: usize> Heap for dary_heap::DaryHeap<Reverse<T>, N> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -124,12 +124,12 @@ impl<const N: usize> Heap for dary_heap::DaryHeap<T, N> {
 
     #[inline(always)]
     fn push(&mut self, t: T) {
-        self.push(t)
+        self.push(Reverse(t))
     }
 
     #[inline(always)]
     fn pop(&mut self) -> Option<T> {
-        self.pop()
+        self.pop().map(|x| x.0)
     }
 }
 
