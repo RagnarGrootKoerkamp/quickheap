@@ -122,8 +122,12 @@ impl<const N: usize, const M: usize> QuickHeap<N, M> {
 
         // Reserve space in the next layer,
         // and make sure the current layer can hold a spare SIMD register.
-        next_layer.resize(n + L, 0);
-        cur_layer.resize(n + L, 0);
+        cur_layer.reserve(L);
+        next_layer.clear();
+        next_layer.reserve(n + L);
+
+        unsafe { cur_layer.set_len(n + L) };
+        unsafe { next_layer.set_len(n + L) };
 
         // Partition a list into two using SIMD.
         let mut cur_len = 0;
@@ -156,8 +160,10 @@ impl<const N: usize, const M: usize> QuickHeap<N, M> {
         // eprintln!("cur len: {cur_len}, next len: {next_len}");
         debug_assert!(next_len > 0);
 
-        cur_layer.resize(cur_len, 0);
-        next_layer.resize(next_len, 0);
+        unsafe {
+            cur_layer.set_len(cur_len);
+            next_layer.set_len(next_len);
+        }
 
         // If we extracted all elements to the next layer
         // because the pivot was the largest one,
