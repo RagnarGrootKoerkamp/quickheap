@@ -1,10 +1,13 @@
 [package]
 name = "quickheap"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2024"
-
-[profile.release]
-debug = true
+license = "MIT"
+repository = "https://github.com/ragnargrootkoerkamp/quickheap"
+keywords = ["priority-queue", "heap", "simd"]
+categories = ["algorithms", "data-structures"]
+authors = ["Ragnar Groot Koerkamp"]
+description = "A SIMD-accelerated priority queue"
 
 [dependencies]
 dary_heap = "0.3.7"
@@ -20,4 +23,5 @@ random = "0.14.0"
 wide = "0.7.33"
 
 [features]
+# To use u64 instead of u32 as the underlying type.
 u64 = []
