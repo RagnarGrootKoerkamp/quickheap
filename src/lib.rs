@@ -1,4 +1,4 @@
-#![feature(iter_partition_in_place, portable_simd, slice_as_array)]
+#![feature(portable_simd)]
 mod impls;
 mod simd;
 use std::{array::from_fn, cmp::Reverse, iter::repeat_n};
@@ -129,7 +129,7 @@ impl<const N: usize, const M: usize> QuickHeap<N, M> {
         let mut next_len = 0;
         let half = (pivot_pos + 1).next_multiple_of(L);
         for i in (0..half).step_by(L) {
-            let vals = *cur_layer[i..i + L].as_array().unwrap();
+            let vals: [T; L] = cur_layer[i..i + L].try_into().unwrap();
             simd::partition(
                 S::from_array(vals),
                 n - i,
@@ -141,7 +141,7 @@ impl<const N: usize, const M: usize> QuickHeap<N, M> {
             );
         }
         for i in (half..n).step_by(L) {
-            let vals = *cur_layer[i..i + L].as_array().unwrap();
+            let vals: [T; L] = cur_layer[i..i + L].try_into().unwrap();
             simd::partition(
                 S::from_array(vals),
                 n - i,
