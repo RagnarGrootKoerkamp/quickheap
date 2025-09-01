@@ -1,39 +1,37 @@
 #![feature(iter_partition_in_place, portable_simd, slice_as_array)]
 #![allow(unused)]
-mod bench;
 mod impls;
 mod simd;
-#[cfg(test)]
-mod test;
 use std::{array::from_fn, cmp::Reverse, iter::repeat_n, simd::u32x8};
 
 use itertools::Itertools;
 use rand::seq::SliceRandom;
 
 #[cfg(not(feature = "u64"))]
-const T_U32: bool = true;
+pub const T_U32: bool = true;
 #[cfg(not(feature = "u64"))]
-type T = u32;
+pub type T = u32;
 #[cfg(not(feature = "u64"))]
 const L: usize = 8;
 #[cfg(not(feature = "u64"))]
 type S = std::simd::u32x8;
+
 #[cfg(feature = "u64")]
-const T_U32: bool = false;
+pub const T_U32: bool = false;
 #[cfg(feature = "u64")]
-type T = u64;
+pub type T = u64;
 #[cfg(feature = "u64")]
 const L: usize = 4;
 #[cfg(feature = "u64")]
 type S = std::simd::u64x4;
 
-trait Heap {
+pub trait Heap {
     fn default() -> Self;
     fn push(&mut self, t: T);
     fn pop(&mut self) -> Option<T>;
 }
 
-struct QuickHeap<const N: usize, const M: usize> {
+pub struct QuickHeap<const N: usize, const M: usize> {
     /// The number of layers in the tree.
     layer: usize,
     /// A decreasing array of the pivots for all layers.
@@ -177,49 +175,4 @@ impl<const N: usize, const M: usize> QuickHeap<N, M> {
         // Increment the active layer.
         self.layer += 1;
     }
-}
-
-fn main() {
-    use impls::*;
-
-    eprintln!("QUICKHEAP");
-    // bench::bench::<QuickHeap<4, 1>>(false);
-    // bench::bench::<QuickHeap<8, 1>>(false);
-    // bench::bench::<QuickHeap<8, 3>>(false);
-    bench::bench::<QuickHeap<16, 1>>(false);
-    // bench::bench::<QuickHeap<16, 3>>(false);
-    // bench::bench::<QuickHeap<32, 1>>(false);
-    // bench::bench::<QuickHeap<32, 3>>(false);
-    // bench::bench::<QuickHeap<64, 3>>(false);
-
-    // bench::bench::<QuickHeap<32, 3>>(false);
-    // bench::bench::<QuickHeap<64, 3>>(false);
-
-    // bench::bench::<QuickHeap<16, 1>>(false); // actually slightly faster usually ??
-    // bench::bench::<QuickHeap<16, 5>>(false);
-
-    eprintln!("BASELINE");
-    bench::bench::<BinaryHeap<Reverse<T>>>(false);
-
-    eprintln!("DARY");
-    // bench::bench::<dary_heap::DaryHeap<Reverse<T>, 2>>(false);
-    // bench::bench::<dary_heap::DaryHeap<Reverse<T>, 4>>(false);
-    bench::bench::<dary_heap::DaryHeap<Reverse<T>, 8>>(false);
-    // bench::bench::<DaryHeap<(), T, 2>>(false);
-    bench::bench::<DaryHeap<(), T, 4>>(false);
-    // bench::bench::<DaryHeap<(), T, 8>>(false);
-
-    eprintln!("RADIX");
-    bench::bench::<RadixHeapMap<Reverse<T>, ()>>(true);
-
-    //
-    // eprintln!("BTREES");
-    // bench::bench::<BTreeSet<T>>(false);
-    // bench::bench::<BTreeSet<Reverse<T>>>(false);
-    // bench::bench::<indexset::BTreeSet<T>>(false);
-    // bench::bench::<indexset::BTreeSet<Reverse<T>>>(false);
-
-    // eprintln!("FANCY");
-    // bench::bench::<PairingHeap<(), T>>(false);
-    // bench::bench::<FibonacciHeap>(false); // too slow
 }

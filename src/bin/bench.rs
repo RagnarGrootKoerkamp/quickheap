@@ -1,8 +1,10 @@
-use std::{any::type_name, hint::black_box};
+use std::{any::type_name, cmp::Reverse, collections::BinaryHeap, hint::black_box};
 
+use orx_priority_queue::DaryHeap;
+use radix_heap::RadixHeapMap;
 use rand::{rng, seq::SliceRandom};
 
-use super::*;
+use quickheap::*;
 
 fn push_random_shuffle<H: Heap>(n: T) -> impl Fn(T) {
     let mut v: Vec<T> = (0..n).collect();
@@ -255,5 +257,83 @@ pub fn bench<H: Heap>(increasing: bool) {
         }
         eprintln!();
         println!();
+    }
+}
+
+fn main() {
+    eprintln!("QUICKHEAP");
+    // bench::<QuickHeap<4, 1>>(false);
+    // bench::<QuickHeap<8, 1>>(false);
+    // bench::<QuickHeap<8, 3>>(false);
+    bench::<QuickHeap<16, 1>>(false);
+    // bench::<QuickHeap<16, 3>>(false);
+    // bench::<QuickHeap<32, 1>>(false);
+    // bench::<QuickHeap<32, 3>>(false);
+    // bench::<QuickHeap<64, 3>>(false);
+
+    // bench::<QuickHeap<32, 3>>(false);
+    // bench::<QuickHeap<64, 3>>(false);
+
+    // bench::<QuickHeap<16, 1>>(false); // actually slightly faster usually ??
+    // bench::<QuickHeap<16, 5>>(false);
+
+    eprintln!("BASELINE");
+    bench::<BinaryHeap<Reverse<T>>>(false);
+
+    eprintln!("DARY");
+    // bench::<dary_heap::DaryHeap<Reverse<T>, 2>>(false);
+    // bench::<dary_heap::DaryHeap<Reverse<T>, 4>>(false);
+    bench::<dary_heap::DaryHeap<Reverse<T>, 8>>(false);
+    // bench::<DaryHeap<(), T, 2>>(false);
+    bench::<DaryHeap<(), T, 4>>(false);
+    // bench::<DaryHeap<(), T, 8>>(false);
+
+    eprintln!("RADIX");
+    bench::<RadixHeapMap<Reverse<T>, ()>>(true);
+
+    //
+    // eprintln!("BTREES");
+    // bench::<BTreeSet<T>>(false);
+    // bench::<BTreeSet<Reverse<T>>>(false);
+    // bench::<indexset::BTreeSet<T>>(false);
+    // bench::<indexset::BTreeSet<Reverse<T>>>(false);
+
+    // eprintln!("FANCY");
+    // bench::<PairingHeap<(), T>>(false);
+    // bench::<FibonacciHeap>(false); // too slow
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    struct TestHeap<H0: Heap, H1: Heap>(H0, H1);
+    impl<H0: Heap, H1: Heap> Heap for TestHeap<H0, H1> {
+        fn default() -> Self {
+            TestHeap(H0::default(), H1::default())
+        }
+
+        fn push(&mut self, t: T) {
+            (self.0.push(t), self.1.push(t));
+        }
+
+        fn pop(&mut self) -> Option<T> {
+            let a0 = self.0.pop();
+            let a1 = self.1.pop();
+            assert_eq!(a0, a1);
+            a0
+        }
+    }
+
+    #[test]
+    fn quickheap() {
+        // bench::<TestHeap<QuickHeap<8, 3>, BinaryHeap<Reverse<T>>>>(false);
+        // bench::<TestHeap<QuickHeap<1, 1>, BinaryHeap<Reverse<T>>>>(false);
+        // bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 2>, BinaryHeap<Reverse<T>>>>(false);
+        // bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 4>, BinaryHeap<Reverse<T>>>>(false);
+        // bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 8>, BinaryHeap<Reverse<T>>>>(false);
+        // bench::<TestHeap<DaryHeap<(), T, 2>, BinaryHeap<Reverse<T>>>>(false);
+        // bench::<TestHeap<DaryHeap<(), T, 4>, BinaryHeap<Reverse<T>>>>(false);
+        // bench::<TestHeap<DaryHeap<(), T, 8>, BinaryHeap<Reverse<T>>>>(false);
+        bench::<TestHeap<RadixHeapMap<Reverse<T>, ()>, BinaryHeap<Reverse<T>>>>(true);
     }
 }
