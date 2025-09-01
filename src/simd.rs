@@ -1,11 +1,5 @@
-use itertools::Itertools;
-
 use crate::{L, S, T, T_U32};
-use std::{
-    array::from_fn,
-    mem::transmute,
-    simd::cmp::{SimdOrd, SimdPartialOrd},
-};
+use std::{array::from_fn, mem::transmute, simd::cmp::SimdPartialOrd};
 
 #[inline(never)]
 pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
@@ -55,8 +49,6 @@ pub fn position_min(v: &mut Vec<T>) -> usize {
     } else {
         return min_pos[1];
     }
-
-    return v.iter().position_min().unwrap();
 }
 
 /// Dedup adjacent `new` values (starting with the last element of `old`).

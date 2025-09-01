@@ -1,11 +1,7 @@
 #![feature(iter_partition_in_place, portable_simd, slice_as_array)]
-#![allow(unused)]
 mod impls;
 mod simd;
-use std::{array::from_fn, cmp::Reverse, iter::repeat_n, simd::u32x8};
-
-use itertools::Itertools;
-use rand::seq::SliceRandom;
+use std::{array::from_fn, cmp::Reverse, iter::repeat_n};
 
 #[cfg(not(feature = "u64"))]
 pub const T_U32: bool = true;
