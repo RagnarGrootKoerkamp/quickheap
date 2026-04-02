@@ -6,7 +6,7 @@ pub use std::collections::{BTreeSet, BinaryHeap};
 
 use super::*;
 
-impl Heap for BinaryHeap<Reverse<T>> {
+impl Heap<T> for BinaryHeap<Reverse<T>> {
     fn default() -> Self {
         BinaryHeap::with_capacity(1 << 20)
     }
@@ -20,7 +20,7 @@ impl Heap for BinaryHeap<Reverse<T>> {
     }
 }
 
-impl Heap for BTreeSet<T> {
+impl Heap<T> for BTreeSet<T> {
     fn default() -> Self {
         Default::default()
     }
@@ -34,7 +34,7 @@ impl Heap for BTreeSet<T> {
     }
 }
 
-impl Heap for BTreeSet<Reverse<T>> {
+impl Heap<T> for BTreeSet<Reverse<T>> {
     fn default() -> Self {
         Default::default()
     }
@@ -48,7 +48,7 @@ impl Heap for BTreeSet<Reverse<T>> {
     }
 }
 
-impl<const N: usize> Heap for DaryHeap<(), T, N> {
+impl<const N: usize> Heap<T> for DaryHeap<(), T, N> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -65,7 +65,7 @@ impl<const N: usize> Heap for DaryHeap<(), T, N> {
     }
 }
 
-impl Heap for FibonacciHeap {
+impl Heap<T> for FibonacciHeap {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -82,7 +82,7 @@ impl Heap for FibonacciHeap {
     }
 }
 
-impl Heap for PairingHeap<(), T> {
+impl Heap<T> for PairingHeap<(), T> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -99,7 +99,7 @@ impl Heap for PairingHeap<(), T> {
     }
 }
 
-impl Heap for RadixHeapMap<Reverse<T>, ()> {
+impl Heap<T> for RadixHeapMap<Reverse<T>, ()> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -116,7 +116,7 @@ impl Heap for RadixHeapMap<Reverse<T>, ()> {
     }
 }
 
-impl<const N: usize> Heap for dary_heap::DaryHeap<Reverse<T>, N> {
+impl<const N: usize> Heap<T> for dary_heap::DaryHeap<Reverse<T>, N> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -133,7 +133,7 @@ impl<const N: usize> Heap for dary_heap::DaryHeap<Reverse<T>, N> {
     }
 }
 
-impl Heap for indexset::BTreeSet<T> {
+impl Heap<T> for indexset::BTreeSet<T> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -150,7 +150,7 @@ impl Heap for indexset::BTreeSet<T> {
     }
 }
 
-impl Heap for indexset::BTreeSet<Reverse<T>> {
+impl Heap<T> for indexset::BTreeSet<Reverse<T>> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -167,7 +167,7 @@ impl Heap for indexset::BTreeSet<Reverse<T>> {
     }
 }
 
-impl Heap for weakheap::WeakHeap<T> {
+impl Heap<T> for weakheap::WeakHeap<T> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()

@@ -21,7 +21,7 @@ const L: usize = 4;
 #[cfg(feature = "u64")]
 type S = std::simd::i64x4;
 
-pub trait Heap {
+pub trait Heap<T> {
     fn default() -> Self;
     fn push(&mut self, t: T);
     fn pop(&mut self) -> Option<T>;
@@ -39,7 +39,7 @@ pub struct QuickHeap<const N: usize, const M: usize> {
     buckets: Vec<Vec<T>>,
 }
 
-impl<const N: usize, const M: usize> Heap for QuickHeap<N, M> {
+impl<const N: usize, const M: usize> Heap<T> for QuickHeap<N, M> {
     fn default() -> Self {
         let mut pivots = vec![0; 128];
         pivots[0] = T::MAX;
