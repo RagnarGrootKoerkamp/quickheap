@@ -27,7 +27,7 @@ pub trait Heap<T> {
     fn pop(&mut self) -> Option<T>;
 }
 
-pub struct QuickHeap<const N: usize, const M: usize> {
+pub struct SimdQuickHeap<const N: usize, const M: usize> {
     /// The number of layers in the tree.
     layer: usize,
     /// A decreasing array of the pivots for all layers.
@@ -39,7 +39,7 @@ pub struct QuickHeap<const N: usize, const M: usize> {
     buckets: Vec<Vec<T>>,
 }
 
-impl<const N: usize, const M: usize> Heap<T> for QuickHeap<N, M> {
+impl<const N: usize, const M: usize> Heap<T> for SimdQuickHeap<N, M> {
     fn default() -> Self {
         let mut pivots = vec![0; 128];
         pivots[0] = T::MAX;
@@ -82,7 +82,7 @@ impl<const N: usize, const M: usize> Heap<T> for QuickHeap<N, M> {
     }
 }
 
-impl<const N: usize, const M: usize> QuickHeap<N, M> {
+impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
     #[inline(never)]
     fn partition(&mut self) {
         // eprintln!(

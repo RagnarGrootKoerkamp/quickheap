@@ -314,7 +314,7 @@ fn main() {
     // bench::<QuickHeap<4, 1>>(false);
     // bench::<QuickHeap<8, 1>>(false);
     // bench::<QuickHeap<8, 3>>(false);
-    bench::<T, QuickHeap<16, 1>>(false);
+    bench::<T, SimdQuickHeap<16, 1>>(false);
     // bench::<QuickHeap<16, 3>>(false);
     // bench::<QuickHeap<32, 1>>(false);
     // bench::<QuickHeap<32, 3>>(false);
