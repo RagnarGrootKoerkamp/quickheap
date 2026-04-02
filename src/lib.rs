@@ -6,20 +6,20 @@ use std::{array::from_fn, cmp::Reverse, iter::repeat_n};
 #[cfg(not(feature = "u64"))]
 pub const T_U32: bool = true;
 #[cfg(not(feature = "u64"))]
-pub type T = u32;
+pub type T = i32;
 #[cfg(not(feature = "u64"))]
 const L: usize = 8;
 #[cfg(not(feature = "u64"))]
-type S = std::simd::u32x8;
+type S = std::simd::i32x8;
 
 #[cfg(feature = "u64")]
 pub const T_U32: bool = false;
 #[cfg(feature = "u64")]
-pub type T = u64;
+pub type T = i64;
 #[cfg(feature = "u64")]
 const L: usize = 4;
 #[cfg(feature = "u64")]
-type S = std::simd::u64x4;
+type S = std::simd::i64x4;
 
 pub trait Heap {
     fn default() -> Self;
