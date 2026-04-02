@@ -124,34 +124,50 @@ impl<const N: usize, const M: usize> QuickHeap<N, M> {
         unsafe { cur_layer.set_len(n + L) };
         unsafe { next_layer.set_len(n + L) };
 
+        let n2 = n.next_multiple_of(L).saturating_sub(L);
+
         // Partition a list into two using SIMD.
         let mut cur_len = 0;
         let mut next_len = 0;
-        let half = (pivot_pos + 1).next_multiple_of(L);
+        let half = (pivot_pos + 1).min(n2).next_multiple_of(L);
+        let threshold = S::splat(pivot + 1);
         for i in (0..half).step_by(L) {
-            let vals: [T; L] = cur_layer[i..i + L].try_into().unwrap();
-            simd::partition(
+            let vals: [T; L] = unsafe { cur_layer.get_unchecked(i..i + L).try_into().unwrap() };
+            simd::partition_fast(
                 S::from_array(vals),
-                n - i,
-                pivot + 1,
+                threshold,
                 cur_layer,
                 &mut cur_len,
                 next_layer,
                 &mut next_len,
             );
         }
-        for i in (half..n).step_by(L) {
-            let vals: [T; L] = cur_layer[i..i + L].try_into().unwrap();
-            simd::partition(
+        let threshold = S::splat(pivot);
+        for i in (half..n2).step_by(L) {
+            let vals: [T; L] = unsafe { cur_layer.get_unchecked(i..i + L).try_into().unwrap() };
+            simd::partition_fast(
                 S::from_array(vals),
-                n - i,
-                pivot,
+                threshold,
                 cur_layer,
                 &mut cur_len,
                 next_layer,
                 &mut next_len,
             );
         }
+        if n2 < n {
+            let threshold = S::splat(pivot + 1);
+            let vals: [T; L] = unsafe { cur_layer.get_unchecked(n2..n2 + L).try_into().unwrap() };
+            simd::partition_slow(
+                S::from_array(vals),
+                S::splat((n - n2) as i32),
+                threshold,
+                cur_layer,
+                &mut cur_len,
+                next_layer,
+                &mut next_len,
+            );
+        }
+
         // eprintln!("cur len: {cur_len}, next len: {next_len}");
         debug_assert!(next_len > 0);
 

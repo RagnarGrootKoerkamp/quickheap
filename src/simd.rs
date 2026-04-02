@@ -1,7 +1,9 @@
+use itertools::Itertools;
+
 use crate::{L, S, T, T_U32};
 use std::{array::from_fn, mem::transmute, simd::cmp::SimdPartialOrd};
 
-#[inline(never)]
+#[inline(always)]
 pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
     // Baseline:
     // return v.iter().map(|x| (t <= **x) as usize).sum::<usize>();
@@ -23,7 +25,15 @@ pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
 #[inline(never)]
 pub fn position_min(v: &mut Vec<T>) -> usize {
     // Baseline:
-    // return v.iter().position_min().unwrap();
+    // let mut min = T::MAX;
+    // let mut pos = 0;
+    // for i in 0..v.len() {
+    //     if v[i] <= min {
+    //         min = v[i];
+    //         pos = i;
+    //     }
+    // }
+    // return pos;
 
     let mut min_pos = [0; 2];
     let mut min_val = [T::MAX; 2];
@@ -59,10 +69,9 @@ pub fn position_min(v: &mut Vec<T>) -> usize {
 /// <https://github.com/lemire/Code-used-on-Daniel-Lemire-s-blog/blob/edfd0e8b809d9a57527a7990c4bb44b9d1d05a69/2017/04/10/removeduplicates.cpp>
 // #[cfg(target_feature = "avx2")]
 #[inline(always)]
-pub fn partition(
+pub fn partition_fast(
     vals: S,
-    len: usize,
-    threshold: T,
+    threshold: S,
     v: &mut [T],
     v_idx: &mut usize,
     w: &mut [T],
@@ -71,12 +80,54 @@ pub fn partition(
     unsafe {
         use core::arch::x86_64::*;
 
-        let threshold = S::splat(threshold);
+        let small = threshold.simd_gt(vals).to_bitmask();
+        let large = (!small) as u8 as u64;
+
+        let vals = transmute(vals);
+
+        // write large to v
+        let val = if T_U32 {
+            let key = transmute(UNIQSHUF32[(!(large as u8)) as usize]);
+            _mm256_permutevar8x32_epi32(vals, key)
+        } else {
+            let key = transmute(UNIQSHUF64[large as usize ^ 0xF]);
+            _mm256_permutevar8x32_epi32(vals, key)
+        };
+        _mm256_storeu_si256(v.as_mut_ptr().add(*v_idx) as *mut __m256i, val);
+        *v_idx += large.count_ones() as usize;
+
+        // write small to w
+        let val = if T_U32 {
+            let key = transmute(UNIQSHUF32[(!(small as u8)) as usize]);
+            _mm256_permutevar8x32_epi32(vals, key)
+        } else {
+            let key = transmute(UNIQSHUF64[small as usize ^ 0xF]);
+            _mm256_permutevar8x32_epi32(vals, key)
+        };
+        _mm256_storeu_si256(w.as_mut_ptr().add(*w_idx) as *mut __m256i, val);
+        *w_idx += small.count_ones() as usize;
+    }
+}
+
+#[inline(always)]
+pub fn partition_slow(
+    vals: S,
+    len: S,
+    threshold: S,
+    v: &mut [T],
+    v_idx: &mut usize,
+    w: &mut [T],
+    w_idx: &mut usize,
+) {
+    unsafe {
+        use core::arch::x86_64::*;
+
         let mut small = vals.simd_lt(threshold).to_bitmask();
         let mut large = vals.simd_ge(threshold).to_bitmask();
 
+        // FIXME: Special end-of-array logic.
         let idx = S::from_array(from_fn(|i| i as T));
-        let in_range = (S::splat(len as T).simd_gt(idx)).to_bitmask();
+        let in_range = (len.simd_gt(idx)).to_bitmask();
         small &= in_range;
         large &= in_range;
         // eprintln!("{large:>032b}");
