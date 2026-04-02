@@ -228,8 +228,8 @@ pub fn bench<H: Heap>(increasing: bool) {
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2 as T).pow(i)).collect();
 
     let mut ts = vec![
-        (9, increasing_linear_mix::<H, 1> as fn(_)),
-        (9, increasing_random_mix::<H, 1> as fn(_)),
+        (3, increasing_linear_mix::<H, 1> as fn(_)),
+        (3, increasing_random_mix::<H, 1> as fn(_)),
         (1, random_mix::<H, 0> as fn(_)),
     ];
     if !increasing {
