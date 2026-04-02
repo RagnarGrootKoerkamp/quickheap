@@ -5,7 +5,7 @@ use radix_heap::RadixHeapMap;
 
 use quickheap::*;
 
-trait Elem: PartialOrd {
+pub trait Elem: Ord {
     fn get(&self) -> u64;
     fn from(x: u64) -> Self;
 }
@@ -29,6 +29,41 @@ impl_elem!(u32);
 impl_elem!(u64);
 impl_elem!(i32);
 impl_elem!(i64);
+
+thread_local! {
+    static COMPARISON: std::cell::Cell<u64> = std::cell::Cell::new(0);
+}
+
+pub struct CountComparisons<T: Elem>(T);
+
+impl<T: Elem> PartialEq for CountComparisons<T> {
+    #[inline(always)]
+    fn eq(&self, _other: &Self) -> bool {
+        panic!()
+    }
+}
+impl<T: Elem> PartialOrd for CountComparisons<T> {
+    #[inline(always)]
+    fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
+        panic!()
+    }
+    fn lt(&self, other: &Self) -> bool {
+        COMPARISON.with(|c| c.set(c.get() + 1));
+        self.0 < other.0
+    }
+    fn le(&self, other: &Self) -> bool {
+        COMPARISON.with(|c| c.set(c.get() + 1));
+        self.0 <= other.0
+    }
+    fn gt(&self, other: &Self) -> bool {
+        COMPARISON.with(|c| c.set(c.get() + 1));
+        self.0 > other.0
+    }
+    fn ge(&self, other: &Self) -> bool {
+        COMPARISON.with(|c| c.set(c.get() + 1));
+        self.0 >= other.0
+    }
+}
 
 fn push_linear<T: Elem, H: Heap<T>>(n: u64) {
     let mut h = H::default();
