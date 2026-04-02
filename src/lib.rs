@@ -1,5 +1,6 @@
-#![feature(portable_simd)]
+#![feature(portable_simd, vec_from_fn)]
 mod impls;
+pub mod scalar_quickheap;
 mod simd;
 pub mod simd_quickheap;
 
