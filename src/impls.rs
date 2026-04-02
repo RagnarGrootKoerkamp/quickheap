@@ -166,3 +166,20 @@ impl Heap for indexset::BTreeSet<Reverse<T>> {
         Some(self.pop_last()?.0)
     }
 }
+
+impl Heap for weakheap::WeakHeap<T> {
+    #[inline(always)]
+    fn default() -> Self {
+        Default::default()
+    }
+
+    #[inline(always)]
+    fn push(&mut self, t: T) {
+        self.push(t as i32);
+    }
+
+    #[inline(always)]
+    fn pop(&mut self) -> Option<T> {
+        self.pop().map(|x| x as T)
+    }
+}

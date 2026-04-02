@@ -290,7 +290,6 @@ fn main() {
 
     eprintln!("RADIX");
     bench::<RadixHeapMap<Reverse<T>, ()>>(true);
-
     //
     // eprintln!("BTREES");
     // bench::<BTreeSet<T>>(false);
@@ -301,6 +300,7 @@ fn main() {
     // eprintln!("FANCY");
     // bench::<PairingHeap<(), T>>(false);
     // bench::<FibonacciHeap>(false); // too slow
+    // bench::<WeakHeap>(false);
 }
 
 #[cfg(test)]
@@ -334,6 +334,7 @@ mod test {
         // bench::<TestHeap<DaryHeap<(), T, 2>, BinaryHeap<Reverse<T>>>>(false);
         // bench::<TestHeap<DaryHeap<(), T, 4>, BinaryHeap<Reverse<T>>>>(false);
         // bench::<TestHeap<DaryHeap<(), T, 8>, BinaryHeap<Reverse<T>>>>(false);
+        // bench::<TestHeap<WeakHeap<T>, BinaryHeap<Reverse<T>>>>(false);
         bench::<TestHeap<RadixHeapMap<Reverse<T>, ()>, BinaryHeap<Reverse<T>>>>(true);
     }
 }
