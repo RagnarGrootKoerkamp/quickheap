@@ -3,7 +3,7 @@ use std::{any::type_name, cmp::Reverse, collections::BinaryHeap, hint::black_box
 use orx_priority_queue::DaryHeap;
 use radix_heap::RadixHeapMap;
 
-use quickheap::*;
+use quickheap::{simd_quickheap::T_U32, *};
 
 pub trait Elem: Ord {
     fn get(&self) -> u64;
@@ -314,7 +314,8 @@ fn main() {
     // bench::<QuickHeap<4, 1>>(false);
     // bench::<QuickHeap<8, 1>>(false);
     // bench::<QuickHeap<8, 3>>(false);
-    bench::<T, SimdQuickHeap<16, 1>>(false);
+    bench::<T, simd_quickheap::SimdQuickHeap<16, 1>>(false);
+
     // bench::<QuickHeap<16, 3>>(false);
     // bench::<QuickHeap<32, 1>>(false);
     // bench::<QuickHeap<32, 3>>(false);

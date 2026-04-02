@@ -1,12 +1,14 @@
 pub use fibonacci_heap::FibonacciHeap;
 pub use orx_priority_queue::{DaryHeap, PriorityQueue};
 pub use pheap::PairingHeap;
+use radix_heap::Radix;
 pub use radix_heap::RadixHeapMap;
+use std::cmp::Reverse;
 pub use std::collections::{BTreeSet, BinaryHeap};
 
-use super::*;
+use super::Heap;
 
-impl Heap<T> for BinaryHeap<Reverse<T>> {
+impl<T: Ord> Heap<T> for BinaryHeap<Reverse<T>> {
     fn default() -> Self {
         BinaryHeap::with_capacity(1 << 20)
     }
@@ -20,7 +22,7 @@ impl Heap<T> for BinaryHeap<Reverse<T>> {
     }
 }
 
-impl Heap<T> for BTreeSet<T> {
+impl<T: Ord> Heap<T> for BTreeSet<T> {
     fn default() -> Self {
         Default::default()
     }
@@ -34,7 +36,7 @@ impl Heap<T> for BTreeSet<T> {
     }
 }
 
-impl Heap<T> for BTreeSet<Reverse<T>> {
+impl<T: Ord> Heap<T> for BTreeSet<Reverse<T>> {
     fn default() -> Self {
         Default::default()
     }
@@ -48,7 +50,7 @@ impl Heap<T> for BTreeSet<Reverse<T>> {
     }
 }
 
-impl<const N: usize> Heap<T> for DaryHeap<(), T, N> {
+impl<T: Ord + Clone, const N: usize> Heap<T> for DaryHeap<(), T, N> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -65,24 +67,24 @@ impl<const N: usize> Heap<T> for DaryHeap<(), T, N> {
     }
 }
 
-impl Heap<T> for FibonacciHeap {
+impl Heap<i32> for FibonacciHeap {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
     }
 
     #[inline(always)]
-    fn push(&mut self, t: T) {
-        self.insert(t as i32);
+    fn push(&mut self, t: i32) {
+        self.insert(t);
     }
 
     #[inline(always)]
-    fn pop(&mut self) -> Option<T> {
-        self.extract_min().map(|x| x as T)
+    fn pop(&mut self) -> Option<i32> {
+        self.extract_min()
     }
 }
 
-impl Heap<T> for PairingHeap<(), T> {
+impl<T: Ord> Heap<T> for PairingHeap<(), T> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -99,7 +101,7 @@ impl Heap<T> for PairingHeap<(), T> {
     }
 }
 
-impl Heap<T> for RadixHeapMap<Reverse<T>, ()> {
+impl<T: Ord + Copy + Radix> Heap<T> for RadixHeapMap<Reverse<T>, ()> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -116,7 +118,7 @@ impl Heap<T> for RadixHeapMap<Reverse<T>, ()> {
     }
 }
 
-impl<const N: usize> Heap<T> for dary_heap::DaryHeap<Reverse<T>, N> {
+impl<T: Ord, const N: usize> Heap<T> for dary_heap::DaryHeap<Reverse<T>, N> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -133,7 +135,7 @@ impl<const N: usize> Heap<T> for dary_heap::DaryHeap<Reverse<T>, N> {
     }
 }
 
-impl Heap<T> for indexset::BTreeSet<T> {
+impl<T: Ord> Heap<T> for indexset::BTreeSet<T> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -150,7 +152,7 @@ impl Heap<T> for indexset::BTreeSet<T> {
     }
 }
 
-impl Heap<T> for indexset::BTreeSet<Reverse<T>> {
+impl<T: Ord> Heap<T> for indexset::BTreeSet<Reverse<T>> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -167,7 +169,7 @@ impl Heap<T> for indexset::BTreeSet<Reverse<T>> {
     }
 }
 
-impl Heap<T> for weakheap::WeakHeap<T> {
+impl<T: Ord> Heap<T> for weakheap::WeakHeap<T> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -175,11 +177,11 @@ impl Heap<T> for weakheap::WeakHeap<T> {
 
     #[inline(always)]
     fn push(&mut self, t: T) {
-        self.push(t as i32);
+        self.push(t);
     }
 
     #[inline(always)]
     fn pop(&mut self) -> Option<T> {
-        self.pop().map(|x| x as T)
+        self.pop()
     }
 }

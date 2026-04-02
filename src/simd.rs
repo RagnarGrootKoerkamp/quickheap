@@ -1,6 +1,4 @@
-use itertools::Itertools;
-
-use crate::{L, S, T, T_U32};
+use crate::simd_quickheap::{L, S, T, T_U32};
 use std::{array::from_fn, mem::transmute, simd::cmp::SimdPartialOrd};
 
 #[inline(always)]
