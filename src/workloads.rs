@@ -1,9 +1,12 @@
+use radix_heap::Radix;
+
 use crate::simd_quickheap::T_U32;
 
 use super::Heap;
 use std::hint::black_box;
 
-pub trait Elem: Ord {
+/// Small wrapper type for elements to support random numbers in the workloads.
+pub trait Elem: Ord + std::fmt::Debug + Clone + Copy + Radix {
     fn get(&self) -> u64;
     fn from(x: u64) -> Self;
     fn stride() -> u64;
@@ -23,7 +26,11 @@ macro_rules! impl_elem {
             }
             #[inline(always)]
             fn stride() -> u64 {
-                (if <$t>::BITS == 32 { 1000 } else { 1 << 32 }) as u64
+                if <$t>::BITS == 32 {
+                    1000u64
+                } else {
+                    1u64 << 32
+                }
             }
         }
     };
@@ -285,7 +292,7 @@ pub fn natural<T: Elem, H: Heap<T>>(n: u64) {
     // assert_eq!(h.pop(), None);
 }
 
-/// push^n (push pop)^10n
+/// push^n (push pop)^(k*n)
 /// values are last-popped + random(O, stride)
 /// (stride=1000 for u32, stride=2^32 for u64)
 pub fn constant_size<T: Elem, H: Heap<T>>(n: u64) {
@@ -295,7 +302,7 @@ pub fn constant_size<T: Elem, H: Heap<T>>(n: u64) {
     for _ in 0..n {
         h.push(T::from(rng.u64(0..stride)));
     }
-    for _ in 0..n {
+    for _ in 0..32 * n {
         let l = h.pop().unwrap().get();
         h.push(T::from(rng.u64(l..l + stride)));
     }

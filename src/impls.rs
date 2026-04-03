@@ -2,16 +2,19 @@ use super::Heap;
 use std::cmp::Reverse;
 
 pub type BinaryHeap<T> = std::collections::BinaryHeap<Reverse<T>>;
+pub type DaryHeap<T, const N: usize> = dary_heap::DaryHeap<Reverse<T>, N>;
+pub type OrxDaryHeap<T, const N: usize> = orx_priority_queue::DaryHeap<(), T, N>;
+pub type PairingHeap<T> = pheap::PairingHeap<(), T>;
+pub type RadixHeap<T> = radix_heap::RadixHeapMap<Reverse<T>, ()>;
+pub type WeakHeap<T> = weakheap::WeakHeap<Reverse<T>>;
+/// only for i32
+pub use fibonacci_heap::FibonacciHeap;
+
+/// set-based, so do not support duplicate elements.
 pub type BTreeSet<T> = std::collections::BTreeSet<T>;
 pub type RevBTreeSet<T> = std::collections::BTreeSet<Reverse<T>>;
 pub type IndexSetBTreeSet<T> = indexset::BTreeSet<T>;
 pub type IndexSetRevBTreeSet<T> = indexset::BTreeSet<Reverse<T>>;
-pub type OrxDaryHeap<T, const N: usize> = orx_priority_queue::DaryHeap<(), T, N>;
-pub type DaryHeap<T, const N: usize> = dary_heap::DaryHeap<Reverse<T>, N>;
-pub type PairingHeap<T> = pheap::PairingHeap<(), T>;
-pub type RadixHeap<T> = radix_heap::RadixHeapMap<Reverse<T>, ()>;
-pub use fibonacci_heap::FibonacciHeap;
-pub use weakheap::WeakHeap;
 
 impl<T: Ord> Heap<T> for BinaryHeap<T> {
     fn default() -> Self {
@@ -182,11 +185,11 @@ impl<T: Ord> Heap<T> for WeakHeap<T> {
 
     #[inline(always)]
     fn push(&mut self, t: T) {
-        self.push(t);
+        self.push(Reverse(t));
     }
 
     #[inline(always)]
     fn pop(&mut self) -> Option<T> {
-        self.pop()
+        Some(self.pop()?.0)
     }
 }

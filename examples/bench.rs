@@ -1,10 +1,7 @@
-use std::{any::type_name, cmp::Reverse, collections::BinaryHeap};
-
-use orx_priority_queue::DaryHeap;
-use radix_heap::RadixHeapMap;
-
 use quickheap::workloads::*;
 use quickheap::*;
+use std::any::type_name;
+use std::any::TypeId;
 
 pub fn time(n: u64, f: impl Fn(u64)) -> f64 {
     const REPEATS: usize = 2;
@@ -24,9 +21,11 @@ pub fn bench<T: Elem, H: Heap<T>>(increasing: bool) {
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
 
     let mut ts = vec![
-        (3, increasing_linear_mix::<T, H, 1> as fn(_)),
+        // (3, increasing_linear_mix::<T, H, 1> as fn(_)),
+        // (1, random_mix::<T, H, 0> as fn(_)),
+        (1, heapsort::<T, H> as fn(_)),
+        (33, constant_size::<T, H> as fn(_)),
         (3, increasing_random_mix::<T, H, 1> as fn(_)),
-        (1, random_mix::<T, H, 0> as fn(_)),
     ];
     if !increasing {
         ts.extend_from_slice(&[(1, random_mix::<T, H, 0> as fn(_))]);
@@ -56,84 +55,47 @@ pub fn bench<T: Elem, H: Heap<T>>(increasing: bool) {
     }
 }
 
-fn main() {
-    type T = i32;
-
+fn test<T: Elem + 'static>() {
     eprintln!("QUICKHEAP");
-    // bench::<QuickHeap<4, 1>>(false);
-    // bench::<QuickHeap<8, 1>>(false);
-    // bench::<QuickHeap<8, 3>>(false);
-    bench::<T, simd_quickheap::SimdQuickHeap<16, 1>>(false);
-
-    // bench::<QuickHeap<16, 3>>(false);
-    // bench::<QuickHeap<32, 1>>(false);
-    // bench::<QuickHeap<32, 3>>(false);
-    // bench::<QuickHeap<64, 3>>(false);
-
-    // bench::<QuickHeap<32, 3>>(false);
-    // bench::<QuickHeap<64, 3>>(false);
-
-    // bench::<QuickHeap<16, 1>>(false); // actually slightly faster usually ??
-    // bench::<QuickHeap<16, 5>>(false);
+    // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(false);
+    // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>(false);
+    // if TypeId::of::<T>() == TypeId::of::<i32>() {
+    //     bench::<i32, simd_quickheap::SimdQuickHeap<8, 3>>(false);
+    //     bench::<i32, simd_quickheap::SimdQuickHeap<16, 1>>(false);
+    // }
 
     eprintln!("BASELINE");
-    bench::<T, BinaryHeap<Reverse<T>>>(false);
+    bench::<T, impls::BinaryHeap<T>>(false);
 
     eprintln!("DARY");
-    // bench::<dary_heap::DaryHeap<Reverse<T>, 2>>(false);
-    // bench::<dary_heap::DaryHeap<Reverse<T>, 4>>(false);
-    bench::<T, dary_heap::DaryHeap<Reverse<T>, 8>>(false);
-    // bench::<DaryHeap<(), T, 2>>(false);
-    bench::<T, DaryHeap<(), T, 4>>(false);
-    // bench::<DaryHeap<(), T, 8>>(false);
+    bench::<T, impls::DaryHeap<T, 2>>(false);
+    bench::<T, impls::DaryHeap<T, 4>>(false);
+    bench::<T, impls::DaryHeap<T, 8>>(false);
+    bench::<T, impls::DaryHeap<T, 16>>(false);
+    bench::<T, impls::OrxDaryHeap<T, 2>>(false);
+    bench::<T, impls::OrxDaryHeap<T, 4>>(false);
+    bench::<T, impls::OrxDaryHeap<T, 8>>(false);
+    bench::<T, impls::OrxDaryHeap<T, 16>>(false);
 
-    eprintln!("RADIX");
-    bench::<T, RadixHeapMap<Reverse<T>, ()>>(true);
-    //
-    // eprintln!("BTREES");
-    // bench::<BTreeSet<T>>(false);
-    // bench::<BTreeSet<Reverse<T>>>(false);
-    // bench::<indexset::BTreeSet<T>>(false);
-    // bench::<indexset::BTreeSet<Reverse<T>>>(false);
+    eprintln!("Amortized");
+    bench::<T, impls::PairingHeap<T>>(false);
 
-    // eprintln!("FANCY");
-    // bench::<PairingHeap<(), T>>(false);
-    // bench::<FibonacciHeap>(false); // too slow
-    // bench::<WeakHeap>(false);
+    if TypeId::of::<T>() == TypeId::of::<i32>() {
+        bench::<i32, impls::FibonacciHeap>(false);
+    }
+    bench::<T, impls::WeakHeap<T>>(false);
+
+    eprintln!("Monotone");
+    bench::<T, impls::RadixHeap<T>>(true);
+
+    eprintln!("Set");
+    bench::<T, impls::BTreeSet<T>>(true);
+    bench::<T, impls::RevBTreeSet<T>>(true);
+    bench::<T, impls::IndexSetBTreeSet<T>>(true);
+    bench::<T, impls::IndexSetRevBTreeSet<T>>(true);
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    struct TestHeap<H0: Heap, H1: Heap>(H0, H1);
-    impl<H0: Heap, H1: Heap> Heap for TestHeap<H0, H1> {
-        fn default() -> Self {
-            TestHeap(H0::default(), H1::default())
-        }
-
-        fn push(&mut self, t: T) {
-            (self.0.push(t), self.1.push(t));
-        }
-
-        fn pop(&mut self) -> Option<T> {
-            let a0 = self.0.pop();
-            let a1 = self.1.pop();
-            assert_eq!(a0, a1);
-            a0
-        }
-    }
-
-    #[test]
-    fn quickheap() {
-        // bench::<TestHeap<QuickHeap<8, 3>, BinaryHeap<Reverse<T>>>>(false);
-        // bench::<TestHeap<QuickHeap<1, 1>, BinaryHeap<Reverse<T>>>>(false);
-        // bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 2>, BinaryHeap<Reverse<T>>>>(false);
-        // bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 4>, BinaryHeap<Reverse<T>>>>(false);
-        // bench::<TestHeap<dary_heap::DaryHeap<Reverse<T>, 8>, BinaryHeap<Reverse<T>>>>(false);
-        // bench::<TestHeap<DaryHeap<(), T, 2>, BinaryHeap<Reverse<T>>>>(false);
-        // bench::<TestHeap<DaryHeap<(), T, 4>, BinaryHeap<Reverse<T>>>>(false);
-        // bench::<TestHeap<DaryHeap<(), T, 8>, BinaryHeap<Reverse<T>>>>(false);
-        // bench::<TestHeap<WeakHeap<T>, BinaryHeap<Reverse<T>>>>(false);
-        bench::<TestHeap<RadixHeapMap<Reverse<T>, ()>, BinaryHeap<Reverse<T>>>>(true);
-    }
+fn main() {
+    test::<i32>();
+    test::<i64>();
 }
