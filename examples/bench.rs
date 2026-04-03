@@ -21,11 +21,11 @@ pub fn bench<T: Elem, H: Heap<T>>(increasing: bool) {
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
 
     let mut ts = vec![
+        (1, heapsort::<T, H> as fn(_)),
+        (9, constant_size::<T, H> as fn(_)),
+        (3, increasing_random_mix::<T, H, 1> as fn(_)),
         // (3, increasing_linear_mix::<T, H, 1> as fn(_)),
         // (1, random_mix::<T, H, 0> as fn(_)),
-        (1, heapsort::<T, H> as fn(_)),
-        (33, constant_size::<T, H> as fn(_)),
-        (3, increasing_random_mix::<T, H, 1> as fn(_)),
     ];
     if !increasing {
         ts.extend_from_slice(&[(1, random_mix::<T, H, 0> as fn(_))]);

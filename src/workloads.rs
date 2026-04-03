@@ -302,7 +302,7 @@ pub fn constant_size<T: Elem, H: Heap<T>>(n: u64) {
     for _ in 0..n {
         h.push(T::from(rng.u64(0..stride)));
     }
-    for _ in 0..32 * n {
+    for _ in 0..8 * n {
         let l = h.pop().unwrap().get();
         h.push(T::from(rng.u64(l..l + stride)));
     }
