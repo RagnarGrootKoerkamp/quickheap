@@ -54,6 +54,7 @@ impl<T: Ord + Copy, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
         // Update the active layer.
         if self.layer > 0 {
             self.layer -= 1;
+            self.pivots.pop();
         }
         Some(min)
     }
@@ -77,7 +78,12 @@ impl<T: Ord + Copy, const M: usize> ScalarQuickHeap<T, M> {
         // Pivots are inclusive.
         let pivot = pivots[M / 2].0;
         let pivot_pos = pivots[M / 2].1;
-        self.pivots[self.layer] = pivot;
+        if self.layer >= self.pivots.len() {
+            assert_eq!(self.layer, self.pivots.len());
+            self.pivots.push(pivot);
+        } else {
+            self.pivots[self.layer] = pivot;
+        }
 
         next_layer.clear();
 
