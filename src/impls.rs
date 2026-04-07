@@ -1,3 +1,5 @@
+use crate::workloads::Elem;
+
 use super::Heap;
 use std::cmp::Reverse;
 
@@ -28,6 +30,8 @@ impl<T: Ord> Heap<T> for BinaryHeap<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop()?.0)
     }
+
+    type Casted<T2: Elem> = BinaryHeap<T2>;
 }
 
 impl<T: Ord> Heap<T> for BTreeSet<T> {
@@ -42,6 +46,8 @@ impl<T: Ord> Heap<T> for BTreeSet<T> {
     fn pop(&mut self) -> Option<T> {
         self.pop_first()
     }
+
+    type Casted<T2: Elem> = BTreeSet<T2>;
 }
 
 impl<T: Ord> Heap<T> for RevBTreeSet<T> {
@@ -56,6 +62,8 @@ impl<T: Ord> Heap<T> for RevBTreeSet<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop_last()?.0)
     }
+
+    type Casted<T2: Elem> = RevBTreeSet<T2>;
 }
 
 impl<T: Ord + Clone, const N: usize> Heap<T> for OrxDaryHeap<T, N> {
@@ -73,6 +81,8 @@ impl<T: Ord + Clone, const N: usize> Heap<T> for OrxDaryHeap<T, N> {
     fn pop(&mut self) -> Option<T> {
         orx_priority_queue::PriorityQueue::pop(self).map(|((), y)| y)
     }
+
+    type Casted<T2: Elem> = OrxDaryHeap<T2, N>;
 }
 
 impl Heap<i32> for FibonacciHeap {
@@ -90,6 +100,22 @@ impl Heap<i32> for FibonacciHeap {
     fn pop(&mut self) -> Option<i32> {
         self.extract_min()
     }
+
+    type Casted<T2: Elem> = NoHeap;
+}
+
+pub struct NoHeap;
+impl<T> Heap<T> for NoHeap {
+    fn default() -> Self {
+        unimplemented!()
+    }
+    fn push(&mut self, _t: T) {
+        unimplemented!()
+    }
+    fn pop(&mut self) -> Option<T> {
+        unimplemented!()
+    }
+    type Casted<T2: Elem> = Self;
 }
 
 impl<T: Ord> Heap<T> for PairingHeap<T> {
@@ -107,6 +133,8 @@ impl<T: Ord> Heap<T> for PairingHeap<T> {
     fn pop(&mut self) -> Option<T> {
         self.delete_min().map(|(_x, y)| y)
     }
+
+    type Casted<T2: Elem> = PairingHeap<T2>;
 }
 
 impl<T: Ord + Copy + radix_heap::Radix> Heap<T> for RadixHeap<T> {
@@ -124,6 +152,8 @@ impl<T: Ord + Copy + radix_heap::Radix> Heap<T> for RadixHeap<T> {
     fn pop(&mut self) -> Option<T> {
         self.pop().map(|(k, _v)| k.0)
     }
+
+    type Casted<T2: Elem> = RadixHeap<T2>;
 }
 
 impl<T: Ord, const N: usize> Heap<T> for DaryHeap<T, N> {
@@ -141,6 +171,8 @@ impl<T: Ord, const N: usize> Heap<T> for DaryHeap<T, N> {
     fn pop(&mut self) -> Option<T> {
         self.pop().map(|x| x.0)
     }
+
+    type Casted<T2: Elem> = DaryHeap<T2, N>;
 }
 
 impl<T: Ord> Heap<T> for IndexSetBTreeSet<T> {
@@ -158,6 +190,8 @@ impl<T: Ord> Heap<T> for IndexSetBTreeSet<T> {
     fn pop(&mut self) -> Option<T> {
         self.pop_first()
     }
+
+    type Casted<T2: Elem> = IndexSetBTreeSet<T2>;
 }
 
 impl<T: Ord> Heap<T> for IndexSetRevBTreeSet<T> {
@@ -175,6 +209,8 @@ impl<T: Ord> Heap<T> for IndexSetRevBTreeSet<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop_last()?.0)
     }
+
+    type Casted<T2: Elem> = IndexSetRevBTreeSet<T2>;
 }
 
 impl<T: Ord> Heap<T> for WeakHeap<T> {
@@ -192,4 +228,6 @@ impl<T: Ord> Heap<T> for WeakHeap<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop()?.0)
     }
+
+    type Casted<T2: Elem> = WeakHeap<T2>;
 }

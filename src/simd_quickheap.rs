@@ -1,3 +1,6 @@
+use crate::impls::NoHeap;
+use crate::workloads::Elem;
+
 use super::simd;
 use super::Heap;
 use std::array::from_fn;
@@ -34,6 +37,8 @@ pub struct SimdQuickHeap<const N: usize, const M: usize> {
 }
 
 impl<const N: usize, const M: usize> Heap<T> for SimdQuickHeap<N, M> {
+    type Casted<T2: Elem> = NoHeap;
+
     fn default() -> Self {
         let mut pivots = vec![0; 128];
         pivots[0] = T::MAX;

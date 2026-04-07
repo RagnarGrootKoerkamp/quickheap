@@ -44,7 +44,17 @@ thread_local! {
     static COMPARISON: std::cell::Cell<u64> = std::cell::Cell::new(0);
 }
 
+#[derive(Clone, Copy, Debug, Ord, Eq)]
 pub struct CountComparisons<T: Elem>(T);
+
+impl<T: Elem> CountComparisons<T> {
+    pub fn reset_count() {
+        COMPARISON.with(|c| c.set(0));
+    }
+    pub fn get_count() -> u64 {
+        COMPARISON.with(|c| c.get())
+    }
+}
 
 impl<T: Elem> PartialEq for CountComparisons<T> {
     #[inline(always)]
@@ -55,7 +65,8 @@ impl<T: Elem> PartialEq for CountComparisons<T> {
 impl<T: Elem> PartialOrd for CountComparisons<T> {
     #[inline(always)]
     fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
-        panic!()
+        COMPARISON.with(|c| c.set(c.get() + 1));
+        self.0.partial_cmp(&_other.0)
     }
     fn lt(&self, other: &Self) -> bool {
         COMPARISON.with(|c| c.set(c.get() + 1));
@@ -72,6 +83,29 @@ impl<T: Elem> PartialOrd for CountComparisons<T> {
     fn ge(&self, other: &Self) -> bool {
         COMPARISON.with(|c| c.set(c.get() + 1));
         self.0 >= other.0
+    }
+}
+impl<T: Elem> Radix for CountComparisons<T> {
+    fn radix_similarity(&self, other: &Self) -> u32 {
+        COMPARISON.with(|c| c.set(c.get() + 1));
+        self.0.radix_similarity(&other.0)
+    }
+
+    const RADIX_BITS: u32 = T::RADIX_BITS;
+}
+impl<T: Elem> Elem for CountComparisons<T> {
+    #[inline(always)]
+    fn get(&self) -> u64 {
+        self.0.get()
+    }
+
+    #[inline(always)]
+    fn from(x: u64) -> Self {
+        Self(T::from(x))
+    }
+    #[inline(always)]
+    fn stride() -> u64 {
+        T::stride()
     }
 }
 

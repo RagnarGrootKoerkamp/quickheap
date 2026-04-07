@@ -1,4 +1,6 @@
 #![feature(portable_simd, vec_from_fn)]
+
+use workloads::Elem;
 pub mod impls;
 pub mod scalar_quickheap;
 mod simd;
@@ -6,6 +8,7 @@ pub mod simd_quickheap;
 pub mod workloads;
 
 pub trait Heap<T> {
+    type Casted<T2: Elem>: Heap<T2>;
     fn default() -> Self;
     fn push(&mut self, t: T);
     fn pop(&mut self) -> Option<T>;
@@ -35,6 +38,7 @@ mod test {
             assert_eq!(a0, a1);
             a0
         }
+        type Casted<T2: Elem> = TestHeap<T2, H0::Casted<T2>, H1::Casted<T2>>;
     }
 
     impl<T: Elem + Copy, H0: Heap<T>, H1: Heap<T>> TestHeap<T, H0, H1> {

@@ -1,3 +1,5 @@
+use crate::workloads::Elem;
+
 use super::Heap;
 use std::array::from_fn;
 
@@ -17,6 +19,8 @@ pub struct ScalarQuickHeap<T: Ord, const M: usize> {
 }
 
 impl<T: Ord + Copy, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
+    type Casted<T2: Elem> = ScalarQuickHeap<T2, M>;
+
     fn default() -> Self {
         Self {
             layer: 0,
