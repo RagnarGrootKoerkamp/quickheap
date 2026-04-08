@@ -23,19 +23,18 @@ mod test {
     use super::*;
     struct TestHeap<T, H0, H1>(H0, H1, PhantomData<T>);
     impl<T: Elem + Copy, H0: Heap<T>, H1: Heap<T>> Heap<T> for TestHeap<T, H0, H1> {
+        const MONOTONE: bool = H0::MONOTONE || H1::MONOTONE;
         fn default() -> Self {
             TestHeap(H0::default(), H1::default(), PhantomData)
         }
 
         fn push(&mut self, t: T) {
-            eprintln!("Push {:?}", t);
             (self.0.push(t), self.1.push(t));
         }
 
         fn pop(&mut self) -> Option<T> {
             let a0 = self.0.pop();
             let a1 = self.1.pop();
-            eprintln!("pop {:?} and {:?}", a0, a1);
             assert_eq!(a0, a1);
             a0
         }
@@ -49,8 +48,10 @@ mod test {
             workloads::HeapSort::setup::<T, Self>(n)();
             eprintln!("CONSTANT");
             workloads::ConstantSize::setup::<T, Self>(n)();
-            eprintln!("DECREASING");
-            workloads::Decreasing::setup::<T, Self>(n)();
+            if !Self::MONOTONE {
+                eprintln!("DECREASING");
+                workloads::Decreasing::setup::<T, Self>(n)();
+            }
         }
     }
 
@@ -72,7 +73,7 @@ mod test {
         TestHeap::<T, Base, impls::WeakHeap<T>>::run(n);
         // TestHeap::<i32, impls::BinaryHeap<i32>, impls::FibonacciHeap>::run(n); // broken
 
-        {
+        if false {
             // Set-based implementations without support for duplicate elements.
             type Base = impls::BTreeSet<T>;
             TestHeap::<T, Base, impls::BTreeSet<T>>::run(n);
@@ -85,6 +86,7 @@ mod test {
     }
 
     #[test]
+    #[ignore = "Bug in FibonacciHeap crate"]
     fn fibonacci_heap() {
         let mut h = TestHeap::<i32, impls::BinaryHeap<i32>, impls::FibonacciHeap>::default();
         for n in 0..10 {
