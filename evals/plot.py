@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-benchname = "latest"
+benchname = "floyd"
 df = pd.read_csv(f"test-{benchname}.csv")
 
 # Shorten heap names
@@ -79,6 +79,7 @@ type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(all_types)}
 # type_colour["DaryHeapOrx"] = "black"
 # blogyellow = "#fcc007"
 type_colour["SimdQuickHeap"] = "black"
+type_colour["SimdQuickHeap512"] = "black"
 all_names_by_type = {
     tp: list(df[df["type"] == tp]["name"].unique()) for tp in all_types
 }
@@ -87,9 +88,17 @@ all_names_by_type = {
 def width_for_type(tp):
     if tp == "SimdQuickHeap":
         return 1.0
+    if tp == "SimdQuickHeap512":
+        return 1.0
     if tp == "RadixHeapMap":
         return 0.7
     return 1.0
+
+
+def style_for_type(tp):
+    if tp == "SimdQuickHeap512":
+        return "--"
+    return None
 
 
 for metric, label in metrics:
@@ -114,7 +123,7 @@ for metric, label in metrics:
                         title=workload if j == 0 else None,
                         label=name if i == 0 and j == 0 else None,
                         color=c,
-                        ls=ls,
+                        ls=style_for_type(tp) or ls,
                         lw=width_for_type(tp),
                     )
             axs[j][i].set_yscale("log", base=2)
