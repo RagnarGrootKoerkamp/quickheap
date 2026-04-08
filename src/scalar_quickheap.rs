@@ -80,8 +80,10 @@ impl<T: Ord + Copy, const M: usize> ScalarQuickHeap<T, M> {
     #[inline(never)]
     fn partition(&mut self) {
         // Alias the current layer (to be split) and the next layer.
+        if self.layer + 1 == self.buckets.len() {
+            self.buckets.push(vec![]);
+        }
         let [cur_layer, next_layer] = &mut self.buckets[self.layer..=self.layer + 1] else {
-            // FIXME: Push a new layer if needed.
             unreachable!()
         };
         let n = cur_layer.len();

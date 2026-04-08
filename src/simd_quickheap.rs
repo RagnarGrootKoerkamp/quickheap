@@ -91,7 +91,7 @@ impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
         // );
 
         // Reserve space for an additional L layers when needed.
-        if self.layer + 2 == self.pivots.len() {
+        if self.layer + L >= self.pivots.len() {
             self.pivots.extend(repeat_n(0, L));
             self.buckets.extend(repeat_n(vec![], L));
         }
