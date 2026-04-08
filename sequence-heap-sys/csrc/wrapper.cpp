@@ -1,0 +1,94 @@
+#include "wrapper.hpp"
+
+#include <climits>
+#include <cstdint>
+#include <new>
+
+// Pull in the full KNHeap template.
+// knheap.C uses `#include "knheap.h"` (caught by include guard after
+// our include below) and `#include "multiMergeUnrolled.C"` (found
+// relative to knheap.C's own directory in third_party/SequenceHeap/spq/).
+//
+// util.h (pulled in by knheap.h) defines Assert macros that use unqualified
+// `cout`/`endl`. We disable all assertions before including the template
+// implementations to avoid the compile error.
+#define DEBUGLEVEL 0 // suppress Debug1..Debug5 and their Assert variants
+#include "spq/knheap.h"
+// Assert(c) used directly in dead stub functions — redefine as no-op
+#undef Assert
+#define Assert(c) ((void)0)
+#include "spq/knheap.C"
+#undef Assert
+
+using I32Heap = KNHeap<int32_t, void>;
+using I64Heap = KNHeap<int64_t, void>;
+
+extern "C" {
+
+SeqHeapI32 *seq_heap_i32_new() {
+    return reinterpret_cast<SeqHeapI32 *>(
+        new (std::nothrow) I32Heap(INT32_MAX, INT32_MIN));
+}
+
+void seq_heap_i32_free(SeqHeapI32 *pq) {
+    delete reinterpret_cast<I32Heap *>(pq);
+}
+
+void seq_heap_i32_push(SeqHeapI32 *pq, int32_t key) {
+    reinterpret_cast<I32Heap *>(pq)->insert(key, 0);
+}
+
+int32_t seq_heap_i32_pop(SeqHeapI32 *pq) {
+    int32_t key, value;
+    reinterpret_cast<I32Heap *>(pq)->deleteMin(&key, &value);
+    return key;
+}
+
+int32_t seq_heap_i32_top(SeqHeapI32 *pq) {
+    int32_t key, value;
+    reinterpret_cast<I32Heap *>(pq)->getMin(&key, &value);
+    return key;
+}
+
+int seq_heap_i32_size(const SeqHeapI32 *pq) {
+    return reinterpret_cast<const I32Heap *>(pq)->getSize();
+}
+
+bool seq_heap_i32_empty(const SeqHeapI32 *pq) {
+    return reinterpret_cast<const I32Heap *>(pq)->getSize() == 0;
+}
+
+SeqHeapI64 *seq_heap_i64_new() {
+    return reinterpret_cast<SeqHeapI64 *>(
+        new (std::nothrow) I64Heap(INT64_MAX, INT64_MIN));
+}
+
+void seq_heap_i64_free(SeqHeapI64 *pq) {
+    delete reinterpret_cast<I64Heap *>(pq);
+}
+
+void seq_heap_i64_push(SeqHeapI64 *pq, int64_t key) {
+    reinterpret_cast<I64Heap *>(pq)->insert(key, 0);
+}
+
+int64_t seq_heap_i64_pop(SeqHeapI64 *pq) {
+    int64_t key, value;
+    reinterpret_cast<I64Heap *>(pq)->deleteMin(&key, &value);
+    return key;
+}
+
+int64_t seq_heap_i64_top(SeqHeapI64 *pq) {
+    int64_t key, value;
+    reinterpret_cast<I64Heap *>(pq)->getMin(&key, &value);
+    return key;
+}
+
+int seq_heap_i64_size(const SeqHeapI64 *pq) {
+    return reinterpret_cast<const I64Heap *>(pq)->getSize();
+}
+
+bool seq_heap_i64_empty(const SeqHeapI64 *pq) {
+    return reinterpret_cast<const I64Heap *>(pq)->getSize() == 0;
+}
+
+} // extern "C"

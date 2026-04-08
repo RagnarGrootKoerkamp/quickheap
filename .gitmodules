@@ -10,3 +10,6 @@
 [submodule "s3q-sys/third_party/xoshiro"]
 	path = s3q-sys/third_party/xoshiro
 	url = https://github.com/Reputeless/Xoshiro-cpp.git
+[submodule "sequence-heap-sys/third_party/SequenceHeap"]
+	path = sequence-heap-sys/third_party/SequenceHeap
+	url = https://github.com/raphinesse/SequenceHeap.git

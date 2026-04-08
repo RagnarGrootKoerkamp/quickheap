@@ -1,5 +1,5 @@
 [workspace]
-members = ["s3q-sys"]
+members = ["s3q-sys", "sequence-heap-sys"]
 
 [package]
 name = "quickheap"
