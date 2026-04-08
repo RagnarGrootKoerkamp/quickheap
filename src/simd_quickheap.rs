@@ -1,29 +1,12 @@
 use crate::impls::NoHeap;
+use crate::simd::SimdElem;
 use crate::workloads::Elem;
 
 use super::simd;
 use super::Heap;
 use std::array::from_fn;
 
-#[cfg(not(feature = "u64"))]
-pub const T_U32: bool = true;
-#[cfg(not(feature = "u64"))]
-pub type T = i32;
-#[cfg(not(feature = "u64"))]
-pub(crate) const L: usize = 8;
-#[cfg(not(feature = "u64"))]
-pub(crate) type S = std::simd::i32x8;
-
-#[cfg(feature = "u64")]
-pub const T_U32: bool = false;
-#[cfg(feature = "u64")]
-pub type T = i64;
-#[cfg(feature = "u64")]
-pub(crate) const L: usize = 4;
-#[cfg(feature = "u64")]
-pub(crate) type S = std::simd::i64x4;
-
-pub struct SimdQuickHeap<const N: usize, const M: usize> {
+pub struct SimdQuickHeap<T: SimdElem, const N: usize, const M: usize> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -41,7 +24,7 @@ pub struct SimdQuickHeap<const N: usize, const M: usize> {
     pub(crate) buckets: Vec<Vec<T>>,
 }
 
-impl<const N: usize, const M: usize> Heap<T> for SimdQuickHeap<N, M> {
+impl<T: SimdElem, const N: usize, const M: usize> Heap<T> for SimdQuickHeap<T, N, M> {
     type Casted<T2: Elem> = NoHeap;
 
     fn default() -> Self {
@@ -53,7 +36,7 @@ impl<const N: usize, const M: usize> Heap<T> for SimdQuickHeap<N, M> {
     #[inline(never)]
     fn push(&mut self, t: T) {
         let target_layer = simd::push_position(&self.pivots, t);
-        self.buckets[target_layer].reserve(L + 1);
+        self.buckets[target_layer].reserve(T::L + 1);
         self.buckets[target_layer].push(t);
     }
     #[inline(never)]
@@ -80,13 +63,13 @@ impl<const N: usize, const M: usize> Heap<T> for SimdQuickHeap<N, M> {
     }
 }
 
-impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
+impl<T: SimdElem, const N: usize, const M: usize> SimdQuickHeap<T, N, M> {
     #[inline(never)]
     pub(crate) fn partition(&mut self) {
         // Reserve space for an additional L layers when needed.
         let layer = self.pivots.len();
-        if layer + 2 * L >= self.pivots.capacity() {
-            self.pivots.reserve(L);
+        if layer + 2 * T::L >= self.pivots.capacity() {
+            self.pivots.reserve(T::L);
         }
         if layer + 1 == self.buckets.len() {
             self.buckets.push(vec![]);
@@ -97,7 +80,7 @@ impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
         };
         let n = cur_layer.len();
 
-        // Select 3 random pivots, and compute their median.
+        // Select M random pivots and compute their median.
         let mut pivots: [(T, usize); M] = from_fn(|_| {
             let pos = rand::random_range(0..n);
             (cur_layer[pos], pos)
@@ -110,59 +93,62 @@ impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
 
         // Reserve space in the next layer,
         // and make sure the current layer can hold a spare SIMD register.
-        cur_layer.reserve(L);
+        cur_layer.reserve(T::L);
         next_layer.clear();
-        next_layer.reserve(n + L);
+        next_layer.reserve(n + T::L);
 
-        unsafe { cur_layer.set_len(n + L) };
-        unsafe { next_layer.set_len(n + L) };
+        unsafe { cur_layer.set_len(n + T::L) };
+        unsafe { next_layer.set_len(n + T::L) };
 
-        let n2 = n.next_multiple_of(L).saturating_sub(L);
+        let n2 = n.next_multiple_of(T::L).saturating_sub(T::L);
 
         // Partition a list into two using SIMD.
         let mut cur_len = 0;
         let mut next_len = 0;
-        let half = (pivot_pos + 1).min(n2).next_multiple_of(L);
-        let threshold = S::splat(pivot + 1);
-        for i in (0..half).step_by(L) {
-            let vals: [T; L] = unsafe { cur_layer.get_unchecked(i..i + L).try_into().unwrap() };
-            simd::partition_fast(
-                S::from_array(vals),
-                threshold,
-                cur_layer,
-                &mut cur_len,
-                next_layer,
-                &mut next_len,
-            );
+        let half = (pivot_pos + 1).min(n2).next_multiple_of(T::L);
+        let threshold = T::splat(pivot.wrapping_add_one());
+        for i in (0..half).step_by(T::L) {
+            unsafe {
+                T::partition_fast(
+                    T::simd_from_slice(cur_layer.get_unchecked(i..i + T::L)),
+                    threshold,
+                    cur_layer,
+                    &mut cur_len,
+                    next_layer,
+                    &mut next_len,
+                );
+            }
         }
-        let threshold = S::splat(pivot);
-        for i in (half..n2).step_by(L) {
-            let vals: [T; L] = unsafe { cur_layer.get_unchecked(i..i + L).try_into().unwrap() };
-            simd::partition_fast(
-                S::from_array(vals),
-                threshold,
-                cur_layer,
-                &mut cur_len,
-                next_layer,
-                &mut next_len,
-            );
+        let threshold = T::splat(pivot);
+        for i in (half..n2).step_by(T::L) {
+            unsafe {
+                T::partition_fast(
+                    T::simd_from_slice(cur_layer.get_unchecked(i..i + T::L)),
+                    threshold,
+                    cur_layer,
+                    &mut cur_len,
+                    next_layer,
+                    &mut next_len,
+                );
+            }
         }
         if n2 < n {
             let threshold = if pivot_pos >= n2 {
-                S::splat(pivot + 1)
+                T::splat(pivot.wrapping_add_one())
             } else {
-                S::splat(pivot)
+                T::splat(pivot)
             };
-            let vals: [T; L] = unsafe { cur_layer.get_unchecked(n2..n2 + L).try_into().unwrap() };
-            simd::partition_slow(
-                S::from_array(vals),
-                S::splat((n - n2) as i32),
-                threshold,
-                cur_layer,
-                &mut cur_len,
-                next_layer,
-                &mut next_len,
-            );
+            unsafe {
+                T::partition_slow(
+                    T::simd_from_slice(cur_layer.get_unchecked(n2..n2 + T::L)),
+                    T::splat(T::from_usize(n - n2)),
+                    threshold,
+                    cur_layer,
+                    &mut cur_len,
+                    next_layer,
+                    &mut next_len,
+                );
+            }
         }
 
         debug_assert!(next_len > 0);

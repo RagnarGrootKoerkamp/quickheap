@@ -32,6 +32,3 @@ random = "0.14.0"
 weakheap = "0.1.0"
 wide = "0.7.33"
 
-[features]
-# To use u64 instead of u32 as the underlying type.
-u64 = []

@@ -3,7 +3,7 @@
 use workloads::Elem;
 pub mod impls;
 pub mod scalar_quickheap;
-mod simd;
+pub mod simd;
 pub mod simd_quickheap;
 pub mod workloads;
 

@@ -4,6 +4,7 @@ use perfcnt::linux::CacheOpResultId;
 use perfcnt::linux::PerfCounterBuilderLinux;
 use perfcnt::AbstractPerfCounter;
 use quickheap::impls::NoHeap;
+use quickheap::simd::SimdElem;
 use quickheap::workloads::*;
 use quickheap::*;
 use serde::Serialize;
@@ -157,14 +158,13 @@ where
     }
 }
 
-fn test<T: Elem + 'static>() {
+fn test<T: Elem + SimdElem + 'static>() {
     eprintln!("QUICKHEAP");
     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>();
     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>();
-    if TypeId::of::<T>() == TypeId::of::<i32>() {
-        bench::<i32, simd_quickheap::SimdQuickHeap<16, 1>>();
-        bench::<i32, simd_quickheap::SimdQuickHeap<8, 3>>();
-    }
+
+    bench::<T, simd_quickheap::SimdQuickHeap<T, 16, 1>>();
+    bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>();
 
     eprintln!("BASELINE");
     bench::<T, impls::BinaryHeap<T>>();
