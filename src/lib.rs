@@ -18,7 +18,11 @@ pub trait Heap<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::workloads::{Elem, Workload};
+    use crate::{
+        scalar_quickheap::ScalarQuickHeap,
+        simd_quickheap::SimdQuickHeap,
+        workloads::{Elem, Workload},
+    };
     use std::marker::PhantomData;
 
     use super::*;
@@ -60,10 +64,15 @@ mod test {
     fn quickheap() {
         let n = 100000;
 
-        type T = u64;
+        type T = i64;
         type Base = impls::BinaryHeap<T>;
 
         TestHeap::<T, Base, impls::BinaryHeap<T>>::run(n);
+
+        TestHeap::<T, Base, ScalarQuickHeap<T, 3>>::run(n);
+        TestHeap::<T, Base, SimdQuickHeap<T, 8, 3>>::run(n);
+        TestHeap::<T, Base, s3q::S3qHeapI64>::run(n);
+
         TestHeap::<T, Base, impls::DaryHeap<T, 2>>::run(n);
         TestHeap::<T, Base, impls::DaryHeap<T, 4>>::run(n);
         TestHeap::<T, Base, impls::DaryHeap<T, 8>>::run(n);

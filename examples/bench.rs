@@ -166,6 +166,13 @@ fn test<T: Elem + SimdElem + 'static>() {
     bench::<T, simd_quickheap::SimdQuickHeap<T, 16, 1>>();
     bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>();
 
+    eprintln!("Engineered");
+    match TypeId::of::<T>() {
+        x if x == TypeId::of::<i64>() => bench::<i64, s3q::S3qHeapI64>(),
+        x if x == TypeId::of::<i32>() => bench::<i32, s3q::S3qHeapI32>(),
+        _ => unimplemented!(),
+    }
+
     eprintln!("BASELINE");
     bench::<T, impls::BinaryHeap<T>>();
 

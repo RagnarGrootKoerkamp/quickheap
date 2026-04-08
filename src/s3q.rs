@@ -1,10 +1,10 @@
+use crate::impls::NoHeap;
 use crate::workloads::Elem;
 use crate::Heap;
-use crate::impls::NoHeap;
 use s3q_sys::{
-    S3qI32Pq, S3qI64Pq,
     s3q_i32_pq_empty, s3q_i32_pq_free, s3q_i32_pq_new, s3q_i32_pq_pop, s3q_i32_pq_push,
-    s3q_i64_pq_empty, s3q_i64_pq_free, s3q_i64_pq_new, s3q_i64_pq_pop, s3q_i64_pq_push,
+    s3q_i64_pq_empty, s3q_i64_pq_free, s3q_i64_pq_new, s3q_i64_pq_pop, s3q_i64_pq_push, S3qI32Pq,
+    S3qI64Pq,
 };
 
 pub struct S3qHeapI32(*mut S3qI32Pq);
