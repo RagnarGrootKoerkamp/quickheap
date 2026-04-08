@@ -14,6 +14,7 @@ pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
     for c in v.as_chunks::<L>().0 {
         let vals = S::from_array(*c);
         let mask = t.simd_le(vals);
+        // TODO: Compare SIMD register against 0
         target_layer += mask.to_bitmask().count_ones() as usize;
     }
 
@@ -65,6 +66,7 @@ pub fn position_min(v: &mut Vec<T>) -> usize {
 /// Based on Daniel Lemire's blog.
 /// <https://lemire.me/blog/2017/04/10/removing-duplicates-from-lists-quickly/>
 /// <https://github.com/lemire/Code-used-on-Daniel-Lemire-s-blog/blob/edfd0e8b809d9a57527a7990c4bb44b9d1d05a69/2017/04/10/removeduplicates.cpp>
+/// TODO: Update with compress instructions using AVX512
 // #[cfg(target_feature = "avx2")]
 #[inline(always)]
 pub fn partition_fast(
