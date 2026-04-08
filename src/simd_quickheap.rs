@@ -4,7 +4,6 @@ use crate::workloads::Elem;
 use super::simd;
 use super::Heap;
 use std::array::from_fn;
-use std::iter::repeat_n;
 
 #[cfg(not(feature = "u64"))]
 pub const T_U32: bool = true;
@@ -25,14 +24,20 @@ pub(crate) const L: usize = 4;
 pub(crate) type S = std::simd::i64x4;
 
 pub struct SimdQuickHeap<const N: usize, const M: usize> {
-    /// The number of layers in the tree.
-    pub(crate) layer: usize,
     /// A decreasing array of the pivots for all layers.
-    /// pivots[0] = u32::MAX
+    /// buckets[i] >= pivots[i] >= buckets[i+1]
+    /// Values equal to pivots[i] can be in layer i or i+1.
+    /// The first layer does not have a pivot in this array.
+    ///
+    /// The effective number of layers is always 1 longer than `pivots`.
+    ///
+    /// This will have enough underlying capacity for out-of-bounds SIMD reads.
     pub(crate) pivots: Vec<T>,
     /// The values in each layer.
-    /// pivots[i+1] <= elements of buckets[i] <= pivots[i]
+    /// pivots[i-1] >= elements of buckets[i] >= pivots[i]
     /// Values equal to pivots[i] can be in layer i or i-1.
+    ///
+    /// This can be longer than `layer` to reuse allocations.
     pub(crate) buckets: Vec<Vec<T>>,
 }
 
@@ -40,42 +45,36 @@ impl<const N: usize, const M: usize> Heap<T> for SimdQuickHeap<N, M> {
     type Casted<T2: Elem> = NoHeap;
 
     fn default() -> Self {
-        let mut pivots = vec![0; 128];
-        pivots[0] = T::MAX;
-        // pivots[1] = u32::MAX;
         Self {
-            // layer: 1,
-            layer: 0,
-            pivots,
+            pivots: Vec::with_capacity(128),
             buckets: vec![vec![]; 128],
         }
     }
     #[inline(never)]
     fn push(&mut self, t: T) {
-        let target_layer = simd::push_position(&self.pivots, self.layer, t);
-
+        let target_layer = simd::push_position(&self.pivots, t);
         self.buckets[target_layer].reserve(L + 1);
         self.buckets[target_layer].push(t);
     }
     #[inline(never)]
     fn pop(&mut self) -> Option<T> {
+        let layer = self.pivots.len();
         // Only the top layer can be empty.
-        if self.buckets[self.layer].len() == 0 {
+        if layer == 0 && self.buckets[0].is_empty() {
             return None;
         }
         // Split the current layer as long as it is too large.
-        while self.buckets[self.layer].len() > N {
+        while self.buckets[self.pivots.len()].len() > N {
             self.partition();
         }
         // Find and extract the minimum.
-        let layer = &mut self.buckets[self.layer];
+        let layer = &mut self.buckets[self.pivots.len()];
         let min_pos = simd::position_min(layer);
         let min = layer.swap_remove(min_pos);
 
         // Update the active layer.
-        if layer.is_empty() && self.layer > 0 {
-            self.pivots[self.layer] = 0;
-            self.layer -= 1;
+        if layer.is_empty() && self.pivots.len() > 0 {
+            self.pivots.pop();
         }
         Some(min)
     }
@@ -84,19 +83,16 @@ impl<const N: usize, const M: usize> Heap<T> for SimdQuickHeap<N, M> {
 impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
     #[inline(never)]
     pub(crate) fn partition(&mut self) {
-        // eprintln!(
-        //     "Partitioning layer {} of size {}",
-        //     self.layer,
-        //     self.buckets[self.layer].len()
-        // );
-
         // Reserve space for an additional L layers when needed.
-        if self.layer + L >= self.pivots.len() {
-            self.pivots.extend(repeat_n(0, L));
-            self.buckets.extend(repeat_n(vec![], L));
+        let layer = self.pivots.len();
+        if layer + 2 * L >= self.pivots.capacity() {
+            self.pivots.reserve(L);
+        }
+        if layer + 1 == self.buckets.len() {
+            self.buckets.push(vec![]);
         }
         // Alias the current layer (to be split) and the next layer.
-        let [cur_layer, next_layer] = &mut self.buckets[self.layer..=self.layer + 1] else {
+        let [cur_layer, next_layer] = &mut self.buckets[layer..=layer + 1] else {
             unreachable!()
         };
         let n = cur_layer.len();
@@ -106,13 +102,11 @@ impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
             let pos = rand::random_range(0..n);
             (cur_layer[pos], pos)
         });
-        pivots.sort();
+        pivots.sort_by_key(|(pivot, _)| *pivot);
         // Pivots are exclusive.
         let pivot = pivots[M / 2].0;
         let pivot_pos = pivots[M / 2].1;
-        // eprintln!("Pivot: {pivot} at {pivot_pos}");
-        // +1, so we can use 0 to indicate empty layers.
-        self.pivots[self.layer + 1] = pivot + 1;
+        self.pivots.push(pivot);
 
         // Reserve space in the next layer,
         // and make sure the current layer can hold a spare SIMD register.
@@ -171,7 +165,6 @@ impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
             );
         }
 
-        // eprintln!("cur len: {cur_len}, next len: {next_len}");
         debug_assert!(next_len > 0);
 
         unsafe {
@@ -184,10 +177,8 @@ impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
         // undo and try again.
         if cur_len == 0 {
             std::mem::swap(cur_layer, next_layer);
+            self.pivots.pop().unwrap();
             return;
         }
-
-        // Increment the active layer.
-        self.layer += 1;
     }
 }

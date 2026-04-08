@@ -2,23 +2,47 @@ use crate::simd_quickheap::{L, S, T, T_U32};
 use std::{array::from_fn, mem::transmute, simd::cmp::SimdPartialOrd};
 
 #[inline(always)]
-pub fn push_position(v: &[T], layer: usize, t: T) -> usize {
+pub fn push_position(pivots: &Vec<T>, t: T) -> usize {
     // Baseline:
-    // return v.iter().map(|x| (t <= **x) as usize).sum::<usize>();
+    // return pivots.iter().map(|x| (t <= **x) as usize).sum::<usize>();
 
-    let v = &v[1..1 + (layer).next_multiple_of(L)];
+    let v = unsafe { pivots.get_unchecked(..pivots.len().next_multiple_of(L)) };
 
-    let t = S::splat(t);
+    if v.len() <= 64 {
+        let t_simd = S::splat(t);
 
-    let mut target_layer = 0;
-    for c in v.as_chunks::<L>().0 {
-        let vals = S::from_array(*c);
-        let mask = t.simd_le(vals);
-        // TODO: Compare SIMD register against 0
-        target_layer += mask.to_bitmask().count_ones() as usize;
+        let mut target_layer = 0;
+        for c in v.as_chunks::<L>().0 {
+            let vals = S::from_array(*c);
+            let mask = t_simd.simd_le(vals);
+            // TODO: Compare SIMD register against 0
+            target_layer += mask.to_bitmask().trailing_ones() as usize;
+        }
+        target_layer = target_layer.min(pivots.len());
+
+        let l2 = pivots
+            .binary_search_by(|p| {
+                if *p < t {
+                    std::cmp::Ordering::Greater
+                } else {
+                    std::cmp::Ordering::Less
+                }
+            })
+            .unwrap_err();
+        assert_eq!(target_layer, l2, "pivots {pivots:?} v {v:?}, t {t}");
+
+        target_layer
+    } else {
+        pivots
+            .binary_search_by(|p| {
+                if *p < t {
+                    std::cmp::Ordering::Greater
+                } else {
+                    std::cmp::Ordering::Less
+                }
+            })
+            .unwrap_err()
     }
-
-    target_layer
 }
 
 #[inline(never)]

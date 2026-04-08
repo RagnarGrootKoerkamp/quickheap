@@ -6,26 +6,23 @@ use std::array::from_fn;
 /// A non-SIMD implementation that works for any type.
 /// M: Use median of M pivots.
 pub struct ScalarQuickHeap<T: Ord, const M: usize> {
-    /// The number of layers in the tree.
-    pub layer: usize,
     /// A decreasing array of the pivots for all layers.
-    /// pivots[i] is the largest element of layer i+1.
+    /// buckets[i] >= pivots[i] >= buckets[i+1]
+    /// Values equal to pivots[i] can be in layer i or i+1.
     /// The first layer does not have a pivot in this array.
     pub pivots: Vec<T>,
     /// The values in each layer.
-    /// pivots[i+1] <= elements of buckets[i] <= pivots[i]
-    /// Values equal to pivots[i] can be in layer i or i-1.
+    /// pivots[i-1] >= elements of buckets[i] >= pivots[i]
     pub buckets: Vec<Vec<T>>,
 }
 
-impl<T: Ord + Copy, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
+impl<T: Elem, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
     type Casted<T2: Elem> = ScalarQuickHeap<T2, M>;
 
     fn default() -> Self {
         Self {
-            layer: 0,
             pivots: vec![],
-            buckets: Vec::from_fn(128, |_| vec![]),
+            buckets: vec![vec![]],
         }
     }
     #[inline(never)]
@@ -38,7 +35,6 @@ impl<T: Ord + Copy, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
                 .position(|p| *p < t)
                 .unwrap_or(self.pivots.len())
         } else {
-            // TODO: Test this
             self.pivots
                 .binary_search_by(|p| {
                     if *p < t {
@@ -55,24 +51,27 @@ impl<T: Ord + Copy, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
     #[inline(never)]
     fn pop(&mut self) -> Option<T> {
         // Only the top layer can be empty.
-        if self.buckets[self.layer].len() == 0 {
+        if self.buckets.len() == 1 && self.buckets[0].is_empty() {
             return None;
         }
         // Split the current layer as long as it is too large.
-        while self.buckets[self.layer].len() > 1 {
+        while self.buckets.last().unwrap().len() > 1 {
             self.partition();
         }
         // Find and extract the minimum.
-        let layer = &mut self.buckets[self.layer];
-        let min = layer.pop().unwrap();
-        assert!(layer.is_empty());
-
-        // Update the active layer.
-        if self.layer > 0 {
-            self.layer -= 1;
-            self.pivots.pop();
+        if self.buckets.len() > 1 {
+            let mut layer = self.buckets.pop().unwrap();
+            self.pivots.pop().unwrap();
+            let min = layer.pop().unwrap();
+            assert!(layer.is_empty());
+            Some(min)
+        } else {
+            // Preserve the first bucket.
+            let layer = &mut self.buckets[0];
+            let min = layer.pop().unwrap();
+            assert!(layer.is_empty());
+            Some(min)
         }
-        Some(min)
     }
 }
 
@@ -80,12 +79,8 @@ impl<T: Ord + Copy, const M: usize> ScalarQuickHeap<T, M> {
     #[inline(never)]
     fn partition(&mut self) {
         // Alias the current layer (to be split) and the next layer.
-        if self.layer + 1 == self.buckets.len() {
-            self.buckets.push(vec![]);
-        }
-        let [cur_layer, next_layer] = &mut self.buckets[self.layer..=self.layer + 1] else {
-            unreachable!()
-        };
+        let cur_layer = self.buckets.last_mut().unwrap();
+        let mut next_layer = vec![];
         let n = cur_layer.len();
 
         // Select M random pivots, and compute their median.
@@ -97,12 +92,6 @@ impl<T: Ord + Copy, const M: usize> ScalarQuickHeap<T, M> {
         // Pivots are inclusive.
         let pivot = pivots[M / 2].0;
         let pivot_pos = pivots[M / 2].1;
-        if self.layer >= self.pivots.len() {
-            assert_eq!(self.layer, self.pivots.len());
-            self.pivots.push(pivot);
-        } else {
-            self.pivots[self.layer] = pivot;
-        }
 
         next_layer.clear();
 
@@ -130,11 +119,10 @@ impl<T: Ord + Copy, const M: usize> ScalarQuickHeap<T, M> {
         // because the pivot was the largest one,
         // undo and try again.
         if cur_layer.len() == 0 {
-            std::mem::swap(cur_layer, next_layer);
+            std::mem::swap(cur_layer, &mut next_layer);
             return;
         }
-
-        // Increment the active layer.
-        self.layer += 1;
+        self.pivots.push(pivot);
+        self.buckets.push(next_layer);
     }
 }
