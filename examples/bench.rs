@@ -119,8 +119,8 @@ pub fn bench<T: Elem, H: Heap<T>>()
 where
     <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
 {
-    let minpow = 20;
-    let maxpow = 20;
+    let minpow = 10;
+    let maxpow = 25;
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
 
     let mut ok = [true; 3];
