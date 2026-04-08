@@ -19,20 +19,7 @@ pub fn push_position<T: SimdElem>(pivots: &Vec<T>, t: T) -> usize {
             target_layer += T::simd_le_bitmask(t_simd, vals).trailing_ones() as usize;
             i += T::L;
         }
-        target_layer = target_layer.min(pivots.len());
-
-        let l2 = pivots
-            .binary_search_by(|p| {
-                if *p < t {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            })
-            .unwrap_err();
-        assert_eq!(target_layer, l2, "pivots {pivots:?} v {v:?}, t {t:?}");
-
-        target_layer
+        target_layer.min(pivots.len())
     } else {
         pivots
             .binary_search_by(|p| {
