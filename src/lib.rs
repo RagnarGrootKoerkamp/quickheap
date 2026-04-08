@@ -16,7 +16,7 @@ pub trait Heap<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::workloads::Elem;
+    use crate::workloads::{Elem, Workload};
     use std::marker::PhantomData;
 
     use super::*;
@@ -44,14 +44,12 @@ mod test {
     impl<T: Elem + Copy, H0: Heap<T>, H1: Heap<T>> TestHeap<T, H0, H1> {
         fn run(n: u64) {
             eprintln!("Test: {:?}", std::any::type_name::<Self>());
+            eprintln!("HEAP SORT");
+            workloads::HeapSort::setup::<T, Self>(n)();
             eprintln!("CONSTANT");
-            workloads::constant_size::<T, Self>(n);
-            eprintln!("LINEAR");
-            workloads::push_linear::<T, Self>(n);
-            eprintln!("LINEAR MIX");
-            workloads::increasing_linear_mix::<T, Self, 2>(n);
-            eprintln!("NATURAL");
-            workloads::natural::<T, Self>(n);
+            workloads::ConstantSize::setup::<T, Self>(n)();
+            eprintln!("DECREASING");
+            workloads::Decreasing::setup::<T, Self>(n)();
         }
     }
 

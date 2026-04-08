@@ -6,7 +6,7 @@ use super::Heap;
 use std::hint::black_box;
 
 /// Small wrapper type for elements to support random numbers in the workloads.
-pub trait Elem: Ord + std::fmt::Debug + Clone + Copy + Radix {
+pub trait Elem: Ord + std::fmt::Debug + Clone + Copy + Radix + 'static {
     fn get(&self) -> u64;
     fn from(x: u64) -> Self;
     fn stride() -> u64;
@@ -114,231 +114,76 @@ fn get<T: Elem>(rng: &mut fastrand::Rng) -> T {
     T::from(rng.u64(..))
 }
 
-/// Push 0 to n
-pub fn push_linear<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    for i in 0..n {
-        h.push(T::from(i));
-    }
-    black_box(h);
+pub trait Workload {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce();
 }
 
-/// Push n to 0
-pub fn push_linear_rev<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    for i in (0..n).rev() {
-        h.push(T::from(i));
-    }
-    black_box(h);
-}
+/// bench: push^n pop^n
+/// values: random
+pub struct HeapSort;
 
-/// Push random.
-pub fn push_random<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    let mut rng = fastrand::Rng::new();
-    for _i in 0..n {
-        h.push(get(&mut rng));
-    }
-    black_box(h);
-}
-
-/// Push 0 to n, then pop all.
-pub fn linear<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    for i in 0..n {
-        h.push(T::from(i));
-    }
-    for _i in 0..n {
-        h.pop();
-    }
-    black_box(h);
-}
-
-/// (push (pop push)^K)^n (pop (push pop)^K)^n
-/// values are linear increasing
-pub fn linear_mix<T: Elem, H: Heap<T>, const K: usize>(n: u64) {
-    let mut h = H::default();
-    let mut x = 0;
-    for _ in 0..n {
-        h.push(T::from(x));
-        x += 1;
-        for _ in 0..K {
-            h.pop();
-            h.push(T::from(x));
-            x += 1;
-        }
-    }
-    for _ in 0..n {
-        h.pop();
-        for _ in 0..K {
-            h.push(T::from(x));
-            x += 1;
-            h.pop();
-        }
-    }
-    black_box(h);
-}
-
-/// (push push pop)^n
-/// values are linear decreasing
-pub fn linear_rev_mix<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    for i in (0..n).rev() {
-        h.push(T::from(2 * i + 1));
-        h.push(T::from(2 * i));
-        h.pop();
-    }
-    black_box(h);
-}
-
-/// push^n pop^n
-/// values are linear decreasing
-pub fn linear_rev<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    for i in (0..n).rev() {
-        h.push(T::from(i));
-    }
-    for _i in 0..n {
-        h.pop();
-    }
-    black_box(h);
-}
-
-/// push^n pop^n
-/// random values, heapsort
-pub fn heapsort<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    let mut rng = fastrand::Rng::new();
-    for _i in 0..n {
-        h.push(get(&mut rng));
-    }
-    for _i in 0..n {
-        h.pop();
-    }
-    black_box(h);
-}
-
-/// push^n (push pop)^n
-/// random values
-pub fn random_alternate<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    let mut rng = fastrand::Rng::new();
-    for _i in 0..n {
-        h.push(get(&mut rng));
-    }
-    for _i in 0..n {
-        h.push(get(&mut rng));
-        h.pop();
-    }
-    black_box(h);
-}
-
-/// (push (pop push)^K)^n (pop (push pop)^K)^n
-/// random values
-pub fn random_mix<T: Elem, H: Heap<T>, const K: usize>(n: u64) {
-    let mut h = H::default();
-    let mut rng = fastrand::Rng::new();
-    for _ in 0..n {
-        h.push(get(&mut rng));
-        for _ in 0..K {
-            h.pop();
-            h.push(get(&mut rng));
-        }
-    }
-    for _ in 0..n {
-        h.pop();
-        for _ in 0..K {
-            h.push(get(&mut rng));
-            h.pop();
-        }
-    }
-    black_box(h);
-}
-
-/// (push (pop push)^K)^n (pop (push pop)^K)^n
-/// values are last-popped + random(O, C)
-/// (C=1000 for u32, C=2^32 for u64)
-pub fn increasing_random_mix<T: Elem, H: Heap<T>, const K: usize>(n: u64) {
-    let mut h = H::default();
-    let mut rng = fastrand::Rng::new();
-    let mut l = 0;
-    const C: u64 = if !T_U32 { 1 << 32 } else { 1000 };
-    for _ in 0..n {
-        h.push(T::from(rng.u64(l..l + C)));
-        for _ in 0..K {
-            l = h.pop().unwrap().get();
-            h.push(T::from(rng.u64(l..l + C)));
-        }
-    }
-    for _ in 0..n {
-        l = h.pop().unwrap().get();
-        for _ in 0..K {
-            h.push(T::from(rng.u64(l..l + C)));
-            l = h.pop().unwrap().get();
-        }
-    }
-    black_box(h);
-}
-
-/// (push (pop push)^K)^n (pop (push pop)^K)^n
-/// linear increasing values
-pub fn increasing_linear_mix<T: Elem, H: Heap<T>, const K: usize>(n: u64) {
-    let mut h = H::default();
-    let mut l = 0;
-    for _ in 0..n {
-        h.push(T::from(l));
-        l += 1;
-        for _ in 0..K {
-            h.pop().unwrap().get();
-            h.push(T::from(l));
-            l += 1;
-        }
-    }
-    for _ in 0..n {
-        h.pop().unwrap().get();
-        for _ in 0..K {
-            h.push(T::from(l));
-            l += 1;
-            h.pop().unwrap().get();
-        }
-    }
-    black_box(h);
-}
-
-/// (push^(s-i) pop^i)^(s+1)
-/// start with mostly pushes, then slowly transition to mostly pops
-/// random values.
-pub fn natural<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    let mut rng = fastrand::Rng::new();
-
-    let s = n.isqrt();
-    for i in 0..=s {
-        for j in 0..s {
-            if j < i {
-                h.pop();
-            } else {
+impl Workload for HeapSort {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+        let mut h = H::default();
+        let mut rng = fastrand::Rng::new();
+        move || {
+            for _ in 0..n {
                 h.push(get(&mut rng));
             }
+            for _ in 0..n {
+                h.pop().unwrap().get();
+            }
+            black_box(h);
         }
     }
-    black_box(h);
-    // assert_eq!(h.pop(), None);
 }
 
-/// push^n (push pop)^(k*n)
-/// values are last-popped + random(O, stride)
-/// (stride=1000 for u32, stride=2^32 for u64)
-pub fn constant_size<T: Elem, H: Heap<T>>(n: u64) {
-    let mut h = H::default();
-    let mut rng = fastrand::Rng::new();
-    let stride = T::stride();
-    for _ in 0..n {
-        h.push(T::from(rng.u64(0..stride)));
+/// init: push^n
+/// bench: (pop push)^n
+/// values: last + (0..C)
+/// C = 1000 for u32, C=2^32 for u64.
+pub struct ConstantSize;
+
+impl Workload for ConstantSize {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+        let mut h = H::default();
+        let mut rng = fastrand::Rng::new();
+        let stride = T::stride();
+        for _ in 0..n {
+            h.push(T::from(rng.u64(0..stride)));
+        }
+        move || {
+            for _ in 0..n {
+                let l = h.pop().unwrap().get();
+                h.push(T::from(rng.u64(l..l + stride)));
+            }
+            black_box(h);
+        }
     }
-    for _ in 0..8 * n {
-        let l = h.pop().unwrap().get();
-        h.push(T::from(rng.u64(l..l + stride)));
+}
+
+/// bench: (push pop push)^(n/3) (pop push pop)^(n/3)
+/// values: n..0
+pub struct Decreasing;
+
+impl Workload for Decreasing {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+        let mut h = H::default();
+        let mut i = n;
+        move || {
+            for _ in 0..n / 3 {
+                h.push(T::from(i));
+                i -= 1;
+                h.pop().unwrap().get();
+                h.push(T::from(i));
+            }
+            for _ in 0..n / 3 {
+                h.pop().unwrap().get();
+                h.push(T::from(i));
+                i -= 1;
+                h.pop().unwrap().get();
+            }
+            black_box(h);
+        }
     }
-    black_box(h);
 }

@@ -32,11 +32,23 @@ impl<T: Ord + Copy, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
     fn push(&mut self, t: T) {
         // Push on the last layer with a pivot >= t,
         // i.e. the index of first pivot < t.
-        let target_layer = self
-            .pivots
-            .iter()
-            .position(|p| *p < t)
-            .unwrap_or(self.pivots.len());
+        let target_layer = if self.pivots.len() <= 64 {
+            self.pivots
+                .iter()
+                .position(|p| *p < t)
+                .unwrap_or(self.pivots.len())
+        } else {
+            // TODO: Test this
+            self.pivots
+                .binary_search_by(|p| {
+                    if *p < t {
+                        std::cmp::Ordering::Greater
+                    } else {
+                        std::cmp::Ordering::Less
+                    }
+                })
+                .unwrap_err()
+        };
 
         self.buckets[target_layer].push(t);
     }

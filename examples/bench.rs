@@ -1,55 +1,76 @@
+use quickheap::impls::NoHeap;
 use quickheap::workloads::*;
 use quickheap::*;
 use std::any::type_name;
 use std::any::TypeId;
 
-pub fn time(n: u64, f: impl Fn(u64)) -> f64 {
-    const REPEATS: usize = 2;
+const REPEATS: usize = 3;
+
+fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
     let mut ts = vec![];
     for _ in 0..REPEATS {
+        let f = W::setup::<T, H>(n);
         let start = std::time::Instant::now();
-        f(n);
+        f();
         ts.push(start.elapsed());
     }
-    let t = ts.iter().min().unwrap();
-    (t.as_secs_f64() / n as f64) * 1e9f64
+    ts.iter().min().unwrap().as_secs_f64() * 1e9f64
 }
 
-pub fn bench<T: Elem, H: Heap<T>>(increasing: bool) {
-    let minpow = 10;
-    let maxpow = 25;
+pub fn bench<T: Elem, H: Heap<T>>(increasing: bool)
+where
+    <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
+{
+    let minpow = 20;
+    let maxpow = 20;
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
 
-    let mut ts = vec![
-        (1, heapsort::<T, H> as fn(_)),
-        (9, constant_size::<T, H> as fn(_)),
-        (3, increasing_random_mix::<T, H, 1> as fn(_)),
-        // (3, increasing_linear_mix::<T, H, 1> as fn(_)),
-        // (1, random_mix::<T, H, 0> as fn(_)),
-    ];
-    if !increasing {
-        ts.extend_from_slice(&[(1, random_mix::<T, H, 0> as fn(_))]);
-        ts.extend_from_slice(&[(3, random_mix::<T, H, 1> as fn(_))]);
-    }
+    type T2<T> = CountComparisons<T>;
+    #[allow(type_alias_bounds)]
+    type H2<T, H: Heap<T>> = H::Casted<T2<T>>;
 
-    let mut ok = vec![true; ts.len()];
+    let mut ok = [true; 3];
 
     for n in ns {
         eprint!("{:<70} {} {n:>10}", type_name::<H>(), type_name::<T>());
         print!("{}\t{}\t{n}", type_name::<H>(), type_name::<T>());
-        for (&(cnt, t), ok) in std::iter::zip(&ts, &mut ok) {
+
+        fn bench_one<T: Elem, H: Heap<T>, W: Workload>(n: u64, ok: &mut bool)
+        where
+            <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
+        {
             if !*ok {
                 eprint!("{:>9}", "");
                 print!("\t");
-                continue;
+                return;
             }
-            let t = time(n, t) / (2 * cnt) as f64 / (n as f64).log2();
+            let ops = n as f64 * (n as f64).log2();
+            let t = time_workload::<T, H, W>(n) / ops;
             eprint!("{t:>9.2}");
             print!("\t{t:>.2}");
+
+            T2::<T>::reset_count();
+            if TypeId::of::<H2<T, H>>() != TypeId::of::<NoHeap>() {
+                let f = W::setup::<T, H>(n);
+                T2::<T>::reset_count();
+                f();
+            }
+            let count = T2::<T>::get_count() as f64 / ops;
+            eprint!(" {count:.2}");
+            print!("\t{count:.2}");
+
+            // Don't test larger n for this workflow once things get too slow.
             if t > 100.0 {
                 *ok = false;
             }
         }
+
+        bench_one::<T, H, HeapSort>(n, &mut ok[0]);
+        bench_one::<T, H, ConstantSize>(n, &mut ok[1]);
+        if !increasing {
+            bench_one::<T, H, Decreasing>(n, &mut ok[2]);
+        }
+
         eprintln!();
         println!();
     }
@@ -57,12 +78,12 @@ pub fn bench<T: Elem, H: Heap<T>>(increasing: bool) {
 
 fn test<T: Elem + 'static>() {
     eprintln!("QUICKHEAP");
-    // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(false);
-    // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>(false);
-    // if TypeId::of::<T>() == TypeId::of::<i32>() {
-    //     bench::<i32, simd_quickheap::SimdQuickHeap<8, 3>>(false);
-    //     bench::<i32, simd_quickheap::SimdQuickHeap<16, 1>>(false);
-    // }
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(false);
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>(false);
+    if TypeId::of::<T>() == TypeId::of::<i32>() {
+        bench::<i32, simd_quickheap::SimdQuickHeap<16, 1>>(false);
+        bench::<i32, simd_quickheap::SimdQuickHeap<8, 3>>(false);
+    }
 
     eprintln!("BASELINE");
     bench::<T, impls::BinaryHeap<T>>(false);
@@ -88,11 +109,11 @@ fn test<T: Elem + 'static>() {
     eprintln!("Monotone");
     bench::<T, impls::RadixHeap<T>>(true);
 
-    eprintln!("Set");
-    bench::<T, impls::BTreeSet<T>>(true);
-    bench::<T, impls::RevBTreeSet<T>>(true);
-    bench::<T, impls::IndexSetBTreeSet<T>>(true);
-    bench::<T, impls::IndexSetRevBTreeSet<T>>(true);
+    // eprintln!("Set");
+    // bench::<T, impls::BTreeSet<T>>(true);
+    // bench::<T, impls::RevBTreeSet<T>>(true);
+    // bench::<T, impls::IndexSetBTreeSet<T>>(true);
+    // bench::<T, impls::IndexSetRevBTreeSet<T>>(true);
 }
 
 fn main() {
