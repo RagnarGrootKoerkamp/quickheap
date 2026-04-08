@@ -13,18 +13,18 @@ const REPEATS: usize = 3;
 
 struct Result {
     nanos: f64,
+    comparisons: f64,
     branch_misses: f64,
     l1_cache_misses: f64,
     hw_cache_misses: f64,
     l3_cache_misses: f64,
 }
 
-fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> Result {
-    let mut nanos = vec![];
-    let mut bm = vec![];
-    let mut l1 = vec![];
-    let mut hw = vec![];
-    let mut l3 = vec![];
+fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> Vec<Result>
+where
+    <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
+{
+    let mut out = vec![];
     for _ in 0..REPEATS {
         let f = W::setup::<T, H>(n);
 
@@ -58,28 +58,36 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> Result {
 
         let start = std::time::Instant::now();
         f();
-        nanos.push(start.elapsed().as_nanos() as f64);
+        let nanos = start.elapsed().as_nanos() as f64;
         branch_misses.stop().unwrap();
         l1_cache_misses.stop().unwrap();
         hw_cache_misses.stop().unwrap();
         l3_cache_misses.stop().unwrap();
 
-        bm.push(branch_misses.read().unwrap() as f64);
-        l1.push(l1_cache_misses.read().unwrap() as f64);
-        hw.push(hw_cache_misses.read().unwrap() as f64);
-        l3.push(l3_cache_misses.read().unwrap() as f64);
+        let comparisons = {
+            type T2<T> = CountComparisons<T>;
+            #[allow(type_alias_bounds)]
+            type H2<T, H: Heap<T>> = H::Casted<T2<T>>;
+            T2::<T>::reset_count();
+            if TypeId::of::<H2<T, H>>() != TypeId::of::<NoHeap>() {
+                let f = W::setup::<T2<T>, H2<T, H>>(n);
+                T2::<T>::reset_count();
+                f();
+            }
+            T2::<T>::get_count() as f64
+        };
+
+        out.push(Result {
+            nanos,
+            comparisons, // will be filled in later
+            branch_misses: branch_misses.read().unwrap() as f64,
+            l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
+            hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
+            l3_cache_misses: l3_cache_misses.read().unwrap() as f64,
+        });
     }
-    let median = |mut v: Vec<f64>| {
-        v.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        v[v.len() / 2] as f64
-    };
-    Result {
-        nanos: median(nanos),
-        branch_misses: median(bm),
-        l1_cache_misses: median(l1),
-        hw_cache_misses: median(hw),
-        l3_cache_misses: median(l3),
-    }
+
+    out
 }
 
 pub fn bench<T: Elem, H: Heap<T>>()
