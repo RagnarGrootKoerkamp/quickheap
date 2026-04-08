@@ -16,7 +16,7 @@ pub fn push_position<T: SimdElem>(pivots: &Vec<T>, t: T) -> usize {
         while i < v.len() {
             let vals = unsafe { T::simd_from_slice(v.get_unchecked(i..i + T::L)) };
             // TODO: Compare SIMD register against 0
-            target_layer += (T::simd_le_bitmask(t_simd, vals) as u8).trailing_ones() as usize;
+            target_layer += T::simd_le_bitmask(t_simd, vals).trailing_ones() as usize;
             i += T::L;
         }
         target_layer = target_layer.min(pivots.len());
@@ -89,11 +89,13 @@ pub fn position_min<T: SimdElem>(v: &mut Vec<T>) -> usize {
 ///
 /// Implemented for `i32`, `u32`, `i64`, and `u64`.
 pub trait SimdElem: Elem + Copy + 'static {
-    /// Number of SIMD lanes (8 for 32-bit types, 4 for 64-bit types).
+    /// Number of SIMD lanes.
+    /// Without AVX-512: 8 for 32-bit types, 4 for 64-bit types.
+    /// With AVX-512:   16 for 32-bit types, 8 for 64-bit types.
     const L: usize;
     /// Maximum value for this type.
     const MAX: Self;
-    /// The SIMD vector type (e.g. `i32x8` or `i64x4`).
+    /// The SIMD vector type (e.g. `i32x16`/`i32x8` or `i64x8`/`i64x4`).
     type Simd: Copy;
 
     fn splat(v: Self) -> Self::Simd;
@@ -372,11 +374,250 @@ macro_rules! impl_simd_elem_64 {
     };
 }
 
+#[cfg(not(target_feature = "avx512f"))]
+macro_rules! impl_simd_elem_32_avx2 {
+    ($t:ty, $simd:ty) => {
+        impl_simd_elem_32!($t, $simd);
+    };
+}
+
+#[cfg(target_feature = "avx512f")]
+macro_rules! impl_simd_elem_32_avx512 {
+    ($t:ty, $simd:ty) => {
+        impl SimdElem for $t {
+            const L: usize = 16;
+            const MAX: Self = <$t>::MAX;
+            type Simd = $simd;
+
+            #[inline(always)]
+            fn splat(v: Self) -> $simd {
+                <$simd>::splat(v)
+            }
+
+            #[inline(always)]
+            unsafe fn simd_from_slice(slice: &[Self]) -> $simd {
+                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [Self; 16])) }
+            }
+
+            #[inline(always)]
+            fn simd_le_bitmask(a: $simd, b: $simd) -> u64 {
+                use std::simd::cmp::SimdPartialOrd;
+                a.simd_le(b).to_bitmask() as u64
+            }
+
+            #[inline(always)]
+            fn lane_indices() -> $simd {
+                <$simd>::from_array([0 as $t, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+            }
+
+            #[inline(always)]
+            fn from_usize(n: usize) -> Self {
+                n as $t
+            }
+
+            #[inline(always)]
+            fn wrapping_add_one(self) -> Self {
+                self.wrapping_add(1)
+            }
+
+            #[inline(always)]
+            unsafe fn partition_fast(
+                vals: $simd,
+                threshold: $simd,
+                v: &mut [Self],
+                v_idx: &mut usize,
+                w: &mut [Self],
+                w_idx: &mut usize,
+            ) {
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    use std::simd::cmp::SimdPartialOrd;
+
+                    let small: u16 = threshold.simd_gt(vals).to_bitmask() as u16;
+                    let large: u16 = !small;
+                    let vals: __m512i = transmute(vals);
+
+                    _mm512_mask_compressstoreu_epi32(
+                        v.as_mut_ptr().add(*v_idx) as *mut i32,
+                        large,
+                        vals,
+                    );
+                    *v_idx += large.count_ones() as usize;
+
+                    _mm512_mask_compressstoreu_epi32(
+                        w.as_mut_ptr().add(*w_idx) as *mut i32,
+                        small,
+                        vals,
+                    );
+                    *w_idx += small.count_ones() as usize;
+                }
+            }
+
+            #[inline(always)]
+            unsafe fn partition_slow(
+                vals: $simd,
+                len: $simd,
+                threshold: $simd,
+                v: &mut [Self],
+                v_idx: &mut usize,
+                w: &mut [Self],
+                w_idx: &mut usize,
+            ) {
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    use std::simd::cmp::SimdPartialOrd;
+
+                    let in_range: u16 = len.simd_gt(Self::lane_indices()).to_bitmask() as u16;
+                    let small: u16 = vals.simd_lt(threshold).to_bitmask() as u16 & in_range;
+                    let large: u16 = vals.simd_ge(threshold).to_bitmask() as u16 & in_range;
+                    let vals: __m512i = transmute(vals);
+
+                    _mm512_mask_compressstoreu_epi32(
+                        v.as_mut_ptr().add(*v_idx) as *mut i32,
+                        large,
+                        vals,
+                    );
+                    *v_idx += large.count_ones() as usize;
+
+                    _mm512_mask_compressstoreu_epi32(
+                        w.as_mut_ptr().add(*w_idx) as *mut i32,
+                        small,
+                        vals,
+                    );
+                    *w_idx += small.count_ones() as usize;
+                }
+            }
+        }
+    };
+}
+
+#[cfg(target_feature = "avx512f")]
+macro_rules! impl_simd_elem_64_avx512 {
+    ($t:ty, $simd:ty) => {
+        impl SimdElem for $t {
+            const L: usize = 8;
+            const MAX: Self = <$t>::MAX;
+            type Simd = $simd;
+
+            #[inline(always)]
+            fn splat(v: Self) -> $simd {
+                <$simd>::splat(v)
+            }
+
+            #[inline(always)]
+            unsafe fn simd_from_slice(slice: &[Self]) -> $simd {
+                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [Self; 8])) }
+            }
+
+            #[inline(always)]
+            fn simd_le_bitmask(a: $simd, b: $simd) -> u64 {
+                use std::simd::cmp::SimdPartialOrd;
+                a.simd_le(b).to_bitmask() as u64
+            }
+
+            #[inline(always)]
+            fn lane_indices() -> $simd {
+                <$simd>::from_array([0 as $t, 1, 2, 3, 4, 5, 6, 7])
+            }
+
+            #[inline(always)]
+            fn from_usize(n: usize) -> Self {
+                n as $t
+            }
+
+            #[inline(always)]
+            fn wrapping_add_one(self) -> Self {
+                self.wrapping_add(1)
+            }
+
+            #[inline(always)]
+            unsafe fn partition_fast(
+                vals: $simd,
+                threshold: $simd,
+                v: &mut [Self],
+                v_idx: &mut usize,
+                w: &mut [Self],
+                w_idx: &mut usize,
+            ) {
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    use std::simd::cmp::SimdPartialOrd;
+
+                    let small: u8 = threshold.simd_gt(vals).to_bitmask() as u8;
+                    let large: u8 = !small;
+                    let vals: __m512i = transmute(vals);
+
+                    _mm512_mask_compressstoreu_epi64(
+                        v.as_mut_ptr().add(*v_idx) as *mut i64,
+                        large,
+                        vals,
+                    );
+                    *v_idx += large.count_ones() as usize;
+
+                    _mm512_mask_compressstoreu_epi64(
+                        w.as_mut_ptr().add(*w_idx) as *mut i64,
+                        small,
+                        vals,
+                    );
+                    *w_idx += small.count_ones() as usize;
+                }
+            }
+
+            #[inline(always)]
+            unsafe fn partition_slow(
+                vals: $simd,
+                len: $simd,
+                threshold: $simd,
+                v: &mut [Self],
+                v_idx: &mut usize,
+                w: &mut [Self],
+                w_idx: &mut usize,
+            ) {
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    use std::simd::cmp::SimdPartialOrd;
+
+                    let in_range: u8 = len.simd_gt(Self::lane_indices()).to_bitmask() as u8;
+                    let small: u8 = vals.simd_lt(threshold).to_bitmask() as u8 & in_range;
+                    let large: u8 = vals.simd_ge(threshold).to_bitmask() as u8 & in_range;
+                    let vals: __m512i = transmute(vals);
+
+                    _mm512_mask_compressstoreu_epi64(
+                        v.as_mut_ptr().add(*v_idx) as *mut i64,
+                        large,
+                        vals,
+                    );
+                    *v_idx += large.count_ones() as usize;
+
+                    _mm512_mask_compressstoreu_epi64(
+                        w.as_mut_ptr().add(*w_idx) as *mut i64,
+                        small,
+                        vals,
+                    );
+                    *w_idx += small.count_ones() as usize;
+                }
+            }
+        }
+    };
+}
+
+#[cfg(not(target_feature = "avx512f"))]
 impl_simd_elem_32!(i32, std::simd::i32x8);
+#[cfg(not(target_feature = "avx512f"))]
 impl_simd_elem_64!(i64, std::simd::i64x4);
+
+#[cfg(target_feature = "avx512f")]
+impl_simd_elem_32_avx512!(i32, std::simd::i32x16);
+#[cfg(target_feature = "avx512f")]
+impl_simd_elem_64_avx512!(i64, std::simd::i64x8);
 
 /// For each of 256 masks of which elements are different than their predecessor,
 /// a shuffle that sends those new elements to the beginning.
+#[cfg(not(target_feature = "avx512f"))]
 #[rustfmt::skip]
 pub(crate) const UNIQSHUF32: [[i32; 8]; 256] = unsafe {transmute([
 0,1,2,3,4,5,6,7,
@@ -638,6 +879,7 @@ pub(crate) const UNIQSHUF32: [[i32; 8]; 256] = unsafe {transmute([
 ])};
 
 /// Masks for 32-bit shuffle instructions on 64-bit data.
+#[cfg(not(target_feature = "avx512f"))]
 #[rustfmt::skip]
 pub(crate) const UNIQSHUF64: [[i32; 8]; 16] = unsafe {
 transmute([
