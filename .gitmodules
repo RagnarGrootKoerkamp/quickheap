@@ -1,0 +1,12 @@
+[submodule "s3q-sys/third_party/s3q"]
+	path = s3q-sys/third_party/s3q
+	url = https://github.com/raphinesse/s3q.git
+[submodule "s3q-sys/third_party/ips4o"]
+	path = s3q-sys/third_party/ips4o
+	url = https://github.com/raphinesse/ips4o.git
+[submodule "s3q-sys/third_party/range-v3"]
+	path = s3q-sys/third_party/range-v3
+	url = https://github.com/ericniebler/range-v3.git
+[submodule "s3q-sys/third_party/xoshiro"]
+	path = s3q-sys/third_party/xoshiro
+	url = https://github.com/Reputeless/Xoshiro-cpp.git
