@@ -138,6 +138,8 @@ impl<T: Ord> Heap<T> for PairingHeap<T> {
 }
 
 impl<T: Ord + Copy + radix_heap::Radix> Heap<T> for RadixHeap<T> {
+    const MONOTONE: bool = true;
+
     #[inline(always)]
     fn default() -> Self {
         Default::default()

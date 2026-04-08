@@ -8,6 +8,7 @@ pub mod simd_quickheap;
 pub mod workloads;
 
 pub trait Heap<T> {
+    const MONOTONE: bool = false;
     type Casted<T2: Elem>: Heap<T2>;
     fn default() -> Self;
     fn push(&mut self, t: T);

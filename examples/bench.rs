@@ -82,7 +82,7 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> Result {
     }
 }
 
-pub fn bench<T: Elem, H: Heap<T>>(increasing: bool)
+pub fn bench<T: Elem, H: Heap<T>>()
 where
     <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
 {
@@ -132,7 +132,7 @@ where
 
         bench_one::<T, H, HeapSort>(n, &mut ok[0]);
         bench_one::<T, H, ConstantSize>(n, &mut ok[1]);
-        if !increasing {
+        if !H::MONOTONE {
             bench_one::<T, H, Decreasing>(n, &mut ok[2]);
         }
 
@@ -143,42 +143,42 @@ where
 
 fn test<T: Elem + 'static>() {
     eprintln!("QUICKHEAP");
-    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(false);
-    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>(false);
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>();
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>();
     if TypeId::of::<T>() == TypeId::of::<i32>() {
-        bench::<i32, simd_quickheap::SimdQuickHeap<16, 1>>(false);
-        bench::<i32, simd_quickheap::SimdQuickHeap<8, 3>>(false);
+        bench::<i32, simd_quickheap::SimdQuickHeap<16, 1>>();
+        bench::<i32, simd_quickheap::SimdQuickHeap<8, 3>>();
     }
 
     eprintln!("BASELINE");
-    bench::<T, impls::BinaryHeap<T>>(false);
+    bench::<T, impls::BinaryHeap<T>>();
 
     eprintln!("DARY");
-    bench::<T, impls::DaryHeap<T, 2>>(false);
-    bench::<T, impls::DaryHeap<T, 4>>(false);
-    bench::<T, impls::DaryHeap<T, 8>>(false);
-    bench::<T, impls::DaryHeap<T, 16>>(false);
-    bench::<T, impls::OrxDaryHeap<T, 2>>(false);
-    bench::<T, impls::OrxDaryHeap<T, 4>>(false);
-    bench::<T, impls::OrxDaryHeap<T, 8>>(false);
-    bench::<T, impls::OrxDaryHeap<T, 16>>(false);
+    bench::<T, impls::DaryHeap<T, 2>>();
+    bench::<T, impls::DaryHeap<T, 4>>();
+    bench::<T, impls::DaryHeap<T, 8>>();
+    bench::<T, impls::DaryHeap<T, 16>>();
+    bench::<T, impls::OrxDaryHeap<T, 2>>();
+    bench::<T, impls::OrxDaryHeap<T, 4>>();
+    bench::<T, impls::OrxDaryHeap<T, 8>>();
+    bench::<T, impls::OrxDaryHeap<T, 16>>();
 
     eprintln!("Amortized");
-    bench::<T, impls::PairingHeap<T>>(false);
+    bench::<T, impls::PairingHeap<T>>();
 
     if TypeId::of::<T>() == TypeId::of::<i32>() {
-        bench::<i32, impls::FibonacciHeap>(false);
+        bench::<i32, impls::FibonacciHeap>();
     }
-    bench::<T, impls::WeakHeap<T>>(false);
+    bench::<T, impls::WeakHeap<T>>();
 
     eprintln!("Monotone");
-    bench::<T, impls::RadixHeap<T>>(true);
+    bench::<T, impls::RadixHeap<T>>();
 
     // eprintln!("Set");
-    // bench::<T, impls::BTreeSet<T>>(true);
-    // bench::<T, impls::RevBTreeSet<T>>(true);
-    // bench::<T, impls::IndexSetBTreeSet<T>>(true);
-    // bench::<T, impls::IndexSetRevBTreeSet<T>>(true);
+    // bench::<T, impls::BTreeSet<T>>();
+    // bench::<T, impls::RevBTreeSet<T>>();
+    // bench::<T, impls::IndexSetBTreeSet<T>>();
+    // bench::<T, impls::IndexSetRevBTreeSet<T>>();
 }
 
 fn main() {
