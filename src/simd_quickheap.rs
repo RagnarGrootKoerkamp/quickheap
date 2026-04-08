@@ -154,7 +154,11 @@ impl<const N: usize, const M: usize> SimdQuickHeap<N, M> {
             );
         }
         if n2 < n {
-            let threshold = S::splat(pivot + 1);
+            let threshold = if pivot_pos >= n2 {
+                S::splat(pivot + 1)
+            } else {
+                S::splat(pivot)
+            };
             let vals: [T; L] = unsafe { cur_layer.get_unchecked(n2..n2 + L).try_into().unwrap() };
             simd::partition_slow(
                 S::from_array(vals),
