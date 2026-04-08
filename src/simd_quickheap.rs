@@ -164,7 +164,6 @@ impl<T: SimdElem, const N: usize, const M: usize> SimdQuickHeap<T, N, M> {
         if cur_len == 0 {
             std::mem::swap(cur_layer, next_layer);
             self.pivots.pop().unwrap();
-            return;
         }
     }
 }

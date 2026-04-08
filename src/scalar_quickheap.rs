@@ -118,7 +118,7 @@ impl<T: Ord + Copy, const M: usize> ScalarQuickHeap<T, M> {
         // If we extracted all elements to the next layer
         // because the pivot was the largest one,
         // undo and try again.
-        if cur_layer.len() == 0 {
+        if cur_layer.is_empty() {
             std::mem::swap(cur_layer, &mut next_layer);
             return;
         }

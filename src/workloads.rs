@@ -39,7 +39,7 @@ impl_elem!(i32);
 impl_elem!(i64);
 
 thread_local! {
-    static COMPARISON: std::cell::Cell<u64> = std::cell::Cell::new(0);
+    static COMPARISON: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
 }
 
 #[derive(Clone, Copy, Debug, Ord, Eq)]

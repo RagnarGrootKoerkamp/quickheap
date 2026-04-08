@@ -79,9 +79,9 @@ pub fn position_min<T: SimdElem>(v: &mut Vec<T>) -> usize {
         }
     }
     if min_val[0] <= min_val[1] {
-        return min_pos[0];
+        min_pos[0]
     } else {
-        return min_pos[1];
+        min_pos[1]
     }
 }
 
@@ -148,7 +148,7 @@ macro_rules! impl_simd_elem_32 {
 
             #[inline(always)]
             unsafe fn simd_from_slice(slice: &[Self]) -> $simd {
-                <$simd>::from_array(*(slice.as_ptr() as *const [Self; 8]))
+                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [Self; 8])) }
             }
 
             #[inline(always)]
@@ -181,30 +181,32 @@ macro_rules! impl_simd_elem_32 {
                 w: &mut [Self],
                 w_idx: &mut usize,
             ) {
-                use core::arch::x86_64::*;
-                use std::mem::transmute;
-                use std::simd::cmp::SimdPartialOrd;
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    use std::simd::cmp::SimdPartialOrd;
 
-                // bit i = lane i is small (< threshold)
-                let small = threshold.simd_gt(vals).to_bitmask() as u8;
-                let large = !small;
-                let vals: __m256i = transmute(vals);
+                    // bit i = lane i is small (< threshold)
+                    let small = threshold.simd_gt(vals).to_bitmask() as u8;
+                    let large = !small;
+                    let vals: __m256i = transmute(vals);
 
-                // Write large (>= threshold) to v: exclude small lanes.
-                let key: __m256i = transmute(crate::simd::UNIQSHUF32[small as usize]);
-                _mm256_storeu_si256(
-                    v.as_mut_ptr().add(*v_idx) as *mut __m256i,
-                    _mm256_permutevar8x32_epi32(vals, key),
-                );
-                *v_idx += large.count_ones() as usize;
+                    // Write large (>= threshold) to v: exclude small lanes.
+                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[small as usize]);
+                    _mm256_storeu_si256(
+                        v.as_mut_ptr().add(*v_idx) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(vals, key),
+                    );
+                    *v_idx += large.count_ones() as usize;
 
-                // Write small (< threshold) to w: exclude large lanes.
-                let key: __m256i = transmute(crate::simd::UNIQSHUF32[large as usize]);
-                _mm256_storeu_si256(
-                    w.as_mut_ptr().add(*w_idx) as *mut __m256i,
-                    _mm256_permutevar8x32_epi32(vals, key),
-                );
-                *w_idx += small.count_ones() as usize;
+                    // Write small (< threshold) to w: exclude large lanes.
+                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[large as usize]);
+                    _mm256_storeu_si256(
+                        w.as_mut_ptr().add(*w_idx) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(vals, key),
+                    );
+                    *w_idx += small.count_ones() as usize;
+                }
             }
 
             #[inline(always)]
@@ -217,32 +219,34 @@ macro_rules! impl_simd_elem_32 {
                 w: &mut [Self],
                 w_idx: &mut usize,
             ) {
-                use core::arch::x86_64::*;
-                use std::mem::transmute;
-                use std::simd::cmp::SimdPartialOrd;
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    use std::simd::cmp::SimdPartialOrd;
 
-                let mut small = vals.simd_lt(threshold).to_bitmask() as u8;
-                let mut large = vals.simd_ge(threshold).to_bitmask() as u8;
-                let in_range = len.simd_gt(Self::lane_indices()).to_bitmask() as u8;
-                small &= in_range;
-                large &= in_range;
+                    let mut small = vals.simd_lt(threshold).to_bitmask() as u8;
+                    let mut large = vals.simd_ge(threshold).to_bitmask() as u8;
+                    let in_range = len.simd_gt(Self::lane_indices()).to_bitmask() as u8;
+                    small &= in_range;
+                    large &= in_range;
 
-                let vals: __m256i = transmute(vals);
+                    let vals: __m256i = transmute(vals);
 
-                // Exclude mask = complement of keep mask.
-                let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!large) as usize]);
-                _mm256_storeu_si256(
-                    v.as_mut_ptr().add(*v_idx) as *mut __m256i,
-                    _mm256_permutevar8x32_epi32(vals, key),
-                );
-                *v_idx += large.count_ones() as usize;
+                    // Exclude mask = complement of keep mask.
+                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!large) as usize]);
+                    _mm256_storeu_si256(
+                        v.as_mut_ptr().add(*v_idx) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(vals, key),
+                    );
+                    *v_idx += large.count_ones() as usize;
 
-                let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!small) as usize]);
-                _mm256_storeu_si256(
-                    w.as_mut_ptr().add(*w_idx) as *mut __m256i,
-                    _mm256_permutevar8x32_epi32(vals, key),
-                );
-                *w_idx += small.count_ones() as usize;
+                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!small) as usize]);
+                    _mm256_storeu_si256(
+                        w.as_mut_ptr().add(*w_idx) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(vals, key),
+                    );
+                    *w_idx += small.count_ones() as usize;
+                }
             }
         }
     };
@@ -262,7 +266,7 @@ macro_rules! impl_simd_elem_64 {
 
             #[inline(always)]
             unsafe fn simd_from_slice(slice: &[Self]) -> $simd {
-                <$simd>::from_array(*(slice.as_ptr() as *const [Self; 4]))
+                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [Self; 4])) }
             }
 
             #[inline(always)]
@@ -295,31 +299,33 @@ macro_rules! impl_simd_elem_64 {
                 w: &mut [Self],
                 w_idx: &mut usize,
             ) {
-                use core::arch::x86_64::*;
-                use std::mem::transmute;
-                use std::simd::cmp::SimdPartialOrd;
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    use std::simd::cmp::SimdPartialOrd;
 
-                // 4-bit mask: bit i = lane i is small (< threshold).
-                let small = (threshold.simd_gt(vals).to_bitmask() as u8) & 0xF;
-                let large = small ^ 0xF;
-                let vals: __m256i = transmute(vals);
+                    // 4-bit mask: bit i = lane i is small (< threshold).
+                    let small = (threshold.simd_gt(vals).to_bitmask() as u8) & 0xF;
+                    let large = small ^ 0xF;
+                    let vals: __m256i = transmute(vals);
 
-                // UNIQSHUF64[k] keeps the lanes described by keep_pattern = k ^ 0xF.
-                // To keep large lanes (keep_pattern = large): index = large ^ 0xF = small.
-                let key: __m256i = transmute(crate::simd::UNIQSHUF64[small as usize]);
-                _mm256_storeu_si256(
-                    v.as_mut_ptr().add(*v_idx) as *mut __m256i,
-                    _mm256_permutevar8x32_epi32(vals, key),
-                );
-                *v_idx += large.count_ones() as usize;
+                    // UNIQSHUF64[k] keeps the lanes described by keep_pattern = k ^ 0xF.
+                    // To keep large lanes (keep_pattern = large): index = large ^ 0xF = small.
+                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[small as usize]);
+                    _mm256_storeu_si256(
+                        v.as_mut_ptr().add(*v_idx) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(vals, key),
+                    );
+                    *v_idx += large.count_ones() as usize;
 
-                // To keep small lanes (keep_pattern = small): index = small ^ 0xF = large.
-                let key: __m256i = transmute(crate::simd::UNIQSHUF64[large as usize]);
-                _mm256_storeu_si256(
-                    w.as_mut_ptr().add(*w_idx) as *mut __m256i,
-                    _mm256_permutevar8x32_epi32(vals, key),
-                );
-                *w_idx += small.count_ones() as usize;
+                    // To keep small lanes (keep_pattern = small): index = small ^ 0xF = large.
+                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[large as usize]);
+                    _mm256_storeu_si256(
+                        w.as_mut_ptr().add(*w_idx) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(vals, key),
+                    );
+                    *w_idx += small.count_ones() as usize;
+                }
             }
 
             #[inline(always)]
@@ -332,33 +338,35 @@ macro_rules! impl_simd_elem_64 {
                 w: &mut [Self],
                 w_idx: &mut usize,
             ) {
-                use core::arch::x86_64::*;
-                use std::mem::transmute;
-                use std::simd::cmp::SimdPartialOrd;
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    use std::simd::cmp::SimdPartialOrd;
 
-                let mut small = (vals.simd_lt(threshold).to_bitmask() as u8) & 0xF;
-                let mut large = (vals.simd_ge(threshold).to_bitmask() as u8) & 0xF;
-                let in_range = (len.simd_gt(Self::lane_indices()).to_bitmask() as u8) & 0xF;
-                small &= in_range;
-                large &= in_range;
+                    let mut small = (vals.simd_lt(threshold).to_bitmask() as u8) & 0xF;
+                    let mut large = (vals.simd_ge(threshold).to_bitmask() as u8) & 0xF;
+                    let in_range = (len.simd_gt(Self::lane_indices()).to_bitmask() as u8) & 0xF;
+                    small &= in_range;
+                    large &= in_range;
 
-                let vals: __m256i = transmute(vals);
+                    let vals: __m256i = transmute(vals);
 
-                // To keep large lanes: index = large ^ 0xF.
-                let key: __m256i = transmute(crate::simd::UNIQSHUF64[(large ^ 0xF) as usize]);
-                _mm256_storeu_si256(
-                    v.as_mut_ptr().add(*v_idx) as *mut __m256i,
-                    _mm256_permutevar8x32_epi32(vals, key),
-                );
-                *v_idx += large.count_ones() as usize;
+                    // To keep large lanes: index = large ^ 0xF.
+                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[(large ^ 0xF) as usize]);
+                    _mm256_storeu_si256(
+                        v.as_mut_ptr().add(*v_idx) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(vals, key),
+                    );
+                    *v_idx += large.count_ones() as usize;
 
-                // To keep small lanes: index = small ^ 0xF.
-                let key: __m256i = transmute(crate::simd::UNIQSHUF64[(small ^ 0xF) as usize]);
-                _mm256_storeu_si256(
-                    w.as_mut_ptr().add(*w_idx) as *mut __m256i,
-                    _mm256_permutevar8x32_epi32(vals, key),
-                );
-                *w_idx += small.count_ones() as usize;
+                    // To keep small lanes: index = small ^ 0xF.
+                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[(small ^ 0xF) as usize]);
+                    _mm256_storeu_si256(
+                        w.as_mut_ptr().add(*w_idx) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(vals, key),
+                    );
+                    *w_idx += small.count_ones() as usize;
+                }
             }
         }
     };
