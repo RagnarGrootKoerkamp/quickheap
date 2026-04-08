@@ -116,12 +116,12 @@ where
     all_nanos[all_nanos.len() / 2]
 }
 
-pub fn bench<T: Elem, H: Heap<T>>()
+pub fn bench<T: Elem, H: Heap<T>>(maxpow: u32)
 where
     <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
 {
     let minpow = 10;
-    let maxpow = 25;
+
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
 
     let mut ok = [true; 3];
@@ -159,55 +159,58 @@ where
 }
 
 fn test<T: Elem + SimdElem + 'static>() {
-    eprintln!("QUICKHEAP");
-    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>();
-    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>();
+    let maxpow = 25;
 
-    bench::<T, simd_quickheap::SimdQuickHeap<T, 16, 1>>();
-    bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>();
+    eprintln!("QUICKHEAP");
+    // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(maxpow);
+    // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>(maxpow);
+
+    bench::<T, simd_quickheap::SimdQuickHeap<T, 16, 1>>(maxpow);
+    // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(maxpow);
+    // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(maxpow);
 
     eprintln!("Engineered");
     match TypeId::of::<T>() {
-        x if x == TypeId::of::<i64>() => {
-            bench::<i64, sequence_heap::SequenceHeapI64>();
-            bench::<i64, s3q::S3qHeapI64>();
-        }
         x if x == TypeId::of::<i32>() => {
-            bench::<i32, sequence_heap::SequenceHeapI32>();
-            bench::<i32, s3q::S3qHeapI32>();
+            bench::<i32, sequence_heap::SequenceHeapI32>(maxpow);
+            bench::<i32, s3q::S3qHeapI32>(maxpow.min(21));
+        }
+        x if x == TypeId::of::<i64>() => {
+            bench::<i64, sequence_heap::SequenceHeapI64>(maxpow);
+            bench::<i64, s3q::S3qHeapI64>(maxpow);
         }
         _ => unimplemented!(),
     }
 
     eprintln!("BASELINE");
-    bench::<T, impls::BinaryHeap<T>>();
+    bench::<T, impls::BinaryHeap<T>>(maxpow);
 
     eprintln!("DARY");
-    bench::<T, impls::DaryHeap<T, 2>>();
-    bench::<T, impls::DaryHeap<T, 4>>();
-    bench::<T, impls::DaryHeap<T, 8>>();
-    bench::<T, impls::DaryHeap<T, 16>>();
-    bench::<T, impls::OrxDaryHeap<T, 2>>();
-    bench::<T, impls::OrxDaryHeap<T, 4>>();
-    bench::<T, impls::OrxDaryHeap<T, 8>>();
-    bench::<T, impls::OrxDaryHeap<T, 16>>();
+    // bench::<T, impls::DaryHeap<T, 2>>(maxpow);
+    // bench::<T, impls::DaryHeap<T, 4>>(maxpow);
+    // bench::<T, impls::DaryHeap<T, 8>>(maxpow);
+    // bench::<T, impls::DaryHeap<T, 16>>(maxpow);
+    // bench::<T, impls::OrxDaryHeap<T, 2>>(maxpow);
+    bench::<T, impls::OrxDaryHeap<T, 4>>(maxpow);
+    bench::<T, impls::OrxDaryHeap<T, 8>>(maxpow);
+    // bench::<T, impls::OrxDaryHeap<T, 16>>(maxpow);
 
-    eprintln!("Amortized");
-    bench::<T, impls::PairingHeap<T>>();
+    // eprintln!("Amortized");
+    // bench::<T, impls::PairingHeap<T>>(maxpow);
 
-    if TypeId::of::<T>() == TypeId::of::<i32>() {
-        bench::<i32, impls::FibonacciHeap>();
-    }
-    bench::<T, impls::WeakHeap<T>>();
+    // if TypeId::of::<T>(maxpow) == TypeId::of::<i32>() {
+    //     bench::<i32, impls::FibonacciHeap>(maxpow);
+    // }
+    // bench::<T, impls::WeakHeap<T>>(maxpow);
 
     eprintln!("Monotone");
-    bench::<T, impls::RadixHeap<T>>();
+    bench::<T, impls::RadixHeap<T>>(maxpow);
 
     // eprintln!("Set");
-    // bench::<T, impls::BTreeSet<T>>();
-    // bench::<T, impls::RevBTreeSet<T>>();
-    // bench::<T, impls::IndexSetBTreeSet<T>>();
-    // bench::<T, impls::IndexSetRevBTreeSet<T>>();
+    // bench::<T, impls::BTreeSet<T>>(maxpow);
+    // bench::<T, impls::RevBTreeSet<T>>(maxpow);
+    // bench::<T, impls::IndexSetBTreeSet<T>>(maxpow);
+    // bench::<T, impls::IndexSetRevBTreeSet<T>>(maxpow);
 }
 
 fn main() {

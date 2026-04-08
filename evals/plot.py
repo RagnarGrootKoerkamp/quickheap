@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-df = pd.read_csv("test.csv")
+benchname = "latest"
+df = pd.read_csv(f"test-{benchname}.csv")
 
 # Shorten heap names
 df["name"] = df["heap"]
@@ -21,12 +22,22 @@ df["name"] = df["name"].str.replace("fibonacci_heap::", "", regex=False)
 df["name"] = df["name"].str.replace("weakheap::", "", regex=False)
 df["name"] = df["name"].str.replace("radix_heap::", "", regex=False)
 df["name"] = df["name"].str.replace(r"\bi(32|64)\b", "T", regex=True)
+df["name"] = df["name"].str.replace(r"I(32|64)", "<T>", regex=True)
 df["name"] = df["name"].str.replace(r"<\(\), T", "<T", regex=True)
 df["name"] = df["name"].str.replace(r", \(\)>", ">", regex=True)
 df["type"] = df["name"].str.split("<").str[0]
 
 # Shorten workload names
 df["workload"] = df["workload"].str.split("::").str[-1]
+
+# Filter out some overly slow heaps
+# df = df[
+#     ~df["name"].str.contains(
+#         "FibonacciHeap|PairingHeap|WeakHeap|DaryHeap<T, (2|4|8|16)>|DaryHeapOrx<T(|, 16)>"
+#     )
+# ]
+
+df = df[~df["name"].str.contains("SimdQuickHeap<T, 8, (1|3)>")]
 
 # Take median over repeats, then normalize each metric by n*log2(n)
 metrics = [
@@ -41,10 +52,10 @@ metrics = [
     #     "hw_cache_misses",
     #     r"HW cache misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
     # ),
-    # (
-    #     "l3_cache_misses",
-    #     r"L3 cache misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
-    # ),
+    (
+        "l3_cache_misses",
+        r"L3 cache misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
+    ),
 ]
 metric_cols = [m for m, _ in metrics]
 df = (
@@ -62,6 +73,25 @@ elems = ["i32", "i64"]
 colours = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 styles = ["-", "--", "-.", ":"]
 
+
+all_types = df["type"].unique()
+type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(all_types)}
+# type_colour["DaryHeapOrx"] = "black"
+# blogyellow = "#fcc007"
+type_colour["SimdQuickHeap"] = "black"
+all_names_by_type = {
+    tp: list(df[df["type"] == tp]["name"].unique()) for tp in all_types
+}
+
+
+def width_for_type(tp):
+    if tp == "SimdQuickHeap":
+        return 1.0
+    if tp == "RadixHeapMap":
+        return 0.7
+    return 1.0
+
+
 for metric, label in metrics:
     plt.close("all")
     fig, axs = plt.subplots(2, 3, figsize=(10, 6), sharex=True, sharey=True)
@@ -71,10 +101,10 @@ for metric, label in metrics:
         edf = df[df["elem"] == elem]
         for i, workload in enumerate(workloads):
             wdf = edf[edf["workload"] == workload]
-            for c, (tp, tgroup) in zip(colours, wdf.groupby("type")):
-                for ls, (name, ngroup) in zip(
-                    styles, tgroup.groupby("name", sort=False)
-                ):
+            for tp, tgroup in wdf.groupby("type"):
+                c = type_colour[tp]
+                for name, ngroup in tgroup.groupby("name", sort=False):
+                    ls = styles[all_names_by_type[tp].index(name) % len(styles)]
                     ngroup.plot(
                         kind="line",
                         x="n",
@@ -85,9 +115,11 @@ for metric, label in metrics:
                         label=name if i == 0 and j == 0 else None,
                         color=c,
                         ls=ls,
+                        lw=width_for_type(tp),
                     )
             axs[j][i].set_yscale("log", base=2)
             axs[j][i].set_xscale("log", base=2)
+            axs[j][i].set_xticks([2**i for i in [10, 15, 20, 25]])
             axs[j][i].legend().remove()
             axs[j][i].set_xlabel(None)
             axs[j][i].grid(axis="y", which="both", linestyle="-")
@@ -95,8 +127,6 @@ for metric, label in metrics:
                 axs[j][i].set_title(None)
 
         axs[j][0].set_ylabel(elem)
-
-    axs[0][0].set_xticks([2**i for i in [10, 15, 20]])
 
     handles, labels_leg = axs[0][0].get_legend_handles_labels()
     fig.legend(
@@ -108,4 +138,5 @@ for metric, label in metrics:
     )
     fig.supxlabel("n = max #elements in heap", y=0.02)
 
-    fig.savefig(f"plot-{metric}.svg", bbox_inches="tight")
+    fig.savefig(f"plot-{benchname}-{metric}.svg", bbox_inches="tight")
+    fig.savefig(f"plot-{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
