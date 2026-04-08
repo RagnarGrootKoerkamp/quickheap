@@ -361,14 +361,14 @@ macro_rules! impl_simd_elem_64 {
     };
 }
 
-#[cfg(not(target_feature = "avx512f"))]
+#[cfg(not(feature = "avx512"))]
 macro_rules! impl_simd_elem_32_avx2 {
     ($t:ty, $simd:ty) => {
         impl_simd_elem_32!($t, $simd);
     };
 }
 
-#[cfg(target_feature = "avx512f")]
+#[cfg(feature = "avx512")]
 macro_rules! impl_simd_elem_32_avx512 {
     ($t:ty, $simd:ty) => {
         impl SimdElem for $t {
@@ -480,7 +480,7 @@ macro_rules! impl_simd_elem_32_avx512 {
     };
 }
 
-#[cfg(target_feature = "avx512f")]
+#[cfg(feature = "avx512")]
 macro_rules! impl_simd_elem_64_avx512 {
     ($t:ty, $simd:ty) => {
         impl SimdElem for $t {
@@ -592,19 +592,19 @@ macro_rules! impl_simd_elem_64_avx512 {
     };
 }
 
-#[cfg(not(target_feature = "avx512f"))]
+#[cfg(not(feature = "avx512"))]
 impl_simd_elem_32!(i32, std::simd::i32x8);
-#[cfg(not(target_feature = "avx512f"))]
+#[cfg(not(feature = "avx512"))]
 impl_simd_elem_64!(i64, std::simd::i64x4);
 
-#[cfg(target_feature = "avx512f")]
+#[cfg(feature = "avx512")]
 impl_simd_elem_32_avx512!(i32, std::simd::i32x16);
-#[cfg(target_feature = "avx512f")]
+#[cfg(feature = "avx512")]
 impl_simd_elem_64_avx512!(i64, std::simd::i64x8);
 
 /// For each of 256 masks of which elements are different than their predecessor,
 /// a shuffle that sends those new elements to the beginning.
-#[cfg(not(target_feature = "avx512f"))]
+#[cfg(not(feature = "avx512"))]
 #[rustfmt::skip]
 pub(crate) const UNIQSHUF32: [[i32; 8]; 256] = unsafe {transmute([
 0,1,2,3,4,5,6,7,
@@ -866,7 +866,7 @@ pub(crate) const UNIQSHUF32: [[i32; 8]; 256] = unsafe {transmute([
 ])};
 
 /// Masks for 32-bit shuffle instructions on 64-bit data.
-#[cfg(not(target_feature = "avx512f"))]
+#[cfg(not(feature = "avx512"))]
 #[rustfmt::skip]
 pub(crate) const UNIQSHUF64: [[i32; 8]; 16] = unsafe {
 transmute([

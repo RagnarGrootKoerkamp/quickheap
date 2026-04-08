@@ -12,6 +12,11 @@ categories = ["algorithms", "data-structures"]
 authors = ["Ragnar Groot Koerkamp"]
 description = "A SIMD-accelerated priority queue"
 
+[features]
+# Enable 512-bit AVX-512 SIMD (16 lanes for i32, 8 lanes for i64).
+# Requires compiling with RUSTFLAGS="-C target-feature=+avx512f".
+avx512 = []
+
 [profile.release]
 debug = true
 
