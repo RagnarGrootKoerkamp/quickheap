@@ -62,13 +62,10 @@ elems = ["i32", "i64"]
 colours = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 styles = ["-", "--", "-.", ":"]
 
-plt.close("all")
-fig = plt.figure(figsize=(10, 8 * len(metrics)))
-subfigs = fig.subfigures(len(metrics), 1, hspace=0.15)
-
-for m_idx, (subfig, (metric, label)) in enumerate(zip(subfigs, metrics)):
-    subfig.suptitle(label)
-    axs = subfig.subplots(2, 3, sharex=True, sharey=True)
+for metric, label in metrics:
+    plt.close("all")
+    fig, axs = plt.subplots(2, 3, figsize=(10, 6), sharex=True, sharey=True)
+    fig.suptitle(label)
 
     for j, elem in enumerate(elems):
         edf = df[df["elem"] == elem]
@@ -85,7 +82,7 @@ for m_idx, (subfig, (metric, label)) in enumerate(zip(subfigs, metrics)):
                         logx=True,
                         ax=axs[j][i],
                         title=workload if j == 0 else None,
-                        label=name if m_idx == 0 and i == 0 and j == 0 else None,
+                        label=name if i == 0 and j == 0 else None,
                         color=c,
                         ls=ls,
                     )
@@ -101,14 +98,14 @@ for m_idx, (subfig, (metric, label)) in enumerate(zip(subfigs, metrics)):
 
     axs[0][0].set_xticks([2**i for i in [10, 15, 20]])
 
-handles, labels = subfigs[0].get_axes()[0].get_legend_handles_labels()
-fig.legend(
-    handles,
-    labels,
-    loc="lower center",
-    ncol=4,
-    bbox_to_anchor=(0.5, -0.05),
-)
-fig.supxlabel("n = max #elements in heap", y=0.01)
+    handles, labels_leg = axs[0][0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels_leg,
+        loc="lower center",
+        ncol=4,
+        bbox_to_anchor=(0.5, -0.15),
+    )
+    fig.supxlabel("n = max #elements in heap", y=0.02)
 
-fig.savefig("plot.svg", bbox_inches="tight")
+    fig.savefig(f"plot-{metric}.svg", bbox_inches="tight")
