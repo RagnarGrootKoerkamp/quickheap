@@ -20,8 +20,10 @@
 #include "spq/knheap.C"
 #undef Assert
 
-using I32Heap = KNHeap<int32_t, void>;
-using I64Heap = KNHeap<int64_t, void>;
+// KNHeap requires a concrete value type; use a zero-size dummy to model void.
+struct NoValue {};
+using I32Heap = KNHeap<int32_t, NoValue>;
+using I64Heap = KNHeap<int64_t, NoValue>;
 
 extern "C" {
 
@@ -35,17 +37,17 @@ void seq_heap_i32_free(SeqHeapI32 *pq) {
 }
 
 void seq_heap_i32_push(SeqHeapI32 *pq, int32_t key) {
-    reinterpret_cast<I32Heap *>(pq)->insert(key, 0);
+    reinterpret_cast<I32Heap *>(pq)->insert(key, NoValue{});
 }
 
 int32_t seq_heap_i32_pop(SeqHeapI32 *pq) {
-    int32_t key, value;
+    int32_t key; NoValue value;
     reinterpret_cast<I32Heap *>(pq)->deleteMin(&key, &value);
     return key;
 }
 
 int32_t seq_heap_i32_top(SeqHeapI32 *pq) {
-    int32_t key, value;
+    int32_t key; NoValue value;
     reinterpret_cast<I32Heap *>(pq)->getMin(&key, &value);
     return key;
 }
@@ -68,17 +70,17 @@ void seq_heap_i64_free(SeqHeapI64 *pq) {
 }
 
 void seq_heap_i64_push(SeqHeapI64 *pq, int64_t key) {
-    reinterpret_cast<I64Heap *>(pq)->insert(key, 0);
+    reinterpret_cast<I64Heap *>(pq)->insert(key, NoValue{});
 }
 
 int64_t seq_heap_i64_pop(SeqHeapI64 *pq) {
-    int64_t key, value;
+    int64_t key; NoValue value;
     reinterpret_cast<I64Heap *>(pq)->deleteMin(&key, &value);
     return key;
 }
 
 int64_t seq_heap_i64_top(SeqHeapI64 *pq) {
-    int64_t key, value;
+    int64_t key; NoValue value;
     reinterpret_cast<I64Heap *>(pq)->getMin(&key, &value);
     return key;
 }

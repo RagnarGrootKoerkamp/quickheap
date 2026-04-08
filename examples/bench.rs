@@ -168,8 +168,14 @@ fn test<T: Elem + SimdElem + 'static>() {
 
     eprintln!("Engineered");
     match TypeId::of::<T>() {
-        x if x == TypeId::of::<i64>() => bench::<i64, s3q::S3qHeapI64>(),
-        x if x == TypeId::of::<i32>() => bench::<i32, s3q::S3qHeapI32>(),
+        x if x == TypeId::of::<i64>() => {
+            bench::<i64, sequence_heap::SequenceHeapI64>();
+            bench::<i64, s3q::S3qHeapI64>();
+        }
+        x if x == TypeId::of::<i32>() => {
+            bench::<i32, sequence_heap::SequenceHeapI32>();
+            bench::<i32, s3q::S3qHeapI32>();
+        }
         _ => unimplemented!(),
     }
 

@@ -4,6 +4,7 @@ use workloads::Elem;
 pub mod impls;
 pub mod s3q;
 pub mod scalar_quickheap;
+pub mod sequence_heap;
 pub mod simd;
 pub mod simd_quickheap;
 pub mod workloads;
@@ -61,7 +62,7 @@ mod test {
     }
 
     #[test]
-    fn quickheap() {
+    fn all_heaps() {
         let n = 100000;
 
         type T = i64;
@@ -71,6 +72,8 @@ mod test {
 
         TestHeap::<T, Base, ScalarQuickHeap<T, 3>>::run(n);
         TestHeap::<T, Base, SimdQuickHeap<T, 8, 3>>::run(n);
+
+        TestHeap::<T, Base, sequence_heap::SequenceHeapI64>::run(n);
         TestHeap::<T, Base, s3q::S3qHeapI64>::run(n);
 
         TestHeap::<T, Base, impls::DaryHeap<T, 2>>::run(n);
