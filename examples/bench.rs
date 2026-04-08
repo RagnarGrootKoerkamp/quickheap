@@ -6,12 +6,20 @@ use perfcnt::AbstractPerfCounter;
 use quickheap::impls::NoHeap;
 use quickheap::workloads::*;
 use quickheap::*;
+use serde::Serialize;
 use std::any::type_name;
 use std::any::TypeId;
+use std::cell::RefCell;
 
 const REPEATS: usize = 3;
 
+#[derive(Serialize)]
 struct Result {
+    elem: &'static str,
+    heap: &'static str,
+    n: u64,
+    workload: &'static str,
+    repeat: usize,
     nanos: f64,
     comparisons: f64,
     branch_misses: f64,
@@ -20,12 +28,20 @@ struct Result {
     l3_cache_misses: f64,
 }
 
-fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> Vec<Result>
+thread_local! {
+    static CSV_WRITER: RefCell<csv::Writer<std::io::Stdout>> =
+        RefCell::new(csv::Writer::from_writer(std::io::stdout()));
+}
+
+/// Runs the workload `REPEATS` times, writes each run as a CSV row, and
+/// returns the median nanos (used to decide whether to skip larger `n`).
+fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64
 where
     <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
 {
-    let mut out = vec![];
-    for _ in 0..REPEATS {
+    let mut all_nanos = vec![];
+
+    for repeat in 0..REPEATS {
         let f = W::setup::<T, H>(n);
 
         let mut branch_misses = PerfCounterBuilderLinux::from_hardware_event(perfcnt::linux::HardwareEventType::BranchMisses)
@@ -77,17 +93,26 @@ where
             T2::<T>::get_count() as f64
         };
 
-        out.push(Result {
+        let result = Result {
+            elem: type_name::<T>(),
+            heap: type_name::<H>(),
+            n,
+            workload: type_name::<W>(),
+            repeat,
             nanos,
-            comparisons, // will be filled in later
+            comparisons,
             branch_misses: branch_misses.read().unwrap() as f64,
             l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
             hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
             l3_cache_misses: l3_cache_misses.read().unwrap() as f64,
-        });
+        };
+        CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
+
+        all_nanos.push(nanos);
     }
 
-    out
+    all_nanos.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    all_nanos[all_nanos.len() / 2]
 }
 
 pub fn bench<T: Elem, H: Heap<T>>()
@@ -98,15 +123,10 @@ where
     let maxpow = 20;
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
 
-    type T2<T> = CountComparisons<T>;
-    #[allow(type_alias_bounds)]
-    type H2<T, H: Heap<T>> = H::Casted<T2<T>>;
-
     let mut ok = [true; 3];
 
     for n in ns {
         eprint!("{:<70} {} {n:>10}", type_name::<H>(), type_name::<T>());
-        print!("{}\t{}\t{n}", type_name::<H>(), type_name::<T>());
 
         fn bench_one<T: Elem, H: Heap<T>, W: Workload>(n: u64, ok: &mut bool)
         where
@@ -114,23 +134,12 @@ where
         {
             if !*ok {
                 eprint!("{:>9}", "");
-                print!("\t");
                 return;
             }
             let ops = n as f64 * (n as f64).log2();
-            let t = time_workload::<T, H, W>(n).nanos / ops;
-            eprint!("{t:>9.2}");
-            print!("\t{t:>.2}");
-
-            T2::<T>::reset_count();
-            if TypeId::of::<H2<T, H>>() != TypeId::of::<NoHeap>() {
-                let f = W::setup::<T, H>(n);
-                T2::<T>::reset_count();
-                f();
-            }
-            let count = T2::<T>::get_count() as f64 / ops;
-            eprint!(" {count:.2}");
-            print!("\t{count:.2}");
+            let median_nanos = time_workload::<T, H, W>(n);
+            let t = median_nanos / ops;
+            eprint!(" {t:>8.2}");
 
             // Don't test larger n for this workflow once things get too slow.
             if t > 100.0 {
@@ -145,7 +154,6 @@ where
         }
 
         eprintln!();
-        println!();
     }
 }
 
@@ -192,4 +200,5 @@ fn test<T: Elem + 'static>() {
 fn main() {
     test::<i32>();
     test::<i64>();
+    CSV_WRITER.with(|w| w.borrow_mut().flush().unwrap());
 }
