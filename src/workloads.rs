@@ -1,7 +1,5 @@
 use radix_heap::Radix;
 
-use crate::simd_quickheap::T_U32;
-
 use super::Heap;
 use std::hint::black_box;
 

@@ -1,3 +1,8 @@
+use perfcnt::linux::CacheId;
+use perfcnt::linux::CacheOpId;
+use perfcnt::linux::CacheOpResultId;
+use perfcnt::linux::PerfCounterBuilderLinux;
+use perfcnt::AbstractPerfCounter;
 use quickheap::impls::NoHeap;
 use quickheap::workloads::*;
 use quickheap::*;
@@ -6,15 +11,75 @@ use std::any::TypeId;
 
 const REPEATS: usize = 3;
 
-fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
-    let mut ts = vec![];
+struct Result {
+    nanos: f64,
+    branch_misses: f64,
+    l1_cache_misses: f64,
+    hw_cache_misses: f64,
+    l3_cache_misses: f64,
+}
+
+fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> Result {
+    let mut nanos = vec![];
+    let mut bm = vec![];
+    let mut l1 = vec![];
+    let mut hw = vec![];
+    let mut l3 = vec![];
     for _ in 0..REPEATS {
         let f = W::setup::<T, H>(n);
+
+        let mut branch_misses = PerfCounterBuilderLinux::from_hardware_event(perfcnt::linux::HardwareEventType::BranchMisses)
+            .finish()
+            .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+        let mut l1_cache_misses = PerfCounterBuilderLinux::from_cache_event(
+            CacheId::L1D,
+            CacheOpId::Read,
+            CacheOpResultId::Miss,
+        )
+            .finish()
+            .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+        let mut hw_cache_misses = PerfCounterBuilderLinux::from_hardware_event(
+            perfcnt::linux::HardwareEventType::CacheMisses,
+        )
+            .finish()
+            .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+        let mut l3_cache_misses = PerfCounterBuilderLinux::from_cache_event(
+            CacheId::LL,
+            CacheOpId::Read,
+            CacheOpResultId::Miss,
+        )
+            .finish()
+            .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+
+        branch_misses.start().unwrap();
+        l1_cache_misses.start().unwrap();
+        hw_cache_misses.start().unwrap();
+        l3_cache_misses.start().unwrap();
+
         let start = std::time::Instant::now();
         f();
-        ts.push(start.elapsed());
+        nanos.push(start.elapsed().as_nanos() as f64);
+        branch_misses.stop().unwrap();
+        l1_cache_misses.stop().unwrap();
+        hw_cache_misses.stop().unwrap();
+        l3_cache_misses.stop().unwrap();
+
+        bm.push(branch_misses.read().unwrap() as f64);
+        l1.push(l1_cache_misses.read().unwrap() as f64);
+        hw.push(hw_cache_misses.read().unwrap() as f64);
+        l3.push(l3_cache_misses.read().unwrap() as f64);
     }
-    ts.iter().min().unwrap().as_secs_f64() * 1e9f64
+    let median = |mut v: Vec<f64>| {
+        v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        v[v.len() / 2] as f64
+    };
+    Result {
+        nanos: median(nanos),
+        branch_misses: median(bm),
+        l1_cache_misses: median(l1),
+        hw_cache_misses: median(hw),
+        l3_cache_misses: median(l3),
+    }
 }
 
 pub fn bench<T: Elem, H: Heap<T>>(increasing: bool)
@@ -45,7 +110,7 @@ where
                 return;
             }
             let ops = n as f64 * (n as f64).log2();
-            let t = time_workload::<T, H, W>(n) / ops;
+            let t = time_workload::<T, H, W>(n).nanos / ops;
             eprint!("{t:>9.2}");
             print!("\t{t:>.2}");
 
