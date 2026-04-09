@@ -1,9 +1,10 @@
 use crate::impls::NoHeap;
-use crate::simd::{position_min, push_position, SimdElem};
+use crate::simd::{push_position, SimdElem};
 use crate::workloads::Elem;
 
 use super::Heap;
 use std::array::from_fn;
+use std::cmp::Reverse;
 use std::marker::PhantomData;
 
 pub struct SimdQuickHeap<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> {
@@ -41,7 +42,19 @@ impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> Heap<T>
     fn push(&mut self, t: T) {
         let target_layer = push_position::<T, S>(&self.pivots, t);
         self.buckets[target_layer].reserve(S::L + 1);
-        self.buckets[target_layer].push(t);
+        let layer = &mut self.buckets[target_layer];
+        if target_layer < self.pivots.len() {
+            layer.push(t);
+        } else {
+            if layer.len() >= N {
+                layer.push(t);
+            } else {
+                // insert in the right spot in the final layer
+                // TODO: Insertion sort step?
+                layer.push(t);
+                layer.sort_unstable_by_key(|x| Reverse(*x));
+            }
+        }
     }
     #[inline(never)]
     fn pop(&mut self) -> Option<T> {
@@ -56,8 +69,9 @@ impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> Heap<T>
         }
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.pivots.len()];
-        let min_pos = position_min::<T, S>(layer);
-        let min = layer.swap_remove(min_pos);
+        // Layer is sorted in descending order already.
+        // let min_pos = position_min::<T, S>(layer);
+        let min = layer.pop().unwrap();
 
         // Update the active layer.
         if layer.is_empty() && self.pivots.len() > 0 {
@@ -168,6 +182,11 @@ impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> SimdQuickHeap<T, S
         if cur_len == 0 {
             std::mem::swap(cur_layer, next_layer);
             self.pivots.pop().unwrap();
+        }
+
+        if next_layer.len() <= N {
+            // TODO: Handwritten insertion or bitonic sort?
+            next_layer.sort_unstable_by_key(|x| Reverse(*x));
         }
     }
 }
