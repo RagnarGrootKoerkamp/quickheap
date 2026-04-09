@@ -39,7 +39,8 @@ impl_elem!(i32);
 impl_elem!(i64);
 
 thread_local! {
-    static COMPARISON: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    pub(crate) static COMPARISONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    pub(crate) static PUSH_COMPARISONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
 }
 
 #[derive(Clone, Copy, Debug, Ord, Eq)]
@@ -47,10 +48,14 @@ pub struct CountComparisons<T: Elem>(T);
 
 impl<T: Elem> CountComparisons<T> {
     pub fn reset_count() {
-        COMPARISON.with(|c| c.set(0));
+        COMPARISONS.with(|c| c.set(0));
+        PUSH_COMPARISONS.with(|c| c.set(0));
     }
-    pub fn get_count() -> u64 {
-        COMPARISON.with(|c| c.get())
+    pub fn get_counts() -> (u64, u64) {
+        (
+            COMPARISONS.with(|c| c.get()),
+            PUSH_COMPARISONS.with(|c| c.get()),
+        )
     }
 }
 
@@ -63,29 +68,29 @@ impl<T: Elem> PartialEq for CountComparisons<T> {
 impl<T: Elem> PartialOrd for CountComparisons<T> {
     #[inline(always)]
     fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
-        COMPARISON.with(|c| c.set(c.get() + 1));
+        COMPARISONS.with(|c| c.set(c.get() + 1));
         self.0.partial_cmp(&_other.0)
     }
     fn lt(&self, other: &Self) -> bool {
-        COMPARISON.with(|c| c.set(c.get() + 1));
+        COMPARISONS.with(|c| c.set(c.get() + 1));
         self.0 < other.0
     }
     fn le(&self, other: &Self) -> bool {
-        COMPARISON.with(|c| c.set(c.get() + 1));
+        COMPARISONS.with(|c| c.set(c.get() + 1));
         self.0 <= other.0
     }
     fn gt(&self, other: &Self) -> bool {
-        COMPARISON.with(|c| c.set(c.get() + 1));
+        COMPARISONS.with(|c| c.set(c.get() + 1));
         self.0 > other.0
     }
     fn ge(&self, other: &Self) -> bool {
-        COMPARISON.with(|c| c.set(c.get() + 1));
+        COMPARISONS.with(|c| c.set(c.get() + 1));
         self.0 >= other.0
     }
 }
 impl<T: Elem> Radix for CountComparisons<T> {
     fn radix_similarity(&self, other: &Self) -> u32 {
-        COMPARISON.with(|c| c.set(c.get() + 1));
+        COMPARISONS.with(|c| c.set(c.get() + 1));
         self.0.radix_similarity(&other.0)
     }
 

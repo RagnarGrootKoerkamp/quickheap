@@ -1,11 +1,11 @@
-use crate::workloads::Elem;
+use crate::workloads::{Elem, COMPARISONS, PUSH_COMPARISONS};
 
 use super::Heap;
 use std::array::from_fn;
 
 /// A non-SIMD implementation that works for any type.
 /// M: Use median of M pivots.
-pub struct ScalarQuickHeap<T: Ord, const M: usize> {
+pub struct ScalarQuickHeap<T: Ord, const M: usize, const PERFECT: bool> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -16,8 +16,8 @@ pub struct ScalarQuickHeap<T: Ord, const M: usize> {
     pub buckets: Vec<Vec<T>>,
 }
 
-impl<T: Elem, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
-    type Casted<T2: Elem> = ScalarQuickHeap<T2, M>;
+impl<T: Elem, const M: usize, const PERFECT: bool> Heap<T> for ScalarQuickHeap<T, M, PERFECT> {
+    type Casted<T2: Elem> = ScalarQuickHeap<T2, M, PERFECT>;
 
     fn default() -> Self {
         Self {
@@ -29,6 +29,7 @@ impl<T: Elem, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
     fn push(&mut self, t: T) {
         // Push on the last layer with a pivot >= t,
         // i.e. the index of first pivot < t.
+        let old_comparison_count = COMPARISONS.with(|c| c.get());
         let target_layer = self
             .pivots
             .binary_search_by(|p| {
@@ -39,6 +40,8 @@ impl<T: Elem, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
                 }
             })
             .unwrap_err();
+        let new_comparison_count = COMPARISONS.with(|c| c.get());
+        PUSH_COMPARISONS.with(|c| c.set(c.get() + (new_comparison_count - old_comparison_count)));
 
         self.buckets[target_layer].push(t);
     }
@@ -69,7 +72,7 @@ impl<T: Elem, const M: usize> Heap<T> for ScalarQuickHeap<T, M> {
     }
 }
 
-impl<T: Ord + Copy, const M: usize> ScalarQuickHeap<T, M> {
+impl<T: Ord + Copy, const M: usize, const PERFECT: bool> ScalarQuickHeap<T, M, PERFECT> {
     #[inline(never)]
     fn partition(&mut self) {
         // Alias the current layer (to be split) and the next layer.
@@ -77,15 +80,25 @@ impl<T: Ord + Copy, const M: usize> ScalarQuickHeap<T, M> {
         let mut next_layer = vec![];
         let n = cur_layer.len();
 
-        // Select M random pivots, and compute their median.
-        let mut pivots: [(T, usize); M] = from_fn(|_| {
-            let pos = rand::random_range(0..n);
-            (cur_layer[pos], pos)
-        });
-        pivots.sort();
-        // Pivots are inclusive.
-        let pivot = pivots[M / 2].0;
-        let pivot_pos = pivots[M / 2].1;
+        let pivot;
+        let pivot_pos;
+        if PERFECT {
+            let old_comparison_count = COMPARISONS.with(|c| c.get());
+            cur_layer.sort();
+            pivot_pos = (n - 1) / 2;
+            pivot = cur_layer[pivot_pos];
+            COMPARISONS.with(|c| c.set(old_comparison_count));
+        } else {
+            // Select M random pivots, and compute their median.
+            let mut pivots: [(T, usize); M] = from_fn(|_| {
+                let pos = rand::random_range(0..n);
+                (cur_layer[pos], pos)
+            });
+            pivots.sort();
+            // Pivots are inclusive.
+            pivot = pivots[M / 2].0;
+            pivot_pos = pivots[M / 2].1;
+        }
 
         next_layer.clear();
 

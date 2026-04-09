@@ -1,5 +1,6 @@
 #![feature(where_clause_attrs)]
 
+use clap::Parser;
 use quickheap::impls::NoHeap;
 #[cfg(feature = "avx512")]
 use quickheap::simd::Avx512;
@@ -16,8 +17,8 @@ use quickheap::workloads::*;
 use quickheap::*;
 use serde::Serialize;
 use std::any::type_name;
-use std::any::TypeId;
 use std::cell::RefCell;
+use std::{any::TypeId, sync::LazyLock};
 
 const REPEATS: usize = 3;
 
@@ -29,12 +30,15 @@ struct Result {
     workload: &'static str,
     repeat: usize,
     nanos: f64,
+    push_comparisons: f64,
     comparisons: f64,
     branch_misses: f64,
     l1_cache_misses: f64,
     hw_cache_misses: f64,
     l3_cache_misses: f64,
 }
+
+static ARGS: LazyLock<Args> = LazyLock::new(|| Args::parse());
 
 thread_local! {
     static CSV_WRITER: RefCell<csv::Writer<std::io::Stdout>> =
@@ -50,7 +54,7 @@ where
     let mut all_nanos = vec![];
 
     for repeat in 0..REPEATS {
-        let comparisons = {
+        let (comparisons, push_comparisons) = {
             type T2<T> = CountComparisons<T>;
             #[allow(type_alias_bounds)]
             type H2<T, H: Heap<T>> = H::Casted<T2<T>>;
@@ -60,8 +64,28 @@ where
                 T2::<T>::reset_count();
                 f();
             }
-            T2::<T>::get_count() as f64
+            let (comparisons, push_comparisons) = T2::<T>::get_counts();
+            (comparisons as f64, push_comparisons as f64)
         };
+
+        if ARGS.comparisons {
+            let result = Result {
+                elem: type_name::<T>(),
+                heap: type_name::<H>(),
+                n,
+                workload: type_name::<W>(),
+                repeat,
+                nanos: 0.0,
+                push_comparisons,
+                comparisons,
+                branch_misses: 0.0,
+                l1_cache_misses: 0.0,
+                hw_cache_misses: 0.0,
+                l3_cache_misses: 0.0,
+            };
+            CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
+            return 0.0;
+        }
 
         let f = W::setup::<T, H>(n);
 
@@ -137,6 +161,7 @@ where
                 workload: type_name::<W>(),
                 repeat,
                 nanos,
+                push_comparisons,
                 comparisons,
                 branch_misses: branch_misses.read().unwrap() as f64,
                 l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
@@ -208,6 +233,8 @@ struct Args {
     r#i32: bool,
     #[clap(long)]
     r#i64: bool,
+    #[clap(long)]
+    comparisons: bool,
 }
 
 fn test<T: Elem + 'static>(args: &Args)
@@ -223,15 +250,20 @@ where
     let maxpow = args.max;
 
     eprintln!("QUICKHEAP");
-    // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(minpow, maxpow);
-    // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>(minpow, maxpow);
+    if args.comparisons {
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false>>(minpow, maxpow);
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>(minpow, maxpow);
+    }
 
-    #[cfg(feature = "avx2")]
-    bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(minpow, maxpow);
-    #[cfg(feature = "avx512")]
-    bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<false>, 16, 1>>(minpow, maxpow);
-    #[cfg(feature = "avx512")]
-    bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(minpow, maxpow);
+    if !args.comparisons {
+        #[cfg(feature = "avx2")]
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(minpow, maxpow);
+        #[cfg(feature = "avx512")]
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<false>, 16, 1>>(minpow, maxpow);
+        #[cfg(feature = "avx512")]
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(minpow, maxpow);
+    }
 
     if args.quickheap {
         return;
@@ -243,6 +275,7 @@ where
     eprintln!("Engineered");
     #[cfg(feature = "ffi")]
     match TypeId::of::<T>() {
+        // TODO: Figure out if we can count comparisons here.
         x if x == TypeId::of::<i32>() => {
             bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
             bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(21));
@@ -286,8 +319,7 @@ where
 }
 
 fn main() {
-    use clap::Parser;
-    let args = Args::parse();
+    let args = &*ARGS;
     if !args.r#i64 {
         test::<i32>(&args);
     }

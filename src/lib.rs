@@ -98,7 +98,7 @@ mod test {
 
         TestHeap::<T, Base, impls::BinaryHeap<T>>::run(n);
 
-        TestHeap::<T, Base, ScalarQuickHeap<T, 3>>::run(n);
+        TestHeap::<T, Base, ScalarQuickHeap<T, 3, false>>::run(n);
 
         #[cfg(feature = "avx2")]
         TestHeap::<T, Base, SimdQuickHeap<T, Avx2, 8, 3>>::run(n);
