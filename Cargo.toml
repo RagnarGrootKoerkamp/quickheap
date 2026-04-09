@@ -15,7 +15,10 @@ description = "A SIMD-accelerated priority queue"
 [features]
 # Enable 512-bit AVX-512 SIMD (16 lanes for i32, 8 lanes for i64).
 # Requires compiling with RUSTFLAGS="-C target-feature=+avx512f".
-avx512 = []
+avx2 = []
+avx512 = ["avx2"]
+ffi = []
+linux = []
 
 [profile.release]
 debug = true
@@ -29,13 +32,15 @@ fibonacci_heap = "1.1.0"
 indexset = "0.15.0"
 itertools = "0.14.0"
 orx-priority-queue = "1.7.0"
-perfcnt = "0.8.0"
+perfcnt = { version = "0.8.0", optional = true }
 pheap = "0.3.0"
 radix-heap = "0.4.2"
 rand = "0.10.0"
 random = "0.14.0"
 weakheap = "0.1.0"
+
 wide = "1.2.0"
-s3q-sys = { path = "s3q-sys" }
-sequence-heap-sys = { path = "sequence-heap-sys" }
+s3q-sys = { path = "s3q-sys", optional = true}
+sequence-heap-sys = { path = "sequence-heap-sys", optional = true }
+
 

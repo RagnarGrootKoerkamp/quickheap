@@ -1,19 +1,22 @@
 #![feature(where_clause_attrs)]
 
-use perfcnt::linux::CacheId;
-use perfcnt::linux::CacheOpId;
-use perfcnt::linux::CacheOpResultId;
-use perfcnt::linux::PerfCounterBuilderLinux;
-use perfcnt::AbstractPerfCounter;
 use quickheap::impls::NoHeap;
 #[cfg(feature = "avx512")]
 use quickheap::simd::Avx512;
+#[cfg(feature = "avx2")]
 use quickheap::simd::{Avx2, SimdElem};
+
+#[cfg(feature = "linux")]
+use perfcnt::{
+    AbstractPerfCounter,
+    linux::{CacheId, CacheOpId, CacheOpResultId, PerfCounterBuilderLinux},
+};
+
 use quickheap::workloads::*;
 use quickheap::*;
 use serde::Serialize;
-use std::any::type_name;
 use std::any::TypeId;
+use std::any::type_name;
 use std::cell::RefCell;
 
 const REPEATS: usize = 3;
@@ -49,22 +52,24 @@ where
     for repeat in 0..REPEATS {
         let f = W::setup::<T, H>(n);
 
-        let mut branch_misses = PerfCounterBuilderLinux::from_hardware_event(perfcnt::linux::HardwareEventType::BranchMisses)
+        #[cfg(feature = "linux")]
+        {
+            let mut branch_misses = PerfCounterBuilderLinux::from_hardware_event(perfcnt::linux::HardwareEventType::BranchMisses)
             .finish()
             .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
-        let mut l1_cache_misses = PerfCounterBuilderLinux::from_cache_event(
+            let mut l1_cache_misses = PerfCounterBuilderLinux::from_cache_event(
             CacheId::L1D,
             CacheOpId::Read,
             CacheOpResultId::Miss,
         )
             .finish()
             .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
-        let mut hw_cache_misses = PerfCounterBuilderLinux::from_hardware_event(
+            let mut hw_cache_misses = PerfCounterBuilderLinux::from_hardware_event(
             perfcnt::linux::HardwareEventType::CacheMisses,
         )
             .finish()
             .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
-        let mut l3_cache_misses = PerfCounterBuilderLinux::from_cache_event(
+            let mut l3_cache_misses = PerfCounterBuilderLinux::from_cache_event(
             CacheId::LL,
             CacheOpId::Read,
             CacheOpResultId::Miss,
@@ -72,18 +77,23 @@ where
             .finish()
             .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
 
-        branch_misses.start().unwrap();
-        l1_cache_misses.start().unwrap();
-        hw_cache_misses.start().unwrap();
-        l3_cache_misses.start().unwrap();
+            branch_misses.start().unwrap();
+            l1_cache_misses.start().unwrap();
+            hw_cache_misses.start().unwrap();
+            l3_cache_misses.start().unwrap();
+        }
 
         let start = std::time::Instant::now();
         f();
         let nanos = start.elapsed().as_nanos() as f64;
-        branch_misses.stop().unwrap();
-        l1_cache_misses.stop().unwrap();
-        hw_cache_misses.stop().unwrap();
-        l3_cache_misses.stop().unwrap();
+
+        #[cfg(feature = "linux")]
+        {
+            branch_misses.stop().unwrap();
+            l1_cache_misses.stop().unwrap();
+            hw_cache_misses.stop().unwrap();
+            l3_cache_misses.stop().unwrap();
+        }
 
         let comparisons = {
             type T2<T> = CountComparisons<T>;
@@ -98,6 +108,7 @@ where
             T2::<T>::get_count() as f64
         };
 
+        #[cfg(feature = "linux")]
         let result = Result {
             elem: type_name::<T>(),
             heap: type_name::<H>(),
@@ -110,6 +121,21 @@ where
             l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
             hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
             l3_cache_misses: l3_cache_misses.read().unwrap() as f64,
+        };
+
+        #[cfg(not(feature = "linux"))]
+        let result = Result {
+            elem: type_name::<T>(),
+            heap: type_name::<H>(),
+            n,
+            workload: type_name::<W>(),
+            repeat,
+            nanos,
+            comparisons,
+            branch_misses: 0 as f64,
+            l1_cache_misses: 0 as f64,
+            hw_cache_misses: 0 as f64,
+            l3_cache_misses: 0 as f64,
         };
         CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
 
@@ -164,6 +190,7 @@ where
 
 fn test<T: Elem + 'static>()
 where
+    #[cfg(feature = "avx2")]
     Avx2: SimdElem<T>,
     #[cfg(feature = "avx512")]
     Avx512: SimdElem<T>,
@@ -174,13 +201,16 @@ where
     // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(maxpow);
     // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>(maxpow);
 
+    #[cfg(feature = "avx2")]
     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(maxpow);
     #[cfg(feature = "avx512")]
     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512, 16, 1>>(maxpow);
+
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(maxpow);
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(maxpow);
 
     eprintln!("Engineered");
+    #[cfg(feature = "ffi")]
     match TypeId::of::<T>() {
         x if x == TypeId::of::<i32>() => {
             bench::<i32, sequence_heap::SequenceHeapI32>(maxpow);
