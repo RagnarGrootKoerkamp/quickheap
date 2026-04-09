@@ -6,17 +6,17 @@ use quickheap::simd::Avx512;
 #[cfg(feature = "avx2")]
 use quickheap::simd::{Avx2, SimdElem};
 
-#[cfg(feature = "linux")]
+#[cfg(feature = "perf")]
 use perfcnt::{
-    AbstractPerfCounter,
     linux::{CacheId, CacheOpId, CacheOpResultId, PerfCounterBuilderLinux},
+    AbstractPerfCounter,
 };
 
 use quickheap::workloads::*;
 use quickheap::*;
 use serde::Serialize;
-use std::any::TypeId;
 use std::any::type_name;
+use std::any::TypeId;
 use std::cell::RefCell;
 
 const REPEATS: usize = 3;
@@ -50,9 +50,44 @@ where
     let mut all_nanos = vec![];
 
     for repeat in 0..REPEATS {
+        let comparisons = {
+            type T2<T> = CountComparisons<T>;
+            #[allow(type_alias_bounds)]
+            type H2<T, H: Heap<T>> = H::Casted<T2<T>>;
+            T2::<T>::reset_count();
+            if TypeId::of::<H2<T, H>>() != TypeId::of::<NoHeap>() {
+                let f = W::setup::<T2<T>, H2<T, H>>(n);
+                T2::<T>::reset_count();
+                f();
+            }
+            T2::<T>::get_count() as f64
+        };
+
         let f = W::setup::<T, H>(n);
 
-        #[cfg(feature = "linux")]
+        let result;
+        #[cfg(not(feature = "perf"))]
+        {
+            let start = std::time::Instant::now();
+            f();
+            let nanos = start.elapsed().as_nanos() as f64;
+
+            result = Result {
+                elem: type_name::<T>(),
+                heap: type_name::<H>(),
+                n,
+                workload: type_name::<W>(),
+                repeat,
+                nanos,
+                comparisons,
+                branch_misses: 0.0,
+                l1_cache_misses: 0.0,
+                hw_cache_misses: 0.0,
+                l3_cache_misses: 0.0,
+            };
+        }
+
+        #[cfg(feature = "perf")]
         {
             let mut branch_misses = PerfCounterBuilderLinux::from_hardware_event(perfcnt::linux::HardwareEventType::BranchMisses)
                 .finish()
@@ -81,65 +116,34 @@ where
             l1_cache_misses.start().unwrap();
             hw_cache_misses.start().unwrap();
             l3_cache_misses.start().unwrap();
-        }
 
-        let start = std::time::Instant::now();
-        f();
-        let nanos = start.elapsed().as_nanos() as f64;
+            let start = std::time::Instant::now();
+            f();
+            let nanos = start.elapsed().as_nanos() as f64;
 
-        #[cfg(feature = "linux")]
-        {
             branch_misses.stop().unwrap();
             l1_cache_misses.stop().unwrap();
             hw_cache_misses.stop().unwrap();
             l3_cache_misses.stop().unwrap();
+
+            result = Result {
+                elem: type_name::<T>(),
+                heap: type_name::<H>(),
+                n,
+                workload: type_name::<W>(),
+                repeat,
+                nanos,
+                comparisons,
+                branch_misses: branch_misses.read().unwrap() as f64,
+                l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
+                hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
+                l3_cache_misses: l3_cache_misses.read().unwrap() as f64,
+            };
         }
 
-        let comparisons = {
-            type T2<T> = CountComparisons<T>;
-            #[allow(type_alias_bounds)]
-            type H2<T, H: Heap<T>> = H::Casted<T2<T>>;
-            T2::<T>::reset_count();
-            if TypeId::of::<H2<T, H>>() != TypeId::of::<NoHeap>() {
-                let f = W::setup::<T2<T>, H2<T, H>>(n);
-                T2::<T>::reset_count();
-                f();
-            }
-            T2::<T>::get_count() as f64
-        };
-
-        #[cfg(feature = "linux")]
-        let result = Result {
-            elem: type_name::<T>(),
-            heap: type_name::<H>(),
-            n,
-            workload: type_name::<W>(),
-            repeat,
-            nanos,
-            comparisons,
-            branch_misses: branch_misses.read().unwrap() as f64,
-            l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
-            hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
-            l3_cache_misses: l3_cache_misses.read().unwrap() as f64,
-        };
-
-        #[cfg(not(feature = "linux"))]
-        let result = Result {
-            elem: type_name::<T>(),
-            heap: type_name::<H>(),
-            n,
-            workload: type_name::<W>(),
-            repeat,
-            nanos,
-            comparisons,
-            branch_misses: 0 as f64,
-            l1_cache_misses: 0 as f64,
-            hw_cache_misses: 0 as f64,
-            l3_cache_misses: 0 as f64,
-        };
         CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
 
-        all_nanos.push(nanos);
+        all_nanos.push(result.nanos);
     }
 
     all_nanos.sort_by(|a, b| a.partial_cmp(b).unwrap());

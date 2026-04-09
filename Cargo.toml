@@ -13,13 +13,15 @@ authors = ["Ragnar Groot Koerkamp"]
 description = "A SIMD-accelerated priority queue"
 
 [features]
-default = ["avx2", "ffi", "linux"]
-# Enable 512-bit AVX-512 SIMD (16 lanes for i32, 8 lanes for i64).
-# Requires compiling with RUSTFLAGS="-C target-feature=+avx512f".
+default = ["avx2", "ffi", "perf"]
+# Enable SimdQuickHeap with AVX2 backend
 avx2 = []
+# Enable SimdQuickHeap with AVX-512 backend
 avx512 = ["avx2"]
-ffi = []
-linux = []
+# Enable SequenceHeap and S3Q
+ffi = ["dep:s3q-sys", "dep:sequence-heap-sys"]
+# Enable performance counters
+perf = ["dep:perfcnt"]
 
 [profile.release]
 debug = true
