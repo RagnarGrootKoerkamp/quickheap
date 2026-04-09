@@ -55,27 +55,27 @@ where
         #[cfg(feature = "linux")]
         {
             let mut branch_misses = PerfCounterBuilderLinux::from_hardware_event(perfcnt::linux::HardwareEventType::BranchMisses)
-            .finish()
-            .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+                .finish()
+                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
             let mut l1_cache_misses = PerfCounterBuilderLinux::from_cache_event(
-            CacheId::L1D,
-            CacheOpId::Read,
-            CacheOpResultId::Miss,
-        )
-            .finish()
-            .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+                CacheId::L1D,
+                CacheOpId::Read,
+                CacheOpResultId::Miss,
+            )
+                .finish()
+                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
             let mut hw_cache_misses = PerfCounterBuilderLinux::from_hardware_event(
-            perfcnt::linux::HardwareEventType::CacheMisses,
-        )
-            .finish()
-            .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+                perfcnt::linux::HardwareEventType::CacheMisses,
+            )
+                .finish()
+                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
             let mut l3_cache_misses = PerfCounterBuilderLinux::from_cache_event(
-            CacheId::LL,
-            CacheOpId::Read,
-            CacheOpResultId::Miss,
-        )
-            .finish()
-            .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+                CacheId::LL,
+                CacheOpId::Read,
+                CacheOpResultId::Miss,
+            )
+                .finish()
+                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
 
             branch_misses.start().unwrap();
             l1_cache_misses.start().unwrap();
