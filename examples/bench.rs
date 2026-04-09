@@ -104,18 +104,22 @@ where
             )
                 .finish()
                 .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
-            let mut l3_cache_misses = PerfCounterBuilderLinux::from_cache_event(
+            let l3_cache_misses = PerfCounterBuilderLinux::from_cache_event(
                 CacheId::LL,
                 CacheOpId::Read,
                 CacheOpResultId::Miss,
             )
-                .finish()
-                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+            .finish();
+            if l3_cache_misses.is_err() {
+                // eprintln!(
+                //     "Could not initialize l3 cache miss counter; it somehow doesn't work on EPYC."
+                // );
+            }
 
             branch_misses.start().unwrap();
             l1_cache_misses.start().unwrap();
             hw_cache_misses.start().unwrap();
-            l3_cache_misses.start().unwrap();
+            let _ = l3_cache_misses.as_ref().map(|c| c.start().unwrap());
 
             let start = std::time::Instant::now();
             f();
@@ -124,7 +128,7 @@ where
             branch_misses.stop().unwrap();
             l1_cache_misses.stop().unwrap();
             hw_cache_misses.stop().unwrap();
-            l3_cache_misses.stop().unwrap();
+            let _ = l3_cache_misses.as_ref().map(|c| c.stop().unwrap());
 
             result = Result {
                 elem: type_name::<T>(),
@@ -137,7 +141,9 @@ where
                 branch_misses: branch_misses.read().unwrap() as f64,
                 l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
                 hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
-                l3_cache_misses: l3_cache_misses.read().unwrap() as f64,
+                l3_cache_misses: l3_cache_misses
+                    .map(|mut c| c.read().unwrap() as f64)
+                    .unwrap_or_default(),
             };
         }
 
