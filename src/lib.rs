@@ -1,18 +1,28 @@
 #![feature(portable_simd, vec_from_fn)]
 
 use workloads::Elem;
+pub mod workloads;
+
 pub mod impls;
 
 #[cfg(feature = "ffi")]
 pub mod s3q;
-pub mod scalar_quickheap;
 #[cfg(feature = "ffi")]
 pub mod sequence_heap;
+
+pub mod scalar_quickheap;
+
 #[cfg(feature = "avx2")]
 pub mod simd;
 #[cfg(feature = "avx2")]
 pub mod simd_quickheap;
-pub mod workloads;
+
+pub mod binary_heap;
+pub mod dary_heap;
+
+// pub mod dijkstra;
+// pub mod graph;
+// pub mod prim;
 
 pub trait Heap<T> {
     const MONOTONE: bool = false;
@@ -77,6 +87,13 @@ mod test {
 
         type T = i64;
         type Base = impls::BinaryHeap<T>;
+
+        TestHeap::<T, Base, binary_heap::CustomBinaryHeap<T>>::run(n);
+        TestHeap::<T, Base, dary_heap::CustomDaryHeap<T, 2>>::run(n);
+        TestHeap::<T, Base, dary_heap::CustomDaryHeap<T, 3>>::run(n);
+        TestHeap::<T, Base, dary_heap::CustomDaryHeap<T, 4>>::run(n);
+        TestHeap::<T, Base, dary_heap::CustomDaryHeap<T, 8>>::run(n);
+        TestHeap::<T, Base, dary_heap::CustomDaryHeap<T, 16>>::run(n);
 
         TestHeap::<T, Base, impls::BinaryHeap<T>>::run(n);
 
