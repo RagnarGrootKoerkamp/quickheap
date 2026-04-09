@@ -19,14 +19,14 @@ pub trait Heap<T> {
 
 #[cfg(test)]
 mod test {
+    #[cfg(feature = "avx512")]
+    use crate::simd::Avx512;
     use crate::{
         scalar_quickheap::ScalarQuickHeap,
-        simd::{Avx2},
+        simd::Avx2,
         simd_quickheap::SimdQuickHeap,
         workloads::{Elem, Workload},
     };
-    #[cfg(feature = "avx512")]
-    use crate::simd::Avx512;
     use std::marker::PhantomData;
 
     use super::*;
@@ -89,7 +89,7 @@ mod test {
         TestHeap::<T, Base, impls::OrxDaryHeap<T, 8>>::run(n);
         TestHeap::<T, Base, impls::PairingHeap<T>>::run(n);
         TestHeap::<T, Base, impls::WeakHeap<T>>::run(n);
-        // TestHeap::<i32, impls::BinaryHeap<i32>, impls::FibonacciHeap>::run(n); // broken
+        TestHeap::<i32, impls::BinaryHeap<i32>, impls::FibonacciHeap>::run(n); // broken
 
         if false {
             // Set-based implementations without support for duplicate elements.
@@ -101,20 +101,5 @@ mod test {
         }
 
         TestHeap::<T, Base, impls::RadixHeap<T>>::run(n);
-    }
-
-    #[test]
-    #[ignore = "Bug in FibonacciHeap crate"]
-    fn fibonacci_heap() {
-        let mut h = TestHeap::<i32, impls::BinaryHeap<i32>, impls::FibonacciHeap>::default();
-        for n in 0..10 {
-            eprintln!("Test {n} pushes and pops");
-            for _ in 0..n {
-                h.push(0);
-            }
-            for _ in 0..(n + 1) {
-                h.pop();
-            }
-        }
     }
 }

@@ -93,7 +93,7 @@ impl Heap<i32> for FibonacciHeap {
 
     #[inline(always)]
     fn push(&mut self, t: i32) {
-        self.insert(t);
+        let _ = self.insert(t);
     }
 
     #[inline(always)]
