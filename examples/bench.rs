@@ -206,6 +206,10 @@ struct Args {
     max: u32,
     #[clap(long)]
     quickheap: bool,
+    #[clap(long)]
+    r#i32: bool,
+    #[clap(long)]
+    r#i64: bool,
 }
 
 fn test<T: Elem + 'static>(args: &Args)
@@ -285,7 +289,11 @@ where
 fn main() {
     use clap::Parser;
     let args = Args::parse();
-    test::<i32>(&args);
-    test::<i64>(&args);
+    if !args.r#i64 {
+        test::<i32>(&args);
+    }
+    if !args.r#i32 {
+        test::<i64>(&args);
+    }
     CSV_WRITER.with(|w| w.borrow_mut().flush().unwrap());
 }
