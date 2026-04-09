@@ -2,8 +2,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import sys
 
-benchname = "floyd"
+benchname = sys.argv[1]
+
 df = pd.read_csv(f"test-{benchname}.csv")
 
 # Shorten heap names
@@ -103,7 +105,13 @@ def style_for_type(tp):
 
 for metric, label in metrics:
     plt.close("all")
-    fig, axs = plt.subplots(2, 3, figsize=(10, 6), sharex=True, sharey=True)
+    fig, axs = plt.subplots(
+        len(elems),
+        len(workloads),
+        figsize=(4 * len(workloads), 6),
+        sharex=True,
+        sharey=True,
+    )
     fig.suptitle(label)
 
     for j, elem in enumerate(elems):
