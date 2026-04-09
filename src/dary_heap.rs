@@ -1,4 +1,4 @@
-use crate::{Heap, workloads::Elem};
+use crate::{workloads::Elem, Heap};
 
 pub struct CustomDaryHeap<T: Elem, const D: usize> {
     elements: Vec<T>,
@@ -79,7 +79,7 @@ impl<T: Elem, const D: usize> CustomDaryHeap<T, D> {
 
     fn bubble_down_it(&mut self, pos: usize) {
         let mut parent_idx = pos;
-        let mut parent = self.elements[parent_idx];
+        let parent = self.elements[parent_idx];
 
         let mut smallest_child_idx: usize;
         let mut smallest_child: T;
@@ -132,7 +132,7 @@ impl<T: Elem, const D: usize> CustomDaryHeap<T, D> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Heap, dary_heap::CustomDaryHeap};
+    use crate::{dary_heap::CustomDaryHeap, Heap};
 
     #[test]
     fn test_dary_heap() {
