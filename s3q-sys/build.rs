@@ -13,6 +13,8 @@ fn main() {
     build
         .cpp(true)
         .std("c++17")
+        .warnings(false)
+        .extra_warnings(false)
         .file("csrc/wrapper.cpp")
         .include("csrc")
         .include(s3q_dir.join("include"))

@@ -8,6 +8,8 @@ fn main() {
     build
         .cpp(true)
         .std("c++17")
+        .warnings(false)
+        .extra_warnings(false)
         .file("csrc/wrapper.cpp")
         .include("csrc")
         .include(third_party.join("SequenceHeap"));
