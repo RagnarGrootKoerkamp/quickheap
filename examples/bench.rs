@@ -197,7 +197,9 @@ where
     #[cfg(feature = "avx2")]
     Avx2: SimdElem<T>,
     #[cfg(feature = "avx512")]
-    Avx512: SimdElem<T>,
+    Avx512<false>: SimdElem<T>,
+    #[cfg(feature = "avx512")]
+    Avx512<true>: SimdElem<T>,
 {
     let maxpow = 25;
 

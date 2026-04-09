@@ -391,6 +391,7 @@ macro_rules! impl_simd_elem_32_avx512 {
     ($t:ty, $simd:ty) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
             const L: usize = 16;
+            const MAX: $t = <$t>::MAX;
             type Simd = $simd;
 
             #[inline(always)]
@@ -443,12 +444,12 @@ macro_rules! impl_simd_elem_32_avx512 {
                     let vals: __m512i = transmute(vals);
 
                     if CS {
-                        let cv = _mm512_mask_compress_epi32(_mm512_setzero_si512(), large, vals);
-                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut i32, cv);
+                        let cv = _mm512_maskz_compress_epi32(large, vals);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
-                        let cw = _mm512_mask_compress_epi32(_mm512_setzero_si512(), small, vals);
-                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut i32, cw);
+                        let cw = _mm512_maskz_compress_epi32(small, vals);
+                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
                         _mm512_mask_compressstoreu_epi32(
@@ -491,12 +492,12 @@ macro_rules! impl_simd_elem_32_avx512 {
                     let vals: __m512i = transmute(vals);
 
                     if CS {
-                        let cv = _mm512_mask_compress_epi32(_mm512_setzero_si512(), large, vals);
-                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut i32, cv);
+                        let cv = _mm512_maskz_compress_epi32(large, vals);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
-                        let cw = _mm512_mask_compress_epi32(_mm512_setzero_si512(), small, vals);
-                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut i32, cw);
+                        let cw = _mm512_maskz_compress_epi32(small, vals);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
                         _mm512_mask_compressstoreu_epi32(
@@ -578,11 +579,11 @@ macro_rules! impl_simd_elem_64_avx512 {
 
                     if CS {
                         let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut i32, cv);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
                         let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut i32, cw);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
                         _mm512_mask_compressstoreu_epi64(
@@ -626,11 +627,11 @@ macro_rules! impl_simd_elem_64_avx512 {
 
                     if CS {
                         let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut i32, cv);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
                         let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut i32, cw);
+                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
                         _mm512_mask_compressstoreu_epi64(
