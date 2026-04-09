@@ -84,10 +84,16 @@ mod test {
 
         #[cfg(feature = "avx2")]
         TestHeap::<T, Base, SimdQuickHeap<T, Avx2, 8, 3>>::run(n);
+        #[cfg(feature = "avx2")]
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx2, 16, 1>>::run(n);
         #[cfg(feature = "avx512")]
         TestHeap::<T, Base, SimdQuickHeap<T, Avx512<false>, 8, 3>>::run(n);
         #[cfg(feature = "avx512")]
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<false>, 16, 1>>::run(n);
+        #[cfg(feature = "avx512")]
         TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 8, 3>>::run(n);
+        #[cfg(feature = "avx512")]
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 16, 1>>::run(n);
 
         #[cfg(feature = "ffi")]
         TestHeap::<T, Base, sequence_heap::SequenceHeapI64>::run(n);
