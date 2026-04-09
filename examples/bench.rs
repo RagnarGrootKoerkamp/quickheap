@@ -192,7 +192,17 @@ where
     }
 }
 
-fn test<T: Elem + 'static>()
+#[derive(clap::Parser)]
+struct Args {
+    // #[clap(long, default_value = "10")]
+    // min: u32,
+    #[clap(long, default_value = "25")]
+    max: u32,
+    #[clap(long)]
+    quickheap: bool,
+}
+
+fn test<T: Elem + 'static>(args: &Args)
 where
     #[cfg(feature = "avx2")]
     Avx2: SimdElem<T>,
@@ -201,7 +211,7 @@ where
     #[cfg(feature = "avx512")]
     Avx512<true>: SimdElem<T>,
 {
-    let maxpow = 25;
+    let maxpow = args.max;
 
     eprintln!("QUICKHEAP");
     // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(maxpow);
@@ -213,6 +223,10 @@ where
     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<false>, 16, 1>>(maxpow);
     #[cfg(feature = "avx512")]
     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(maxpow);
+
+    if args.quickheap {
+        return;
+    }
 
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(maxpow);
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(maxpow);
@@ -263,7 +277,9 @@ where
 }
 
 fn main() {
-    test::<i32>();
-    test::<i64>();
+    use clap::Parser;
+    let args = Args::parse();
+    test::<i32>(&args);
+    test::<i64>(&args);
     CSV_WRITER.with(|w| w.borrow_mut().flush().unwrap());
 }
