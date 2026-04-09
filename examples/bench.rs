@@ -208,7 +208,9 @@ where
     #[cfg(feature = "avx2")]
     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(maxpow);
     #[cfg(feature = "avx512")]
-    bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512, 16, 1>>(maxpow);
+    bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<false>, 16, 1>>(maxpow);
+    #[cfg(feature = "avx512")]
+    bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(maxpow);
 
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(maxpow);
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(maxpow);

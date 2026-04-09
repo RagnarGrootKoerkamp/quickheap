@@ -8,11 +8,17 @@ pub struct Avx2;
 
 /// Marker type selecting the AVX-512 (512-bit) SIMD backend for [`SimdQuickHeap`].
 ///
+/// The const generic `CS` controls how compressed results are written:
+/// - `Avx512<false>` (the default) uses `_mm512_mask_compressstoreu_epi*`, a single
+///   fused compress-and-store instruction.
+/// - `Avx512<true>` uses a separate `_mm512_maskz_compress_epi*` followed by
+///   `_mm512_storeu_si512`, which may perform better on some microarchitectures.
+///
 /// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"` and the `avx512` feature.
 ///
 /// [`SimdQuickHeap`]: crate::simd_quickheap::SimdQuickHeap
 #[cfg(feature = "avx512")]
-pub struct Avx512;
+pub struct Avx512<const CS: bool = false>;
 
 /// A SIMD backend strategy for element type `T`.
 ///
@@ -70,6 +76,7 @@ pub fn push_position<T: Elem, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> usize {
     // Baseline:
     // return pivots.iter().map(|x| (t <= **x) as usize).sum::<usize>();
 
+    // FIXME: This panics in debug mode.
     let v = unsafe { pivots.get_unchecked(..pivots.len().next_multiple_of(S::L)) };
 
     if v.len() <= 64 {
@@ -382,9 +389,8 @@ macro_rules! impl_simd_elem_64 {
 #[cfg(feature = "avx512")]
 macro_rules! impl_simd_elem_32_avx512 {
     ($t:ty, $simd:ty) => {
-        impl SimdElem<$t> for Avx512 {
+        impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
             const L: usize = 16;
-            const MAX: $t = <$t>::MAX;
             type Simd = $simd;
 
             #[inline(always)]
@@ -436,19 +442,29 @@ macro_rules! impl_simd_elem_32_avx512 {
                     let large: u16 = !small;
                     let vals: __m512i = transmute(vals);
 
-                    _mm512_mask_compressstoreu_epi32(
-                        v.as_mut_ptr().add(*v_idx) as *mut i32,
-                        large,
-                        vals,
-                    );
-                    *v_idx += large.count_ones() as usize;
+                    if CS {
+                        let cv = _mm512_mask_compress_epi32(_mm512_setzero_si512(), large, vals);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut i32, cv);
+                        *v_idx += large.count_ones() as usize;
 
-                    _mm512_mask_compressstoreu_epi32(
-                        w.as_mut_ptr().add(*w_idx) as *mut i32,
-                        small,
-                        vals,
-                    );
-                    *w_idx += small.count_ones() as usize;
+                        let cw = _mm512_mask_compress_epi32(_mm512_setzero_si512(), small, vals);
+                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut i32, cw);
+                        *w_idx += small.count_ones() as usize;
+                    } else {
+                        _mm512_mask_compressstoreu_epi32(
+                            v.as_mut_ptr().add(*v_idx) as *mut i32,
+                            large,
+                            vals,
+                        );
+                        *v_idx += large.count_ones() as usize;
+
+                        _mm512_mask_compressstoreu_epi32(
+                            w.as_mut_ptr().add(*w_idx) as *mut i32,
+                            small,
+                            vals,
+                        );
+                        *w_idx += small.count_ones() as usize;
+                    }
                 }
             }
 
@@ -474,19 +490,29 @@ macro_rules! impl_simd_elem_32_avx512 {
                     let large: u16 = vals.simd_ge(threshold).to_bitmask() as u16 & in_range;
                     let vals: __m512i = transmute(vals);
 
-                    _mm512_mask_compressstoreu_epi32(
-                        v.as_mut_ptr().add(*v_idx) as *mut i32,
-                        large,
-                        vals,
-                    );
-                    *v_idx += large.count_ones() as usize;
+                    if CS {
+                        let cv = _mm512_mask_compress_epi32(_mm512_setzero_si512(), large, vals);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut i32, cv);
+                        *v_idx += large.count_ones() as usize;
 
-                    _mm512_mask_compressstoreu_epi32(
-                        w.as_mut_ptr().add(*w_idx) as *mut i32,
-                        small,
-                        vals,
-                    );
-                    *w_idx += small.count_ones() as usize;
+                        let cw = _mm512_mask_compress_epi32(_mm512_setzero_si512(), small, vals);
+                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut i32, cw);
+                        *w_idx += small.count_ones() as usize;
+                    } else {
+                        _mm512_mask_compressstoreu_epi32(
+                            v.as_mut_ptr().add(*v_idx) as *mut i32,
+                            large,
+                            vals,
+                        );
+                        *v_idx += large.count_ones() as usize;
+
+                        _mm512_mask_compressstoreu_epi32(
+                            w.as_mut_ptr().add(*w_idx) as *mut i32,
+                            small,
+                            vals,
+                        );
+                        *w_idx += small.count_ones() as usize;
+                    }
                 }
             }
         }
@@ -496,7 +522,7 @@ macro_rules! impl_simd_elem_32_avx512 {
 #[cfg(feature = "avx512")]
 macro_rules! impl_simd_elem_64_avx512 {
     ($t:ty, $simd:ty) => {
-        impl SimdElem<$t> for Avx512 {
+        impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
             const L: usize = 8;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
@@ -550,19 +576,29 @@ macro_rules! impl_simd_elem_64_avx512 {
                     let large: u8 = !small;
                     let vals: __m512i = transmute(vals);
 
-                    _mm512_mask_compressstoreu_epi64(
-                        v.as_mut_ptr().add(*v_idx) as *mut i64,
-                        large,
-                        vals,
-                    );
-                    *v_idx += large.count_ones() as usize;
+                    if CS {
+                        let cv = _mm512_maskz_compress_epi64(large, vals);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut i32, cv);
+                        *v_idx += large.count_ones() as usize;
 
-                    _mm512_mask_compressstoreu_epi64(
-                        w.as_mut_ptr().add(*w_idx) as *mut i64,
-                        small,
-                        vals,
-                    );
-                    *w_idx += small.count_ones() as usize;
+                        let cw = _mm512_maskz_compress_epi64(small, vals);
+                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut i32, cw);
+                        *w_idx += small.count_ones() as usize;
+                    } else {
+                        _mm512_mask_compressstoreu_epi64(
+                            v.as_mut_ptr().add(*v_idx) as *mut i64,
+                            large,
+                            vals,
+                        );
+                        *v_idx += large.count_ones() as usize;
+
+                        _mm512_mask_compressstoreu_epi64(
+                            w.as_mut_ptr().add(*w_idx) as *mut i64,
+                            small,
+                            vals,
+                        );
+                        *w_idx += small.count_ones() as usize;
+                    }
                 }
             }
 
@@ -588,19 +624,29 @@ macro_rules! impl_simd_elem_64_avx512 {
                     let large: u8 = vals.simd_ge(threshold).to_bitmask() as u8 & in_range;
                     let vals: __m512i = transmute(vals);
 
-                    _mm512_mask_compressstoreu_epi64(
-                        v.as_mut_ptr().add(*v_idx) as *mut i64,
-                        large,
-                        vals,
-                    );
-                    *v_idx += large.count_ones() as usize;
+                    if CS {
+                        let cv = _mm512_maskz_compress_epi64(large, vals);
+                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut i32, cv);
+                        *v_idx += large.count_ones() as usize;
 
-                    _mm512_mask_compressstoreu_epi64(
-                        w.as_mut_ptr().add(*w_idx) as *mut i64,
-                        small,
-                        vals,
-                    );
-                    *w_idx += small.count_ones() as usize;
+                        let cw = _mm512_maskz_compress_epi64(small, vals);
+                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut i32, cw);
+                        *w_idx += small.count_ones() as usize;
+                    } else {
+                        _mm512_mask_compressstoreu_epi64(
+                            v.as_mut_ptr().add(*v_idx) as *mut i64,
+                            large,
+                            vals,
+                        );
+                        *v_idx += large.count_ones() as usize;
+
+                        _mm512_mask_compressstoreu_epi64(
+                            w.as_mut_ptr().add(*w_idx) as *mut i64,
+                            small,
+                            vals,
+                        );
+                        *w_idx += small.count_ones() as usize;
+                    }
                 }
             }
         }
