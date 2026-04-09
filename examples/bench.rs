@@ -1,10 +1,14 @@
+#![feature(where_clause_attrs)]
+
 use perfcnt::linux::CacheId;
 use perfcnt::linux::CacheOpId;
 use perfcnt::linux::CacheOpResultId;
 use perfcnt::linux::PerfCounterBuilderLinux;
 use perfcnt::AbstractPerfCounter;
 use quickheap::impls::NoHeap;
-use quickheap::simd::SimdElem;
+#[cfg(feature = "avx512")]
+use quickheap::simd::Avx512;
+use quickheap::simd::{Avx2, SimdElem};
 use quickheap::workloads::*;
 use quickheap::*;
 use serde::Serialize;
@@ -158,14 +162,21 @@ where
     }
 }
 
-fn test<T: Elem + SimdElem + 'static>() {
+fn test<T: Elem + 'static>()
+where
+    Avx2: SimdElem<T>,
+    #[cfg(feature = "avx512")]
+    Avx512: SimdElem<T>,
+{
     let maxpow = 25;
 
     eprintln!("QUICKHEAP");
     // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1>>(maxpow);
     // bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3>>(maxpow);
 
-    bench::<T, simd_quickheap::SimdQuickHeap<T, 16, 1>>(maxpow);
+    bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(maxpow);
+    #[cfg(feature = "avx512")]
+    bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512, 16, 1>>(maxpow);
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(maxpow);
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(maxpow);
 

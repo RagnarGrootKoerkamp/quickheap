@@ -21,9 +21,12 @@ pub trait Heap<T> {
 mod test {
     use crate::{
         scalar_quickheap::ScalarQuickHeap,
+        simd::{Avx2},
         simd_quickheap::SimdQuickHeap,
         workloads::{Elem, Workload},
     };
+    #[cfg(feature = "avx512")]
+    use crate::simd::Avx512;
     use std::marker::PhantomData;
 
     use super::*;
@@ -71,7 +74,9 @@ mod test {
         TestHeap::<T, Base, impls::BinaryHeap<T>>::run(n);
 
         TestHeap::<T, Base, ScalarQuickHeap<T, 3>>::run(n);
-        TestHeap::<T, Base, SimdQuickHeap<T, 8, 3>>::run(n);
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx2, 8, 3>>::run(n);
+        #[cfg(feature = "avx512")]
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx512, 8, 3>>::run(n);
 
         TestHeap::<T, Base, sequence_heap::SequenceHeapI64>::run(n);
         TestHeap::<T, Base, s3q::S3qHeapI64>::run(n);

@@ -1,23 +1,87 @@
 use crate::workloads::Elem;
 use std::mem::transmute;
 
+/// Marker type selecting the AVX2 (256-bit) SIMD backend for [`SimdQuickHeap`].
+///
+/// [`SimdQuickHeap`]: crate::simd_quickheap::SimdQuickHeap
+pub struct Avx2;
+
+/// Marker type selecting the AVX-512 (512-bit) SIMD backend for [`SimdQuickHeap`].
+///
+/// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"` and the `avx512` feature.
+///
+/// [`SimdQuickHeap`]: crate::simd_quickheap::SimdQuickHeap
+#[cfg(feature = "avx512")]
+pub struct Avx512;
+
+/// A SIMD backend strategy for element type `T`.
+///
+/// Implemented by [`Avx2`] (8 lanes for 32-bit, 4 lanes for 64-bit) and,
+/// when the `avx512` feature is enabled, by [`Avx512`]
+/// (16 lanes for 32-bit, 8 lanes for 64-bit).
+pub trait SimdElem<T: Elem>: 'static {
+    /// Number of SIMD lanes.
+    const L: usize;
+    /// Maximum value for `T`.
+    const MAX: T;
+    /// The SIMD vector type (e.g. `i32x8` or `i64x4`).
+    type Simd: Copy;
+
+    fn splat(v: T) -> Self::Simd;
+    /// # Safety
+    /// `slice` must have at least `L` elements accessible (may read past `slice.len()`).
+    unsafe fn simd_from_slice(slice: &[T]) -> Self::Simd;
+    /// Returns bitmask where bit `i` = `a[i] <= b[i]`.
+    fn simd_le_bitmask(a: Self::Simd, b: Self::Simd) -> u64;
+    /// Returns a SIMD register `[0, 1, 2, ..., L-1]`.
+    fn lane_indices() -> Self::Simd;
+    fn from_usize(n: usize) -> T;
+    fn wrapping_add_one(t: T) -> T;
+
+    /// Partition all `L` lanes of `vals` against `threshold`.
+    /// Lanes `>= threshold` go to `v`, lanes `< threshold` go to `w`.
+    /// # Safety
+    /// `v` and `w` must have at least `L` elements of capacity beyond their current write index.
+    unsafe fn partition_fast(
+        vals: Self::Simd,
+        threshold: Self::Simd,
+        v: &mut [T],
+        v_idx: &mut usize,
+        w: &mut [T],
+        w_idx: &mut usize,
+    );
+
+    /// Like `partition_fast`, but only the first `len` lanes are in range.
+    /// # Safety
+    /// Same capacity requirements as `partition_fast`.
+    unsafe fn partition_slow(
+        vals: Self::Simd,
+        len: Self::Simd,
+        threshold: Self::Simd,
+        v: &mut [T],
+        v_idx: &mut usize,
+        w: &mut [T],
+        w_idx: &mut usize,
+    );
+}
+
 #[inline(always)]
-pub fn push_position<T: SimdElem>(pivots: &Vec<T>, t: T) -> usize {
+pub fn push_position<T: Elem, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> usize {
     // Baseline:
     // return pivots.iter().map(|x| (t <= **x) as usize).sum::<usize>();
 
-    let v = unsafe { pivots.get_unchecked(..pivots.len().next_multiple_of(T::L)) };
+    let v = unsafe { pivots.get_unchecked(..pivots.len().next_multiple_of(S::L)) };
 
     if v.len() <= 64 {
-        let t_simd = T::splat(t);
+        let t_simd = S::splat(t);
 
         let mut target_layer = 0;
         let mut i = 0;
         while i < v.len() {
-            let vals = unsafe { T::simd_from_slice(v.get_unchecked(i..i + T::L)) };
+            let vals = unsafe { S::simd_from_slice(v.get_unchecked(i..i + S::L)) };
             // TODO: Compare SIMD register against 0
-            target_layer += T::simd_le_bitmask(t_simd, vals).trailing_ones() as usize;
-            i += T::L;
+            target_layer += S::simd_le_bitmask(t_simd, vals).trailing_ones() as usize;
+            i += S::L;
         }
         target_layer.min(pivots.len())
     } else {
@@ -34,9 +98,9 @@ pub fn push_position<T: SimdElem>(pivots: &Vec<T>, t: T) -> usize {
 }
 
 #[inline(never)]
-pub fn position_min<T: SimdElem>(v: &mut Vec<T>) -> usize {
+pub fn position_min<T: Elem, S: SimdElem<T>>(v: &mut Vec<T>) -> usize {
     // Baseline:
-    // let mut min = T::MAX;
+    // let mut min = S::MAX;
     // let mut pos = 0;
     // for i in 0..v.len() {
     //     if v[i] <= min {
@@ -47,7 +111,7 @@ pub fn position_min<T: SimdElem>(v: &mut Vec<T>) -> usize {
     // return pos;
 
     let mut min_pos = [0; 2];
-    let mut min_val = [T::MAX; 2];
+    let mut min_val = [S::MAX; 2];
     for (i, &[l, r]) in v.as_chunks::<2>().0.iter().enumerate() {
         if l < min_val[0] {
             min_val[0] = l;
@@ -72,72 +136,21 @@ pub fn position_min<T: SimdElem>(v: &mut Vec<T>) -> usize {
     }
 }
 
-/// Trait for element types supported by `SimdQuickHeap`.
-///
-/// Implemented for `i32`, `u32`, `i64`, and `u64`.
-pub trait SimdElem: Elem + Copy + 'static {
-    /// Number of SIMD lanes.
-    /// Without AVX-512: 8 for 32-bit types, 4 for 64-bit types.
-    /// With AVX-512:   16 for 32-bit types, 8 for 64-bit types.
-    const L: usize;
-    /// Maximum value for this type.
-    const MAX: Self;
-    /// The SIMD vector type (e.g. `i32x16`/`i32x8` or `i64x8`/`i64x4`).
-    type Simd: Copy;
-
-    fn splat(v: Self) -> Self::Simd;
-    /// # Safety
-    /// `slice` must have at least `L` elements accessible (may read past `slice.len()`).
-    unsafe fn simd_from_slice(slice: &[Self]) -> Self::Simd;
-    /// Returns bitmask where bit `i` = `a[i] <= b[i]`.
-    fn simd_le_bitmask(a: Self::Simd, b: Self::Simd) -> u64;
-    /// Returns a SIMD register `[0, 1, 2, ..., L-1]`.
-    fn lane_indices() -> Self::Simd;
-    fn from_usize(n: usize) -> Self;
-    fn wrapping_add_one(self) -> Self;
-
-    /// Partition all `L` lanes of `vals` against `threshold`.
-    /// Lanes `>= threshold` go to `v`, lanes `< threshold` go to `w`.
-    /// # Safety
-    /// `v` and `w` must have at least `L` elements of capacity beyond their current write index.
-    unsafe fn partition_fast(
-        vals: Self::Simd,
-        threshold: Self::Simd,
-        v: &mut [Self],
-        v_idx: &mut usize,
-        w: &mut [Self],
-        w_idx: &mut usize,
-    );
-
-    /// Like `partition_fast`, but only the first `len` lanes are in range.
-    /// # Safety
-    /// Same capacity requirements as `partition_fast`.
-    unsafe fn partition_slow(
-        vals: Self::Simd,
-        len: Self::Simd,
-        threshold: Self::Simd,
-        v: &mut [Self],
-        v_idx: &mut usize,
-        w: &mut [Self],
-        w_idx: &mut usize,
-    );
-}
-
 macro_rules! impl_simd_elem_32 {
     ($t:ty, $simd:ty) => {
-        impl SimdElem for $t {
+        impl SimdElem<$t> for Avx2 {
             const L: usize = 8;
-            const MAX: Self = <$t>::MAX;
+            const MAX: $t = <$t>::MAX;
             type Simd = $simd;
 
             #[inline(always)]
-            fn splat(v: Self) -> $simd {
+            fn splat(v: $t) -> $simd {
                 <$simd>::splat(v)
             }
 
             #[inline(always)]
-            unsafe fn simd_from_slice(slice: &[Self]) -> $simd {
-                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [Self; 8])) }
+            unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
+                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [$t; 8])) }
             }
 
             #[inline(always)]
@@ -152,22 +165,22 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            fn from_usize(n: usize) -> Self {
+            fn from_usize(n: usize) -> $t {
                 n as $t
             }
 
             #[inline(always)]
-            fn wrapping_add_one(self) -> Self {
-                self.wrapping_add(1)
+            fn wrapping_add_one(t: $t) -> $t {
+                t.wrapping_add(1)
             }
 
             #[inline(always)]
             unsafe fn partition_fast(
                 vals: $simd,
                 threshold: $simd,
-                v: &mut [Self],
+                v: &mut [$t],
                 v_idx: &mut usize,
-                w: &mut [Self],
+                w: &mut [$t],
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -203,9 +216,9 @@ macro_rules! impl_simd_elem_32 {
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut [Self],
+                v: &mut [$t],
                 v_idx: &mut usize,
-                w: &mut [Self],
+                w: &mut [$t],
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -215,7 +228,9 @@ macro_rules! impl_simd_elem_32 {
 
                     let mut small = vals.simd_lt(threshold).to_bitmask() as u8;
                     let mut large = vals.simd_ge(threshold).to_bitmask() as u8;
-                    let in_range = len.simd_gt(Self::lane_indices()).to_bitmask() as u8;
+                    let in_range = len
+                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                        .to_bitmask() as u8;
                     small &= in_range;
                     large &= in_range;
 
@@ -243,19 +258,19 @@ macro_rules! impl_simd_elem_32 {
 
 macro_rules! impl_simd_elem_64 {
     ($t:ty, $simd:ty) => {
-        impl SimdElem for $t {
+        impl SimdElem<$t> for Avx2 {
             const L: usize = 4;
-            const MAX: Self = <$t>::MAX;
+            const MAX: $t = <$t>::MAX;
             type Simd = $simd;
 
             #[inline(always)]
-            fn splat(v: Self) -> $simd {
+            fn splat(v: $t) -> $simd {
                 <$simd>::splat(v)
             }
 
             #[inline(always)]
-            unsafe fn simd_from_slice(slice: &[Self]) -> $simd {
-                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [Self; 4])) }
+            unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
+                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [$t; 4])) }
             }
 
             #[inline(always)]
@@ -270,22 +285,22 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            fn from_usize(n: usize) -> Self {
+            fn from_usize(n: usize) -> $t {
                 n as $t
             }
 
             #[inline(always)]
-            fn wrapping_add_one(self) -> Self {
-                self.wrapping_add(1)
+            fn wrapping_add_one(t: $t) -> $t {
+                t.wrapping_add(1)
             }
 
             #[inline(always)]
             unsafe fn partition_fast(
                 vals: $simd,
                 threshold: $simd,
-                v: &mut [Self],
+                v: &mut [$t],
                 v_idx: &mut usize,
-                w: &mut [Self],
+                w: &mut [$t],
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -322,9 +337,9 @@ macro_rules! impl_simd_elem_64 {
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut [Self],
+                v: &mut [$t],
                 v_idx: &mut usize,
-                w: &mut [Self],
+                w: &mut [$t],
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -334,7 +349,10 @@ macro_rules! impl_simd_elem_64 {
 
                     let mut small = (vals.simd_lt(threshold).to_bitmask() as u8) & 0xF;
                     let mut large = (vals.simd_ge(threshold).to_bitmask() as u8) & 0xF;
-                    let in_range = (len.simd_gt(Self::lane_indices()).to_bitmask() as u8) & 0xF;
+                    let in_range = (len
+                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                        .to_bitmask() as u8)
+                        & 0xF;
                     small &= in_range;
                     large &= in_range;
 
@@ -361,29 +379,22 @@ macro_rules! impl_simd_elem_64 {
     };
 }
 
-#[cfg(not(feature = "avx512"))]
-macro_rules! impl_simd_elem_32_avx2 {
-    ($t:ty, $simd:ty) => {
-        impl_simd_elem_32!($t, $simd);
-    };
-}
-
 #[cfg(feature = "avx512")]
 macro_rules! impl_simd_elem_32_avx512 {
     ($t:ty, $simd:ty) => {
-        impl SimdElem for $t {
+        impl SimdElem<$t> for Avx512 {
             const L: usize = 16;
-            const MAX: Self = <$t>::MAX;
+            const MAX: $t = <$t>::MAX;
             type Simd = $simd;
 
             #[inline(always)]
-            fn splat(v: Self) -> $simd {
+            fn splat(v: $t) -> $simd {
                 <$simd>::splat(v)
             }
 
             #[inline(always)]
-            unsafe fn simd_from_slice(slice: &[Self]) -> $simd {
-                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [Self; 16])) }
+            unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
+                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [$t; 16])) }
             }
 
             #[inline(always)]
@@ -398,22 +409,22 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            fn from_usize(n: usize) -> Self {
+            fn from_usize(n: usize) -> $t {
                 n as $t
             }
 
             #[inline(always)]
-            fn wrapping_add_one(self) -> Self {
-                self.wrapping_add(1)
+            fn wrapping_add_one(t: $t) -> $t {
+                t.wrapping_add(1)
             }
 
             #[inline(always)]
             unsafe fn partition_fast(
                 vals: $simd,
                 threshold: $simd,
-                v: &mut [Self],
+                v: &mut [$t],
                 v_idx: &mut usize,
-                w: &mut [Self],
+                w: &mut [$t],
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -446,9 +457,9 @@ macro_rules! impl_simd_elem_32_avx512 {
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut [Self],
+                v: &mut [$t],
                 v_idx: &mut usize,
-                w: &mut [Self],
+                w: &mut [$t],
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -456,7 +467,9 @@ macro_rules! impl_simd_elem_32_avx512 {
                     use std::mem::transmute;
                     use std::simd::cmp::SimdPartialOrd;
 
-                    let in_range: u16 = len.simd_gt(Self::lane_indices()).to_bitmask() as u16;
+                    let in_range: u16 = len
+                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                        .to_bitmask() as u16;
                     let small: u16 = vals.simd_lt(threshold).to_bitmask() as u16 & in_range;
                     let large: u16 = vals.simd_ge(threshold).to_bitmask() as u16 & in_range;
                     let vals: __m512i = transmute(vals);
@@ -483,19 +496,19 @@ macro_rules! impl_simd_elem_32_avx512 {
 #[cfg(feature = "avx512")]
 macro_rules! impl_simd_elem_64_avx512 {
     ($t:ty, $simd:ty) => {
-        impl SimdElem for $t {
+        impl SimdElem<$t> for Avx512 {
             const L: usize = 8;
-            const MAX: Self = <$t>::MAX;
+            const MAX: $t = <$t>::MAX;
             type Simd = $simd;
 
             #[inline(always)]
-            fn splat(v: Self) -> $simd {
+            fn splat(v: $t) -> $simd {
                 <$simd>::splat(v)
             }
 
             #[inline(always)]
-            unsafe fn simd_from_slice(slice: &[Self]) -> $simd {
-                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [Self; 8])) }
+            unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
+                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [$t; 8])) }
             }
 
             #[inline(always)]
@@ -510,22 +523,22 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            fn from_usize(n: usize) -> Self {
+            fn from_usize(n: usize) -> $t {
                 n as $t
             }
 
             #[inline(always)]
-            fn wrapping_add_one(self) -> Self {
-                self.wrapping_add(1)
+            fn wrapping_add_one(t: $t) -> $t {
+                t.wrapping_add(1)
             }
 
             #[inline(always)]
             unsafe fn partition_fast(
                 vals: $simd,
                 threshold: $simd,
-                v: &mut [Self],
+                v: &mut [$t],
                 v_idx: &mut usize,
-                w: &mut [Self],
+                w: &mut [$t],
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -558,9 +571,9 @@ macro_rules! impl_simd_elem_64_avx512 {
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut [Self],
+                v: &mut [$t],
                 v_idx: &mut usize,
-                w: &mut [Self],
+                w: &mut [$t],
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -568,7 +581,9 @@ macro_rules! impl_simd_elem_64_avx512 {
                     use std::mem::transmute;
                     use std::simd::cmp::SimdPartialOrd;
 
-                    let in_range: u8 = len.simd_gt(Self::lane_indices()).to_bitmask() as u8;
+                    let in_range: u8 = len
+                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                        .to_bitmask() as u8;
                     let small: u8 = vals.simd_lt(threshold).to_bitmask() as u8 & in_range;
                     let large: u8 = vals.simd_ge(threshold).to_bitmask() as u8 & in_range;
                     let vals: __m512i = transmute(vals);
@@ -592,9 +607,7 @@ macro_rules! impl_simd_elem_64_avx512 {
     };
 }
 
-#[cfg(not(feature = "avx512"))]
 impl_simd_elem_32!(i32, std::simd::i32x8);
-#[cfg(not(feature = "avx512"))]
 impl_simd_elem_64!(i64, std::simd::i64x4);
 
 #[cfg(feature = "avx512")]
@@ -604,7 +617,6 @@ impl_simd_elem_64_avx512!(i64, std::simd::i64x8);
 
 /// For each of 256 masks of which elements are different than their predecessor,
 /// a shuffle that sends those new elements to the beginning.
-#[cfg(not(feature = "avx512"))]
 #[rustfmt::skip]
 pub(crate) const UNIQSHUF32: [[i32; 8]; 256] = unsafe {transmute([
 0,1,2,3,4,5,6,7,
@@ -866,7 +878,6 @@ pub(crate) const UNIQSHUF32: [[i32; 8]; 256] = unsafe {transmute([
 ])};
 
 /// Masks for 32-bit shuffle instructions on 64-bit data.
-#[cfg(not(feature = "avx512"))]
 #[rustfmt::skip]
 pub(crate) const UNIQSHUF64: [[i32; 8]; 16] = unsafe {
 transmute([
