@@ -56,6 +56,7 @@ type_order = [
     "CustomDaryHeap",
     "SequenceHeap",
     "S3qHeap",
+    "ScalarQuickHeap",
     "SimdQuickHeap",
 ]
 
@@ -69,6 +70,9 @@ type_colour["SimdQuickHeap"] = "black"
 
 is_categorical = "graph" in df.columns
 
+# TODO: Drop this
+df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else 1)
+df["nanos"] /= df["normalization"]
 
 if is_categorical:
     # Shorten graph input names: "input/GER_graph.gr" -> "GER"
@@ -97,7 +101,7 @@ if is_categorical:
 
     all_types = df["type"].unique()
 
-    workloads = sorted(df["workload"].unique())
+    workloads = df["workload"].unique()
     graph_names = sorted(df["graph_name"].unique())
     methods = list(df["name"].unique())  # already sorted by type/name above
 
@@ -188,12 +192,16 @@ else:
 
     if "push_comparisons" not in df.columns:
         df["push_comparisons"] = 0
+    df["comparisons"] /= df["normalization"]
+    df["push_comparisons"] /= df["normalization"]
     df["pop_comparisons"] = df["comparisons"] - df["push_comparisons"]
     metric_cols = [m for m, _ in metrics] + [
         "comparisons",
         "push_comparisons",
         "pop_comparisons",
     ]
+
+    workloads = df["workload"].unique()
 
     if df["nanos"].max() == 0:
         metrics = [
@@ -212,8 +220,7 @@ else:
     for m in metric_cols:
         df[m] = df[m] / ops
 
-    workloads = ["HeapSort", "ConstantSize", "Decreasing"]
-    elems = ["i32", "i64"]
+    elems = df["elem"].unique()
 
     all_types = df["type"].unique()
     all_names_by_type = {
@@ -261,11 +268,11 @@ else:
                             ax=axs[j][i],
                             title=workload if j == 0 else None,
                             label=name if i == 0 and j == 0 else None,
-                            color=c,
+                            # color=c,
                             ls=style_for_type(tp),
                             lw=lw,
                         )
-                        # c = axs[j][i].get_lines()[-1].get_color()
+                        c = axs[j][i].get_lines()[-1].get_color()
                         if metric == "comparisons":
                             ngroup.plot(
                                 kind="line",

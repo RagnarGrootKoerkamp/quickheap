@@ -132,6 +132,9 @@ fn get<T: Elem>(rng: &mut fastrand::Rng) -> T {
 }
 
 pub trait Workload {
+    /// The default is one push-pop pair per `n`.
+    const NORMALIZATION: u64 = 1;
+    /// n is the maximum size of the data structure.
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce();
 }
 
@@ -185,6 +188,7 @@ impl Workload for ConstantSize {
 pub struct MonotoneWiggle;
 
 impl Workload for MonotoneWiggle {
+    const NORMALIZATION: u64 = 3;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
         let mut rng = fastrand::Rng::new();
@@ -211,6 +215,7 @@ impl Workload for MonotoneWiggle {
 pub struct Wiggle;
 
 impl Workload for Wiggle {
+    const NORMALIZATION: u64 = 3;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
         let mut rng = fastrand::Rng::new();
