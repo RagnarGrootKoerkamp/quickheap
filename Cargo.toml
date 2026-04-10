@@ -13,8 +13,8 @@ authors = ["Ragnar Groot Koerkamp"]
 description = "A SIMD-accelerated priority queue"
 
 [features]
-# default = ["avx2", "ffi", "perf"]
-default = []
+default = ["avx2", "ffi", "perf"]
+# default = []
 
 # Enable SimdQuickHeap with AVX2 backend
 avx2 = []
