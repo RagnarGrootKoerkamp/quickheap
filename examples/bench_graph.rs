@@ -53,6 +53,8 @@ struct Result {
     heap: &'static str,
     graph: String,
     workload: &'static str,
+    vertices: usize,
+    edges: usize,
     repeat: usize,
     nanos: f64,
 }
@@ -78,6 +80,8 @@ fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u
             heap: type_name::<H>(),
             graph: instance.to_string(),
             workload: type_name::<W>(),
+            vertices: graph.num_vertices(),
+            edges: graph.num_edges(),
             repeat,
             nanos,
         };
