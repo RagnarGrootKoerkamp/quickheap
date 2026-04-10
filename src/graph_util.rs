@@ -92,51 +92,30 @@ pub fn construct_graph_from_dimacs_file(path: &str) -> Graph<u32> {
     let mut problem_defined: bool = false;
 
     for line in file_reader.lines() {
-        match line {
-            Ok(str) => {
-                let parts: Vec<&str> = str.split(" ").collect();
+        let line = line.unwrap();
+        let parts: Vec<&str> = line.split(" ").collect();
 
-                match parts[0] {
-                    "c" => {
-                        continue;
-                    }
-                    "p" => {
-                        assert!(parts.len() == 4);
-                        assert!(parts[1] == "sp");
-                        let error_v = format!(
-                            "Someting went wrong parsing the number of vertices {}",
-                            parts[2]
-                        );
-                        let error_e = format!(
-                            "Someting went wrong parsing the number of edges {}",
-                            parts[3]
-                        );
-
-                        num_vertices = parts[2].parse::<usize>().expect(&error_v);
-                        parts[3].parse::<usize>().expect(&error_e);
-                        problem_defined = true;
-                    }
-                    "a" => {
-                        assert!(problem_defined);
-                        assert!(parts.len() == 4);
-
-                        let error_from =
-                            format!("Someting went wrong parsing the tail {}", parts[1]);
-
-                        let error_to = format!("Someting went wrong parsing the head {}", parts[2]);
-                        let error_weight =
-                            format!("Someting went wrong parsing the weight {}", parts[3]);
-
-                        let from = parts[2].parse::<usize>().expect(&error_from);
-                        let to = parts[3].parse::<usize>().expect(&error_to);
-                        let weight = parts[3].parse::<u32>().expect(&error_weight);
-
-                        edges.push(Edge { from, to, weight });
-                    }
-                    _ => println!("Unknown match arm: {}", parts[0]),
-                }
+        match parts[0] {
+            "c" => {
+                continue;
             }
-            Err(e) => eprintln!("Someting went wrong when reading the file. {e}"),
+            "p" => {
+                assert!(parts.len() == 4);
+                assert!(parts[1] == "sp");
+                num_vertices = parts[2].parse::<usize>().unwrap();
+                parts[3].parse::<usize>().unwrap();
+                problem_defined = true;
+            }
+            "a" => {
+                assert!(problem_defined);
+                assert!(parts.len() == 4);
+                let from = parts[1].parse::<usize>().unwrap() - 1;
+                let to = parts[2].parse::<usize>().unwrap() - 1;
+                let weight = parts[3].parse::<u32>().unwrap();
+
+                edges.push(Edge { from, to, weight });
+            }
+            _ => panic!("Unknown match arm: {}", parts[0]),
         }
     }
 
