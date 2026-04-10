@@ -7,6 +7,7 @@ use std::hint::black_box;
 pub trait Elem: Ord + std::fmt::Debug + Clone + Copy + Radix + 'static {
     fn get(&self) -> u64;
     fn from(x: u64) -> Self;
+    fn try_from(x: u64) -> Self;
     fn stride() -> u64;
 }
 
@@ -23,11 +24,15 @@ macro_rules! impl_elem {
                 x as $t
             }
             #[inline(always)]
+            fn try_from(x: u64) -> Self {
+                TryFrom::try_from(x).unwrap()
+            }
+            #[inline(always)]
             fn stride() -> u64 {
                 if <$t>::BITS == 32 {
-                    1000u64
+                    1u64 << 24
                 } else {
-                    1u64 << 32
+                    1u64 << 48
                 }
             }
         }
@@ -109,6 +114,12 @@ impl<T: Elem> Elem for CountComparisons<T> {
     fn from(x: u64) -> Self {
         Self(T::from(x))
     }
+
+    #[inline(always)]
+    fn try_from(x: u64) -> Self {
+        Self(T::try_from(x))
+    }
+
     #[inline(always)]
     fn stride() -> u64 {
         T::stride()
@@ -161,7 +172,7 @@ impl Workload for ConstantSize {
         move || {
             for _ in 0..n {
                 let l = h.pop().unwrap().get();
-                h.push(T::from(rng.u64(l..l + stride)));
+                h.push(T::try_from(l + rng.u64(0..stride)));
             }
             black_box(h);
         }
@@ -181,13 +192,13 @@ impl Workload for MonotoneWiggle {
         move || {
             let mut l = 0;
             for _ in 0..n {
-                h.push(T::from(l + rng.u64(0..stride)));
+                h.push(T::try_from(l + rng.u64(0..stride)));
                 l = h.pop().unwrap().get();
-                h.push(T::from(l + rng.u64(0..stride)));
+                h.push(T::try_from(l + rng.u64(0..stride)));
             }
             for _ in 0..n {
                 l = h.pop().unwrap().get();
-                h.push(T::from(l + rng.u64(0..stride)));
+                h.push(T::try_from(l + rng.u64(0..stride)));
                 h.pop().unwrap().get();
             }
             black_box(h);
