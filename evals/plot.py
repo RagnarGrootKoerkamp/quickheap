@@ -101,9 +101,12 @@ if is_categorical:
     graph_names = sorted(df["graph_name"].unique())
     methods = list(df["name"].unique())  # already sorted by type/name above
 
-    hatches = ["", "///", "xxx", "..."]
+    # hatches = ["", "//", "--", "xx", "++", "\\\\", "oo", ".."]
+    hatches = [""]
     graph_hatch = {gn: hatches[k % len(hatches)] for k, gn in enumerate(graph_names)}
-    graph_alpha = {gn: (1.0 if k == 0 else 0.6) for k, gn in enumerate(graph_names)}
+    graph_alpha = {
+        gn: (1.0 if k == 0 or k == 5 else 0.5) for k, gn in enumerate(graph_names)
+    }
 
     n_methods = len(methods)
     bar_width = 0.8 / len(graph_names)
@@ -143,7 +146,12 @@ if is_categorical:
 
         ax.axhline(1.0, color="gray", ls="--", lw=0.8)
         ax.set_yscale("log")
-        ax.yaxis.set_major_locator(ticker.LinearLocator(1, numticks=5))
+        ymax = df[df["workload"] == workload]["rel"].max()
+        # tick_vals = [round(1.0 + i * 0.1, 1) for i in range(int((ymax - 1.0) / 0.1) + 2)]
+        # ax.yaxis.set_major_locator(ticker.FixedLocator(tick_vals))
+        ax.yaxis.set_major_locator(
+            ticker.LogLocator(base=2, subs=(1.0, 1.2, 1.5), numticks=10)
+        )
         ax.yaxis.set_minor_locator(ticker.NullLocator())
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
         ax.set_ylabel("time (ms)")
