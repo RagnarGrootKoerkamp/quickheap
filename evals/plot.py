@@ -284,16 +284,19 @@ elif benchname == "comparisons":
 
     ax.set_ylabel(r"comparisons / (push∘pop) / lg n")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
-    ax.legend(handles=legend_handles, loc="upper left", fontsize=8, ncol=2)
 
-    # Coloured method legend entries (one per method)
+    # Coloured method legend (top-left)
     method_handles = [
         mpatches.Patch(facecolor=bar_colors[mi], label=method)
         for mi, method in enumerate(methods)
     ]
-    ax.legend(
-        handles=legend_handles + method_handles, loc="upper left", fontsize=8, ncol=2
+    legend_methods = ax.legend(
+        handles=method_handles, loc="upper left", fontsize=8, ncol=2
     )
+    ax.add_artist(legend_methods)
+
+    # Push / pop legend (top-right)
+    ax.legend(handles=legend_handles, loc="upper right", fontsize=8, ncol=1)
 
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
