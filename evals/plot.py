@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
@@ -174,6 +175,129 @@ if is_categorical:
     fig.tight_layout()
     fig.savefig(f"plot-{benchname}.svg", bbox_inches="tight")
     fig.savefig(f"plot-{benchname}.png", bbox_inches="tight", dpi=300)
+
+elif benchname == "comparisons":
+    n_max = df["n"].max()
+    df = df[df["n"] == n_max].copy()
+
+    df["push_comparisons"] /= df["normalization"]
+    df["pop_comparisons"] = (df["comparisons"] / df["normalization"]) - df[
+        "push_comparisons"
+    ]
+    ops = n_max * np.log2(n_max)
+
+    df = (
+        df.groupby(["elem", "name", "type", "workload"])[
+            ["push_comparisons", "pop_comparisons"]
+        ]
+        .median()
+        .reset_index()
+    )
+    df["push_comparisons"] /= ops
+    df["pop_comparisons"] /= ops
+
+    df["order"] = pd.Categorical(df["type"], categories=type_order, ordered=True)
+    df = df.sort_values(["order", "name"])
+
+    workloads = list(df["workload"].unique())
+    elems = ["i32", "i64"]
+    methods = list(df["name"].unique())
+
+    n_methods = len(methods)
+    n_pairs = len(workloads)  # 4 workload pairs per method
+    bars_per_pair = len(elems)  # 2 (i32 + i64)
+    bar_width = 0.10
+    pair_spacing = bar_width * bars_per_pair + 0.03  # width of one pair + gap
+
+    # Centre all pairs around x=0 offset per method
+    total_width = pair_spacing * n_pairs - 0.04
+    pair_starts = np.array([i * pair_spacing - total_width / 2 for i in range(n_pairs)])
+
+    method_type = {m: df[df["name"] == m]["type"].iloc[0] for m in methods}
+    bar_colors = [type_colour.get(method_type[m], "gray") for m in methods]
+
+    # i32: solid fill; i64: hatched
+    elem_hatch = {"i32": "", "i64": "///"}
+    pop_alpha = 0.45
+
+    plt.close("all")
+    fig, ax = plt.subplots(figsize=(max(10, n_methods * 1.2), 5))
+    x = np.arange(n_methods)
+
+    legend_handles = []
+    # Track bar height at first method per (workload, elem) for label placement
+    bar_height_0 = {}   # (wi, elem) -> height at first method
+
+    for wi, workload in enumerate(workloads):
+        wdf = df[df["workload"] == workload]
+        for ei, elem in enumerate(elems):
+            edf = wdf[wdf["elem"] == elem].set_index("name")
+            push = [
+                edf.loc[m, "push_comparisons"] if m in edf.index else 0.0
+                for m in methods
+            ]
+            pop = [
+                edf.loc[m, "pop_comparisons"] if m in edf.index else 0.0
+                for m in methods
+            ]
+            offset = pair_starts[wi] + (ei - (bars_per_pair - 1) / 2) * bar_width
+            ax.bar(
+                x + offset,
+                push,
+                bar_width,
+                color=bar_colors,
+                hatch=elem_hatch[elem],
+                edgecolor="white",
+            )
+            ax.bar(
+                x + offset,
+                pop,
+                bar_width,
+                bottom=push,
+                color=bar_colors,
+                hatch=elem_hatch[elem],
+                edgecolor="white",
+                alpha=pop_alpha,
+            )
+            bar_height_0[(wi, elem)] = push[0] + pop[0]
+            if wi == 0:
+                if wi == 0 and ei == 0:
+                    legend_handles = [
+                        mpatches.Patch(facecolor="gray", edgecolor="white", label="push"),
+                        mpatches.Patch(facecolor="gray", alpha=pop_alpha, edgecolor="white", label="pop"),
+                    ]
+
+    y_global_max = max(bar_height_0.values())
+    y_small = y_global_max * 0.06   # gap above bars → elem labels
+    y_lift  = y_global_max * 0.22   # gap above bars → workload labels
+
+    # i32/i64 labels all at the same height (global max + small gap)
+    y_elem = y_global_max + y_small
+    for wi in range(len(workloads)):
+        for ei, elem in enumerate(elems):
+            bx = pair_starts[wi] + (ei - (bars_per_pair - 1) / 2) * bar_width
+            ax.text(bx, y_elem, elem,
+                    ha="center", va="bottom", fontsize=6, rotation=90)
+
+    # Workload labels all at the same height, centred between each pair
+    y_workload = y_global_max + y_lift
+    pair_centres = pair_starts  # true midpoint between the two bars
+    for workload, cx in zip(workloads, pair_centres):
+        ax.text(cx, y_workload, workload,
+                ha="center", va="bottom", fontsize=7, rotation=90)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(methods, rotation=35, ha="right", fontsize=8)
+    for tick, method in zip(ax.get_xticklabels(), methods):
+        tick.set_color(type_colour.get(method_type[method], "black"))
+
+    ax.set_ylabel(r"comparisons / (push∘pop) / lg n")
+    ax.grid(axis="y", linestyle="-", alpha=0.4)
+    ax.legend(handles=legend_handles, loc="upper left", fontsize=8, ncol=2)
+
+    fig.tight_layout()
+    fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)
 
 else:
     # Take median over repeats, then normalize each metric by n*log2(n)
