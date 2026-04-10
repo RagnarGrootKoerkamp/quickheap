@@ -223,17 +223,39 @@ elif benchname == "comparisons":
     method_type = {m: df[df["name"] == m]["type"].iloc[0] for m in methods}
     bar_colors = [type_colour.get(method_type[m], "gray") for m in methods]
 
+    # Build per-method offsets with extra gaps:
+    #   - a small gap before the first ScalarQuickHeap bar
+    #   - another small gap between the 3rd and 4th ScalarQuickHeap bar
+    sqh_gap = bar_width * 0.3  # gap size
+    sqh_indices = [
+        mi for mi, m in enumerate(methods) if method_type[m] == "ScalarQuickHeap"
+    ]
+    sqh_split = (
+        sqh_indices[3] if len(sqh_indices) >= 4 else None
+    )  # index of 4th SQH bar
+
+    offsets = []
+    extra = 0.0
+    for mi in range(n_methods):
+        if sqh_indices and mi == sqh_indices[0]:
+            extra += sqh_gap
+        if sqh_split is not None and mi == sqh_split:
+            extra += sqh_gap
+        offsets.append(mi * bar_width + extra)
+    total = offsets[-1] + bar_width
+    offsets = [o - total / 2 + bar_width / 2 for o in offsets]
+
     pop_alpha = 0.45
 
     plt.close("all")
-    fig, ax = plt.subplots(figsize=(max(8, n_workloads * n_methods * bar_width * 3), 5))
+    fig, ax = plt.subplots(figsize=(max(8, n_workloads * (total + 0.3) * 1.5), 5))
     x = np.arange(n_workloads)  # one tick per workload group
 
     legend_handles = [
-        mpatches.Patch(facecolor="gray", edgecolor="white", label="push"),
         mpatches.Patch(
             facecolor="gray", alpha=pop_alpha, edgecolor="white", label="pop"
         ),
+        mpatches.Patch(facecolor="gray", edgecolor="white", label="push"),
     ]
 
     for mi, method in enumerate(methods):
@@ -244,7 +266,7 @@ elif benchname == "comparisons":
         pop = [
             mdf.loc[w, "pop_comparisons"] if w in mdf.index else 0.0 for w in workloads
         ]
-        offset = (mi - (n_methods - 1) / 2) * bar_width
+        offset = offsets[mi]
         color = bar_colors[mi]
         ax.bar(x + offset, push, bar_width, color=color, edgecolor="white")
         ax.bar(
