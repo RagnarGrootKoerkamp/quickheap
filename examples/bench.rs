@@ -287,7 +287,7 @@ where
             // TODO: Figure out if we can count comparisons here.
             x if x == TypeId::of::<i32>() => {
                 bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
-                bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(21));
+                bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
             }
             x if x == TypeId::of::<i64>() => {
                 bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
