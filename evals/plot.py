@@ -31,12 +31,16 @@ df["name"] = df["name"].str.replace(r"<T><", "<T, ", regex=True)
 df["name"] = df["name"].str.replace(r"<\(\), T", "<T", regex=True)
 df["name"] = df["name"].str.replace(r", \(\)", "", regex=True)
 df["name"] = df["name"].str.replace(r", 16, 1", "", regex=True)
+df["name"] = df["name"].str.replace(r"Generic", "", regex=True)
 df["type"] = df["name"].str.split("<").str[0]
 
 # clean up ScalarQuickHeap for comparisons
 df["name"] = df["name"].str.replace("Search::", "", regex=False)
 df["name"] = df["name"].str.replace(", false", "", regex=False)
 df["name"] = df["name"].str.replace("1, true", "∞", regex=False)
+df["name"] = df["name"].str.replace(
+    "(.), (BinarySearch|LinearScan)", "\\2, \\1", regex=True
+)
 
 # Shorten workload names
 df["workload"] = (
@@ -56,10 +60,13 @@ df["name"] = df["name"].str.replace(r"<true>", "", regex=True)
 # Sort by type
 type_order = [
     "BinaryHeap",
-    "CustomBinaryHeap",
     "RadixHeapMap",
     "DaryHeapOrx",
-    "CustomDaryHeap",
+    # "CustomBinaryHeap",
+    # "CustomDaryHeap",
+    "PairingHeap",
+    "FibonacciHeap",
+    "WeakHeap",
     "SequenceHeap",
     "S3qHeap",
     "ScalarQuickHeap",
@@ -206,66 +213,65 @@ elif benchname == "comparisons":
 
     df = df[df["elem"] == "i64"]
 
-    methods = list(df["name"].unique())
-
     df["order"] = pd.Categorical(df["type"], categories=type_order, ordered=True)
     df = df.sort_values(["order", "name"])
+    methods = list(df["name"].unique())
 
     n_methods = len(methods)
-    n_pairs = len(workloads)  # one bar per workload per method
-    bar_width = 0.13
-    pair_spacing = bar_width + 0.04  # width of one bar + gap
-
-    # Centre all bars around x=0 offset per method
-    total_width = pair_spacing * n_pairs - 0.04
-    bar_starts = np.array([i * pair_spacing - total_width / 2 for i in range(n_pairs)])
-
+    n_workloads = len(workloads)
+    bar_width = 0.7 / n_methods  # fill most of each group slot
     method_type = {m: df[df["name"] == m]["type"].iloc[0] for m in methods}
     bar_colors = [type_colour.get(method_type[m], "gray") for m in methods]
 
     pop_alpha = 0.45
 
     plt.close("all")
-    fig, ax = plt.subplots(figsize=(max(10, n_methods * 1.2), 5))
-    x = np.arange(n_methods)
+    fig, ax = plt.subplots(figsize=(max(8, n_workloads * n_methods * bar_width * 3), 5))
+    x = np.arange(n_workloads)  # one tick per workload group
 
     legend_handles = [
         mpatches.Patch(facecolor="gray", edgecolor="white", label="push"),
-        mpatches.Patch(facecolor="gray", alpha=pop_alpha, edgecolor="white", label="pop"),
+        mpatches.Patch(
+            facecolor="gray", alpha=pop_alpha, edgecolor="white", label="pop"
+        ),
     ]
-    # Track bar height at first method per workload for label placement
-    bar_height_0 = {}  # wi -> height at first method
 
-    for wi, workload in enumerate(workloads):
-        wdf = df[df["workload"] == workload].set_index("name")
-        push = [wdf.loc[m, "push_comparisons"] if m in wdf.index else 0.0 for m in methods]
-        pop = [wdf.loc[m, "pop_comparisons"] if m in wdf.index else 0.0 for m in methods]
-        offset = bar_starts[wi]
-        ax.bar(x + offset, push, bar_width, color=bar_colors, edgecolor="white")
+    for mi, method in enumerate(methods):
+        mdf = df[df["name"] == method].set_index("workload")
+        push = [
+            mdf.loc[w, "push_comparisons"] if w in mdf.index else 0.0 for w in workloads
+        ]
+        pop = [
+            mdf.loc[w, "pop_comparisons"] if w in mdf.index else 0.0 for w in workloads
+        ]
+        offset = (mi - (n_methods - 1) / 2) * bar_width
+        color = bar_colors[mi]
+        ax.bar(x + offset, push, bar_width, color=color, edgecolor="white")
         ax.bar(
-            x + offset, pop, bar_width, bottom=push,
-            color=bar_colors, edgecolor="white", alpha=pop_alpha,
-        )
-        bar_height_0[wi] = push[0] + pop[0]
-
-    y_global_max = max(bar_height_0.values())
-    y_lift = y_global_max * 0.08  # gap above bars → workload labels
-
-    # Workload labels all at the same height, centred over each bar
-    y_workload = y_global_max + y_lift
-    for workload, bx in zip(workloads, bar_starts):
-        ax.text(
-            bx, y_workload, workload, ha="center", va="bottom", fontsize=7, rotation=90
+            x + offset,
+            pop,
+            bar_width,
+            bottom=push,
+            color=color,
+            edgecolor="white",
+            alpha=pop_alpha,
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(methods, rotation=15, ha="right", fontsize=8)
-    for tick, method in zip(ax.get_xticklabels(), methods):
-        tick.set_color(type_colour.get(method_type[method], "black"))
+    ax.set_xticklabels(workloads, rotation=15, ha="right", fontsize=9)
 
     ax.set_ylabel(r"comparisons / (push∘pop) / lg n")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
     ax.legend(handles=legend_handles, loc="upper left", fontsize=8, ncol=2)
+
+    # Coloured method legend entries (one per method)
+    method_handles = [
+        mpatches.Patch(facecolor=bar_colors[mi], label=method)
+        for mi, method in enumerate(methods)
+    ]
+    ax.legend(
+        handles=legend_handles + method_handles, loc="upper left", fontsize=8, ncol=2
+    )
 
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
