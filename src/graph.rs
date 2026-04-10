@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use itertools::izip;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Edge<WeightT: Debug + Copy> {
     pub from: usize,
@@ -11,25 +13,23 @@ pub struct Graph<WeightT: Copy + Debug> {
     num_vertices: usize,
     num_edges: usize,
     first_out: Vec<usize>,
-    heads: Vec<usize>,
-    tails: Vec<usize>,
-    weights: Vec<WeightT>,
+    edges: Vec<Edge<WeightT>>,
 }
 
 impl<WeightT: Copy + Debug> Graph<WeightT> {
     pub fn new(
         first_out: Vec<usize>,
-        heads: Vec<usize>,
-        tails: Vec<usize>,
+        to: Vec<usize>,
+        from: Vec<usize>,
         weights: Vec<WeightT>,
     ) -> Self {
         Self {
             num_vertices: first_out.len() - 1,
-            num_edges: heads.len(),
-            weights,
+            num_edges: to.len(),
             first_out,
-            heads,
-            tails,
+            edges: izip!(from, to, weights)
+                .map(|(from, to, weight)| Edge { from, to, weight })
+                .collect(),
         }
     }
 
@@ -42,7 +42,7 @@ impl<WeightT: Copy + Debug> Graph<WeightT> {
     }
 
     pub fn weight(&self, e: usize) -> WeightT {
-        self.weights[e].clone()
+        self.edges[e].weight
     }
 
     pub fn degree(&self, v: usize) -> usize {
@@ -55,14 +55,19 @@ impl<WeightT: Copy + Debug> Graph<WeightT> {
         self.first_out[v]
     }
 
-    pub fn head(&self, e: usize) -> usize {
+    pub fn to(&self, e: usize) -> usize {
         debug_assert!(e < self.num_edges);
-        self.heads[e]
+        self.edges[e].to
     }
 
-    pub fn tail(&self, e: usize) -> usize {
+    pub fn from(&self, e: usize) -> usize {
         debug_assert!(e < self.num_edges);
-        self.tails[e]
+        self.edges[e].from
+    }
+
+    pub fn edge(&self, e: usize) -> Edge<WeightT> {
+        debug_assert!(e < self.num_edges);
+        self.edges[e]
     }
 
     pub fn print(&self) {
@@ -70,7 +75,7 @@ impl<WeightT: Copy + Debug> Graph<WeightT> {
         for v in 0..self.num_vertices {
             let deg = self.degree(v);
             for _ in 0..deg {
-                let head = self.head(curr_edge);
+                let head = self.to(curr_edge);
                 let weight = self.weight(curr_edge);
                 curr_edge += 1;
                 println!("{} -> {} w = {:?}", v, head, weight);
@@ -78,13 +83,9 @@ impl<WeightT: Copy + Debug> Graph<WeightT> {
         }
     }
 
-    pub fn outgoing_edges(&self, v: usize) -> impl Iterator<Item = Edge<WeightT>> {
+    pub fn outgoing_edges(&self, v: usize) -> impl Iterator<Item = (usize, Edge<WeightT>)> {
         let first_edge = self.first_out[v];
         let last_edge = self.first_out[v + 1];
-        (first_edge..last_edge).map(move |e| Edge {
-            from: v,
-            to: self.heads[e],
-            weight: self.weights[e].clone(),
-        })
+        (first_edge..last_edge).map(move |id| (id, self.edges[id]))
     }
 }

@@ -27,7 +27,7 @@ impl<'g, HeapT: Heap<u64>> DijkstraQuery<'g, HeapT> {
             let (v, dist_to_v) = unpack_id_key_tuple_from_u64(next_elem);
 
             if dist_to_v == self.distances[v] {
-                for Edge { to, weight, .. } in self.graph.outgoing_edges(v) {
+                for (_id, Edge { to, weight, .. }) in self.graph.outgoing_edges(v) {
                     let to_dist = dist_to_v + weight;
                     if to_dist < self.distances[to] {
                         self.distances[to] = to_dist;

@@ -17,7 +17,7 @@ pub fn convert_directed_graph_to_undirected<WeightT: Max + Ord + Copy + Debug>(
     for v in 0..graph.num_vertices() {
         let deg = graph.degree(v);
         for _ in 0..deg {
-            let head = graph.head(current_edge);
+            let head = graph.to(current_edge);
             let weight_ = graph.weight(current_edge);
             edges.push(Edge {
                 from: v,
