@@ -318,5 +318,5 @@ else:
         )
         fig.supxlabel("n = max #elements in heap", y=0.02)
 
-        fig.savefig(f"plot-{benchname}-{metric}.svg", bbox_inches="tight")
-        fig.savefig(f"plot-{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
+        fig.savefig(f"plots/{benchname}-{metric}.svg", bbox_inches="tight")
+        fig.savefig(f"plots/{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
