@@ -23,6 +23,7 @@ pub mod dary_heap;
 pub mod dijkstra;
 pub mod graph;
 pub mod graph_util;
+pub mod original_quickheap;
 pub mod prim;
 
 pub trait Heap<T> {
@@ -36,6 +37,7 @@ pub trait Heap<T> {
 #[cfg(test)]
 mod test {
 
+    use crate::original_quickheap::OriginalQuickHeap;
     #[cfg(feature = "avx512")]
     use crate::simd::Avx512;
 
@@ -86,8 +88,10 @@ mod test {
     fn all_heaps() {
         let n = 100000;
 
-        type T = i64;
+        type T = u32;
         type Base = impls::BinaryHeap<T>;
+
+        TestHeap::<T, Base, OriginalQuickHeap<T>>::run(n);
 
         TestHeap::<T, Base, binary_heap::CustomBinaryHeap<T>>::run(n);
         TestHeap::<T, Base, dary_heap::CustomDaryHeap<T, 2>>::run(n);
@@ -116,9 +120,9 @@ mod test {
         TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 16, 1>>::run(n);
 
         #[cfg(feature = "ffi")]
-        TestHeap::<T, Base, sequence_heap::SequenceHeapI64>::run(n);
+        TestHeap::<T, Base, sequence_heap::SequenceHeapU32>::run(n);
         #[cfg(feature = "ffi")]
-        TestHeap::<T, Base, s3q::S3qHeapI64>::run(n);
+        TestHeap::<T, Base, s3q::S3qHeapU32>::run(n);
 
         TestHeap::<T, Base, impls::DaryHeap<T, 2>>::run(n);
         TestHeap::<T, Base, impls::DaryHeap<T, 4>>::run(n);

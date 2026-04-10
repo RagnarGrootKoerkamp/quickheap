@@ -5,12 +5,12 @@ use clap::Parser;
 use quickheap::simd::Avx512;
 #[cfg(feature = "avx2")]
 use quickheap::simd::{Avx2, SimdElem};
-use quickheap::{impls::NoHeap, scalar_quickheap::Search};
+use quickheap::{impls::NoHeap, original_quickheap::OriginalQuickHeap, scalar_quickheap::Search};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
-    linux::{CacheId, CacheOpId, CacheOpResultId, PerfCounterBuilderLinux},
     AbstractPerfCounter,
+    linux::{CacheId, CacheOpId, CacheOpResultId, PerfCounterBuilderLinux},
 };
 
 use quickheap::workloads::*;
@@ -298,6 +298,7 @@ where
 
     eprintln!("BASELINE");
     bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
+    bench::<T, OriginalQuickHeap<T>>(minpow, maxpow);
 
     eprintln!("DARY");
     // bench::<T, impls::DaryHeap<T, 2>>(minpow, maxpow);

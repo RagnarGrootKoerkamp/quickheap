@@ -33,6 +33,9 @@ macro_rules! impl_elem {
         }
     };
 }
+
+impl_elem!(u8);
+impl_elem!(u16);
 impl_elem!(u32);
 impl_elem!(u64);
 impl_elem!(i32);
