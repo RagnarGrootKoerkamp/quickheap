@@ -3,76 +3,52 @@ use crate::workloads::Elem;
 use crate::Heap;
 use s3q_sys::{
     s3q_i32_pq_empty, s3q_i32_pq_free, s3q_i32_pq_new, s3q_i32_pq_pop, s3q_i32_pq_push,
-    s3q_i64_pq_empty, s3q_i64_pq_free, s3q_i64_pq_new, s3q_i64_pq_pop, s3q_i64_pq_push, S3qI32Pq,
-    S3qI64Pq,
+    s3q_i64_pq_empty, s3q_i64_pq_free, s3q_i64_pq_new, s3q_i64_pq_pop, s3q_i64_pq_push,
+    s3q_u32_pq_empty, s3q_u32_pq_free, s3q_u32_pq_new, s3q_u32_pq_pop, s3q_u32_pq_push,
+    s3q_u64_pq_empty, s3q_u64_pq_free, s3q_u64_pq_new, s3q_u64_pq_pop, s3q_u64_pq_push,
+    S3qI32Pq, S3qI64Pq, S3qU32Pq, S3qU64Pq,
 };
 
-pub struct S3qHeapI32(*mut S3qI32Pq);
+macro_rules! impl_s3q_heap {
+    ($heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident) => {
+        pub struct $heap(*mut $pq);
 
-impl Drop for S3qHeapI32 {
-    fn drop(&mut self) {
-        unsafe { s3q_i32_pq_free(self.0) }
-    }
-}
-
-impl Heap<i32> for S3qHeapI32 {
-    type Casted<T2: Elem> = NoHeap;
-
-    #[inline(always)]
-    fn default() -> Self {
-        let pq = unsafe { s3q_i32_pq_new() };
-        assert!(!pq.is_null(), "s3q_i32_pq_new: allocation failed");
-        S3qHeapI32(pq)
-    }
-
-    #[inline(always)]
-    fn push(&mut self, t: i32) {
-        unsafe { s3q_i32_pq_push(self.0, t) }
-    }
-
-    #[inline(always)]
-    fn pop(&mut self) -> Option<i32> {
-        unsafe {
-            if s3q_i32_pq_empty(self.0) {
-                None
-            } else {
-                Some(s3q_i32_pq_pop(self.0))
+        impl Drop for $heap {
+            fn drop(&mut self) {
+                unsafe { $free(self.0) }
             }
         }
-    }
-}
 
-pub struct S3qHeapI64(*mut S3qI64Pq);
+        impl Heap<$t> for $heap {
+            type Casted<T2: Elem> = NoHeap;
 
-impl Drop for S3qHeapI64 {
-    fn drop(&mut self) {
-        unsafe { s3q_i64_pq_free(self.0) }
-    }
-}
+            #[inline(always)]
+            fn default() -> Self {
+                let pq = unsafe { $new() };
+                assert!(!pq.is_null(), concat!(stringify!($new), ": allocation failed"));
+                $heap(pq)
+            }
 
-impl Heap<i64> for S3qHeapI64 {
-    type Casted<T2: Elem> = NoHeap;
+            #[inline(always)]
+            fn push(&mut self, t: $t) {
+                unsafe { $push(self.0, t) }
+            }
 
-    #[inline(always)]
-    fn default() -> Self {
-        let pq = unsafe { s3q_i64_pq_new() };
-        assert!(!pq.is_null(), "s3q_i64_pq_new: allocation failed");
-        S3qHeapI64(pq)
-    }
-
-    #[inline(always)]
-    fn push(&mut self, t: i64) {
-        unsafe { s3q_i64_pq_push(self.0, t) }
-    }
-
-    #[inline(always)]
-    fn pop(&mut self) -> Option<i64> {
-        unsafe {
-            if s3q_i64_pq_empty(self.0) {
-                None
-            } else {
-                Some(s3q_i64_pq_pop(self.0))
+            #[inline(always)]
+            fn pop(&mut self) -> Option<$t> {
+                unsafe {
+                    if $empty(self.0) {
+                        None
+                    } else {
+                        Some($pop(self.0))
+                    }
+                }
             }
         }
-    }
+    };
 }
+
+impl_s3q_heap!(S3qHeapI32, i32, S3qI32Pq, s3q_i32_pq_new, s3q_i32_pq_free, s3q_i32_pq_push, s3q_i32_pq_pop, s3q_i32_pq_empty);
+impl_s3q_heap!(S3qHeapI64, i64, S3qI64Pq, s3q_i64_pq_new, s3q_i64_pq_free, s3q_i64_pq_push, s3q_i64_pq_pop, s3q_i64_pq_empty);
+impl_s3q_heap!(S3qHeapU32, u32, S3qU32Pq, s3q_u32_pq_new, s3q_u32_pq_free, s3q_u32_pq_push, s3q_u32_pq_pop, s3q_u32_pq_empty);
+impl_s3q_heap!(S3qHeapU64, u64, S3qU64Pq, s3q_u64_pq_new, s3q_u64_pq_free, s3q_u64_pq_push, s3q_u64_pq_pop, s3q_u64_pq_empty);

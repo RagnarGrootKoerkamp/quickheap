@@ -24,6 +24,8 @@
 struct NoValue {};
 using I32Heap = KNHeap<int32_t, NoValue>;
 using I64Heap = KNHeap<int64_t, NoValue>;
+using U32Heap = KNHeap<uint32_t, NoValue>;
+using U64Heap = KNHeap<uint64_t, NoValue>;
 
 extern "C" {
 
@@ -91,6 +93,72 @@ int seq_heap_i64_size(const SeqHeapI64 *pq) {
 
 bool seq_heap_i64_empty(const SeqHeapI64 *pq) {
     return reinterpret_cast<const I64Heap *>(pq)->getSize() == 0;
+}
+
+SeqHeapU32 *seq_heap_u32_new() {
+    return reinterpret_cast<SeqHeapU32 *>(
+        new (std::nothrow) U32Heap(UINT32_MAX, 0));
+}
+
+void seq_heap_u32_free(SeqHeapU32 *pq) {
+    delete reinterpret_cast<U32Heap *>(pq);
+}
+
+void seq_heap_u32_push(SeqHeapU32 *pq, uint32_t key) {
+    reinterpret_cast<U32Heap *>(pq)->insert(key, NoValue{});
+}
+
+uint32_t seq_heap_u32_pop(SeqHeapU32 *pq) {
+    uint32_t key; NoValue value;
+    reinterpret_cast<U32Heap *>(pq)->deleteMin(&key, &value);
+    return key;
+}
+
+uint32_t seq_heap_u32_top(SeqHeapU32 *pq) {
+    uint32_t key; NoValue value;
+    reinterpret_cast<U32Heap *>(pq)->getMin(&key, &value);
+    return key;
+}
+
+int seq_heap_u32_size(const SeqHeapU32 *pq) {
+    return reinterpret_cast<const U32Heap *>(pq)->getSize();
+}
+
+bool seq_heap_u32_empty(const SeqHeapU32 *pq) {
+    return reinterpret_cast<const U32Heap *>(pq)->getSize() == 0;
+}
+
+SeqHeapU64 *seq_heap_u64_new() {
+    return reinterpret_cast<SeqHeapU64 *>(
+        new (std::nothrow) U64Heap(UINT64_MAX, 0));
+}
+
+void seq_heap_u64_free(SeqHeapU64 *pq) {
+    delete reinterpret_cast<U64Heap *>(pq);
+}
+
+void seq_heap_u64_push(SeqHeapU64 *pq, uint64_t key) {
+    reinterpret_cast<U64Heap *>(pq)->insert(key, NoValue{});
+}
+
+uint64_t seq_heap_u64_pop(SeqHeapU64 *pq) {
+    uint64_t key; NoValue value;
+    reinterpret_cast<U64Heap *>(pq)->deleteMin(&key, &value);
+    return key;
+}
+
+uint64_t seq_heap_u64_top(SeqHeapU64 *pq) {
+    uint64_t key; NoValue value;
+    reinterpret_cast<U64Heap *>(pq)->getMin(&key, &value);
+    return key;
+}
+
+int seq_heap_u64_size(const SeqHeapU64 *pq) {
+    return reinterpret_cast<const U64Heap *>(pq)->getSize();
+}
+
+bool seq_heap_u64_empty(const SeqHeapU64 *pq) {
+    return reinterpret_cast<const U64Heap *>(pq)->getSize() == 0;
 }
 
 } // extern "C"

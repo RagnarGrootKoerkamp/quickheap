@@ -1,63 +1,82 @@
 use std::ffi::c_int;
 use std::ffi::c_void;
 
-/// Opaque handle to a `KNHeap<int32_t, int32_t>` instance.
-#[repr(C)]
-pub struct SeqHeapI32(c_void);
+macro_rules! seq_heap_ffi {
+    (
+        $Pq:ident, $t:ty,
+        $new:ident, $free:ident, $push:ident, $pop:ident, $top:ident, $size:ident, $empty:ident
+    ) => {
+        #[repr(C)]
+        pub struct $Pq(c_void);
 
-unsafe extern "C" {
-    /// Allocates and constructs a new priority queue. Returns null on allocation failure.
-    pub fn seq_heap_i32_new() -> *mut SeqHeapI32;
-
-    /// Destroys and deallocates the priority queue.
-    pub fn seq_heap_i32_free(pq: *mut SeqHeapI32);
-
-    /// Pushes `key` onto the priority queue.
-    /// # Safety
-    /// `key` must not equal `i32::MIN` or `i32::MAX` (reserved as sentinels).
-    pub fn seq_heap_i32_push(pq: *mut SeqHeapI32, key: i32);
-
-    /// Removes and returns the minimum element. Undefined behaviour if the queue is empty.
-    pub fn seq_heap_i32_pop(pq: *mut SeqHeapI32) -> i32;
-
-    /// Returns the minimum element without removing it. Undefined behaviour if the queue is empty.
-    pub fn seq_heap_i32_top(pq: *mut SeqHeapI32) -> i32;
-
-    /// Returns the number of elements in the priority queue.
-    pub fn seq_heap_i32_size(pq: *const SeqHeapI32) -> c_int;
-
-    /// Returns `true` if the priority queue contains no elements.
-    pub fn seq_heap_i32_empty(pq: *const SeqHeapI32) -> bool;
+        unsafe extern "C" {
+            /// Allocates and constructs a new priority queue. Returns null on allocation failure.
+            pub fn $new() -> *mut $Pq;
+            /// Destroys and deallocates the priority queue.
+            pub fn $free(pq: *mut $Pq);
+            /// Pushes `key` onto the priority queue.
+            /// # Safety
+            /// Key must not equal the MIN or MAX of the type.
+            pub fn $push(pq: *mut $Pq, key: $t);
+            /// Removes and returns the minimum element. Undefined behaviour if the queue is empty.
+            pub fn $pop(pq: *mut $Pq) -> $t;
+            /// Returns the minimum element without removing it. Undefined behaviour if the queue is empty.
+            pub fn $top(pq: *mut $Pq) -> $t;
+            /// Returns the number of elements in the priority queue.
+            pub fn $size(pq: *const $Pq) -> c_int;
+            /// Returns `true` if the priority queue contains no elements.
+            pub fn $empty(pq: *const $Pq) -> bool;
+        }
+    };
 }
 
-/// Opaque handle to a `KNHeap<int64_t, int64_t>` instance.
-#[repr(C)]
-pub struct SeqHeapI64(c_void);
+seq_heap_ffi!(
+    SeqHeapI32,
+    i32,
+    seq_heap_i32_new,
+    seq_heap_i32_free,
+    seq_heap_i32_push,
+    seq_heap_i32_pop,
+    seq_heap_i32_top,
+    seq_heap_i32_size,
+    seq_heap_i32_empty
+);
 
-unsafe extern "C" {
-    /// Allocates and constructs a new priority queue. Returns null on allocation failure.
-    pub fn seq_heap_i64_new() -> *mut SeqHeapI64;
+seq_heap_ffi!(
+    SeqHeapI64,
+    i64,
+    seq_heap_i64_new,
+    seq_heap_i64_free,
+    seq_heap_i64_push,
+    seq_heap_i64_pop,
+    seq_heap_i64_top,
+    seq_heap_i64_size,
+    seq_heap_i64_empty
+);
 
-    /// Destroys and deallocates the priority queue.
-    pub fn seq_heap_i64_free(pq: *mut SeqHeapI64);
+seq_heap_ffi!(
+    SeqHeapU32,
+    u32,
+    seq_heap_u32_new,
+    seq_heap_u32_free,
+    seq_heap_u32_push,
+    seq_heap_u32_pop,
+    seq_heap_u32_top,
+    seq_heap_u32_size,
+    seq_heap_u32_empty
+);
 
-    /// Pushes `key` onto the priority queue.
-    /// # Safety
-    /// `key` must not equal `i64::MIN` or `i64::MAX` (reserved as sentinels).
-    pub fn seq_heap_i64_push(pq: *mut SeqHeapI64, key: i64);
-
-    /// Removes and returns the minimum element. Undefined behaviour if the queue is empty.
-    pub fn seq_heap_i64_pop(pq: *mut SeqHeapI64) -> i64;
-
-    /// Returns the minimum element without removing it. Undefined behaviour if the queue is empty.
-    pub fn seq_heap_i64_top(pq: *mut SeqHeapI64) -> i64;
-
-    /// Returns the number of elements in the priority queue.
-    pub fn seq_heap_i64_size(pq: *const SeqHeapI64) -> c_int;
-
-    /// Returns `true` if the priority queue contains no elements.
-    pub fn seq_heap_i64_empty(pq: *const SeqHeapI64) -> bool;
-}
+seq_heap_ffi!(
+    SeqHeapU64,
+    u64,
+    seq_heap_u64_new,
+    seq_heap_u64_free,
+    seq_heap_u64_push,
+    seq_heap_u64_pop,
+    seq_heap_u64_top,
+    seq_heap_u64_size,
+    seq_heap_u64_empty
+);
 
 #[cfg(test)]
 mod tests {

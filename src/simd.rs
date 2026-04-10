@@ -655,12 +655,18 @@ macro_rules! impl_simd_elem_64_avx512 {
 }
 
 impl_simd_elem_32!(i32, std::simd::i32x8);
+impl_simd_elem_32!(u32, std::simd::u32x8);
 impl_simd_elem_64!(i64, std::simd::i64x4);
+impl_simd_elem_64!(u64, std::simd::u64x4);
 
 #[cfg(feature = "avx512")]
 impl_simd_elem_32_avx512!(i32, std::simd::i32x16);
 #[cfg(feature = "avx512")]
+impl_simd_elem_32_avx512!(u32, std::simd::u32x16);
+#[cfg(feature = "avx512")]
 impl_simd_elem_64_avx512!(i64, std::simd::i64x8);
+#[cfg(feature = "avx512")]
+impl_simd_elem_64_avx512!(u64, std::simd::u64x8);
 
 /// For each of 256 masks of which elements are different than their predecessor,
 /// a shuffle that sends those new elements to the beginning.

@@ -4,75 +4,51 @@ use crate::Heap;
 use sequence_heap_sys::{
     seq_heap_i32_empty, seq_heap_i32_free, seq_heap_i32_new, seq_heap_i32_pop, seq_heap_i32_push,
     seq_heap_i64_empty, seq_heap_i64_free, seq_heap_i64_new, seq_heap_i64_pop, seq_heap_i64_push,
-    SeqHeapI32, SeqHeapI64,
+    seq_heap_u32_empty, seq_heap_u32_free, seq_heap_u32_new, seq_heap_u32_pop, seq_heap_u32_push,
+    seq_heap_u64_empty, seq_heap_u64_free, seq_heap_u64_new, seq_heap_u64_pop, seq_heap_u64_push,
+    SeqHeapI32, SeqHeapI64, SeqHeapU32, SeqHeapU64,
 };
 
-pub struct SequenceHeapI32(*mut SeqHeapI32);
+macro_rules! impl_sequence_heap {
+    ($heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident) => {
+        pub struct $heap(*mut $pq);
 
-impl Drop for SequenceHeapI32 {
-    fn drop(&mut self) {
-        unsafe { seq_heap_i32_free(self.0) }
-    }
-}
-
-impl Heap<i32> for SequenceHeapI32 {
-    type Casted<T2: Elem> = NoHeap;
-
-    #[inline(always)]
-    fn default() -> Self {
-        let pq = unsafe { seq_heap_i32_new() };
-        assert!(!pq.is_null(), "seq_heap_i32_new: allocation failed");
-        SequenceHeapI32(pq)
-    }
-
-    #[inline(always)]
-    fn push(&mut self, t: i32) {
-        unsafe { seq_heap_i32_push(self.0, t) }
-    }
-
-    #[inline(always)]
-    fn pop(&mut self) -> Option<i32> {
-        unsafe {
-            if seq_heap_i32_empty(self.0) {
-                None
-            } else {
-                Some(seq_heap_i32_pop(self.0))
+        impl Drop for $heap {
+            fn drop(&mut self) {
+                unsafe { $free(self.0) }
             }
         }
-    }
-}
 
-pub struct SequenceHeapI64(*mut SeqHeapI64);
+        impl Heap<$t> for $heap {
+            type Casted<T2: Elem> = NoHeap;
 
-impl Drop for SequenceHeapI64 {
-    fn drop(&mut self) {
-        unsafe { seq_heap_i64_free(self.0) }
-    }
-}
+            #[inline(always)]
+            fn default() -> Self {
+                let pq = unsafe { $new() };
+                assert!(!pq.is_null(), concat!(stringify!($new), ": allocation failed"));
+                $heap(pq)
+            }
 
-impl Heap<i64> for SequenceHeapI64 {
-    type Casted<T2: Elem> = NoHeap;
+            #[inline(always)]
+            fn push(&mut self, t: $t) {
+                unsafe { $push(self.0, t) }
+            }
 
-    #[inline(always)]
-    fn default() -> Self {
-        let pq = unsafe { seq_heap_i64_new() };
-        assert!(!pq.is_null(), "seq_heap_i64_new: allocation failed");
-        SequenceHeapI64(pq)
-    }
-
-    #[inline(always)]
-    fn push(&mut self, t: i64) {
-        unsafe { seq_heap_i64_push(self.0, t) }
-    }
-
-    #[inline(always)]
-    fn pop(&mut self) -> Option<i64> {
-        unsafe {
-            if seq_heap_i64_empty(self.0) {
-                None
-            } else {
-                Some(seq_heap_i64_pop(self.0))
+            #[inline(always)]
+            fn pop(&mut self) -> Option<$t> {
+                unsafe {
+                    if $empty(self.0) {
+                        None
+                    } else {
+                        Some($pop(self.0))
+                    }
+                }
             }
         }
-    }
+    };
 }
+
+impl_sequence_heap!(SequenceHeapI32, i32, SeqHeapI32, seq_heap_i32_new, seq_heap_i32_free, seq_heap_i32_push, seq_heap_i32_pop, seq_heap_i32_empty);
+impl_sequence_heap!(SequenceHeapI64, i64, SeqHeapI64, seq_heap_i64_new, seq_heap_i64_free, seq_heap_i64_push, seq_heap_i64_pop, seq_heap_i64_empty);
+impl_sequence_heap!(SequenceHeapU32, u32, SeqHeapU32, seq_heap_u32_new, seq_heap_u32_free, seq_heap_u32_push, seq_heap_u32_pop, seq_heap_u32_empty);
+impl_sequence_heap!(SequenceHeapU64, u64, SeqHeapU64, seq_heap_u64_new, seq_heap_u64_free, seq_heap_u64_push, seq_heap_u64_pop, seq_heap_u64_empty);

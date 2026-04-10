@@ -1,58 +1,81 @@
 use std::ffi::c_void;
 
-/// Opaque handle to a `s3q::PriorityQueue<I32Cfg>` instance.
-#[repr(C)]
-pub struct S3qI32Pq(c_void);
+macro_rules! s3q_ffi {
+    (
+        $Pq:ident, $t:ty,
+        $new:ident, $free:ident, $push:ident, $pop:ident, $top:ident, $size:ident, $empty:ident
+    ) => {
+        #[repr(C)]
+        pub struct $Pq(c_void);
 
-unsafe extern "C" {
-    /// Allocates and constructs a new priority queue. Returns null on allocation failure.
-    pub fn s3q_i32_pq_new() -> *mut S3qI32Pq;
-
-    /// Destroys and deallocates the priority queue.
-    pub fn s3q_i32_pq_free(pq: *mut S3qI32Pq);
-
-    /// Pushes `item` onto the priority queue.
-    pub fn s3q_i32_pq_push(pq: *mut S3qI32Pq, item: i32);
-
-    /// Removes and returns the minimum element. Undefined behaviour if the queue is empty.
-    pub fn s3q_i32_pq_pop(pq: *mut S3qI32Pq) -> i32;
-
-    /// Returns the minimum element without removing it. Undefined behaviour if the queue is empty.
-    pub fn s3q_i32_pq_top(pq: *const S3qI32Pq) -> i32;
-
-    /// Returns the number of elements in the priority queue.
-    pub fn s3q_i32_pq_size(pq: *const S3qI32Pq) -> usize;
-
-    /// Returns `true` if the priority queue contains no elements.
-    pub fn s3q_i32_pq_empty(pq: *const S3qI32Pq) -> bool;
+        unsafe extern "C" {
+            /// Allocates and constructs a new priority queue. Returns null on allocation failure.
+            pub fn $new() -> *mut $Pq;
+            /// Destroys and deallocates the priority queue.
+            pub fn $free(pq: *mut $Pq);
+            /// Pushes `item` onto the priority queue.
+            /// # Safety
+            /// `item` must not equal the MIN or MAX of the type.
+            pub fn $push(pq: *mut $Pq, item: $t);
+            /// Removes and returns the minimum element. Undefined behaviour if the queue is empty.
+            pub fn $pop(pq: *mut $Pq) -> $t;
+            /// Returns the minimum element without removing it. Undefined behaviour if the queue is empty.
+            pub fn $top(pq: *const $Pq) -> $t;
+            /// Returns the number of elements in the priority queue.
+            pub fn $size(pq: *const $Pq) -> usize;
+            /// Returns `true` if the priority queue contains no elements.
+            pub fn $empty(pq: *const $Pq) -> bool;
+        }
+    };
 }
 
-/// Opaque handle to a `s3q::PriorityQueue<I64Cfg>` instance.
-#[repr(C)]
-pub struct S3qI64Pq(c_void);
+s3q_ffi!(
+    S3qI32Pq,
+    i32,
+    s3q_i32_pq_new,
+    s3q_i32_pq_free,
+    s3q_i32_pq_push,
+    s3q_i32_pq_pop,
+    s3q_i32_pq_top,
+    s3q_i32_pq_size,
+    s3q_i32_pq_empty
+);
 
-unsafe extern "C" {
-    /// Allocates and constructs a new priority queue. Returns null on allocation failure.
-    pub fn s3q_i64_pq_new() -> *mut S3qI64Pq;
+s3q_ffi!(
+    S3qI64Pq,
+    i64,
+    s3q_i64_pq_new,
+    s3q_i64_pq_free,
+    s3q_i64_pq_push,
+    s3q_i64_pq_pop,
+    s3q_i64_pq_top,
+    s3q_i64_pq_size,
+    s3q_i64_pq_empty
+);
 
-    /// Destroys and deallocates the priority queue.
-    pub fn s3q_i64_pq_free(pq: *mut S3qI64Pq);
+s3q_ffi!(
+    S3qU32Pq,
+    u32,
+    s3q_u32_pq_new,
+    s3q_u32_pq_free,
+    s3q_u32_pq_push,
+    s3q_u32_pq_pop,
+    s3q_u32_pq_top,
+    s3q_u32_pq_size,
+    s3q_u32_pq_empty
+);
 
-    /// Pushes `item` onto the priority queue.
-    pub fn s3q_i64_pq_push(pq: *mut S3qI64Pq, item: i64);
-
-    /// Removes and returns the minimum element. Undefined behaviour if the queue is empty.
-    pub fn s3q_i64_pq_pop(pq: *mut S3qI64Pq) -> i64;
-
-    /// Returns the minimum element without removing it. Undefined behaviour if the queue is empty.
-    pub fn s3q_i64_pq_top(pq: *const S3qI64Pq) -> i64;
-
-    /// Returns the number of elements in the priority queue.
-    pub fn s3q_i64_pq_size(pq: *const S3qI64Pq) -> usize;
-
-    /// Returns `true` if the priority queue contains no elements.
-    pub fn s3q_i64_pq_empty(pq: *const S3qI64Pq) -> bool;
-}
+s3q_ffi!(
+    S3qU64Pq,
+    u64,
+    s3q_u64_pq_new,
+    s3q_u64_pq_free,
+    s3q_u64_pq_push,
+    s3q_u64_pq_pop,
+    s3q_u64_pq_top,
+    s3q_u64_pq_size,
+    s3q_u64_pq_empty
+);
 
 #[cfg(test)]
 mod tests {
