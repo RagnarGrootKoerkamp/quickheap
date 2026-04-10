@@ -1,5 +1,6 @@
 #![feature(where_clause_attrs)]
 
+use clap::Parser;
 use quickheap::dijkstra::DijkstraQuery;
 use quickheap::graph::Graph;
 use quickheap::prim::PrimMST;
@@ -13,12 +14,9 @@ use serde::Serialize;
 use std::any::type_name;
 use std::cell::RefCell;
 use std::hint::black_box;
+use std::path::PathBuf;
 
 const REPEATS: usize = 3;
-
-const BASE_PATH: &'static str = "./input/";
-const SUFF: &'static str = ".gr";
-const GRAPH_INSTANCES: &[&str] = &["GER_graph"]; // TODO: Add more graph instances
 
 trait GraphWorkload {
     fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce();
@@ -107,14 +105,38 @@ pub fn bench<H: Heap<u64>>(graphs: &Vec<(String, Graph<u32>)>) {
     }
 }
 
+#[derive(clap::Parser)]
+struct Args {
+    /// Single .gr file, or directory containing .gr files.
+    path: Option<PathBuf>,
+}
+
 fn main() {
+    let args = Args::parse();
+
     let mut graphs: Vec<(String, Graph<u32>)> = vec![];
 
+    let path = args.path.unwrap_or_else(|| PathBuf::from("input/"));
+    // Scan `path` for all input files.
+    let paths = if path.is_file() {
+        vec![path]
+    } else {
+        let mut paths = vec![];
+        let entries = std::fs::read_dir(&path).expect("Could not read input directory");
+        for entry in entries {
+            let entry = entry.expect("Could not read entry in input directory");
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("gr") {
+                paths.push(path);
+            }
+        }
+        paths
+    };
+
     // Load all the graphs into memory
-    for instance in GRAPH_INSTANCES {
-        let path = format!("{}{}{}", BASE_PATH, instance, SUFF);
+    for path in paths {
         let graph = Graph::from_dimacs_instance(&path);
-        graphs.push((instance.to_string(), graph));
+        graphs.push((path.to_string_lossy().to_string(), graph));
     }
 
     // QUICKHEAP

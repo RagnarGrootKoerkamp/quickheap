@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, path::Path};
 
 use itertools::izip;
 
@@ -19,7 +19,7 @@ pub struct Graph<WeightT: Copy + Debug> {
 }
 
 impl Graph<u32> {
-    pub fn from_dimacs_instance(path: &str) -> Self {
+    pub fn from_dimacs_instance(path: &Path) -> Self {
         construct_graph_from_dimacs_file(path)
     }
 }

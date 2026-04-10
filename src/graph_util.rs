@@ -2,6 +2,7 @@ use std::{
     fmt::Debug,
     fs::File,
     io::{BufRead, BufReader},
+    path::Path,
 };
 
 use min_max_traits::Max;
@@ -82,9 +83,8 @@ pub fn construct_graph_from_edge_list<WeightT: Max + Ord + Clone + Copy + Debug>
     Graph::new(new_first_out, new_heads, new_tails, weights)
 }
 
-pub fn construct_graph_from_dimacs_file(path: &str) -> Graph<u32> {
-    let error_msg = &format!("File with path {} could not be opened.", path);
-    let file = File::open(path).expect(error_msg);
+pub fn construct_graph_from_dimacs_file(path: &Path) -> Graph<u32> {
+    let file = File::open(path).unwrap();
     let file_reader = BufReader::new(file);
 
     let mut edges: Vec<Edge<u32>> = vec![];
