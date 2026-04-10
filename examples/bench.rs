@@ -273,26 +273,28 @@ where
         bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(minpow, maxpow);
     }
 
+    // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(minpow, maxpow);
+    // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(minpow, maxpow);
+
     if args.quickheap {
         return;
     }
 
-    // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(minpow, maxpow);
-    // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(minpow, maxpow);
-
     // ENGINEERED
-    #[cfg(feature = "ffi")]
-    match TypeId::of::<T>() {
-        // TODO: Figure out if we can count comparisons here.
-        x if x == TypeId::of::<i32>() => {
-            bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
-            bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(21));
+    if !args.comparisons {
+        #[cfg(feature = "ffi")]
+        match TypeId::of::<T>() {
+            // TODO: Figure out if we can count comparisons here.
+            x if x == TypeId::of::<i32>() => {
+                bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
+                bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(21));
+            }
+            x if x == TypeId::of::<i64>() => {
+                bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
+                bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
+            }
+            _ => unimplemented!(),
         }
-        x if x == TypeId::of::<i64>() => {
-            bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
-            bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
-        }
-        _ => unimplemented!(),
     }
 
     // REIMPLS
@@ -328,7 +330,9 @@ where
     // bench::<T, impls::WeakHeap<T>>(minpow, maxpow);
 
     // MONOTONE
-    bench::<T, impls::RadixHeap<T>>(minpow, maxpow);
+    if !args.comparisons {
+        bench::<T, impls::RadixHeap<T>>(minpow, maxpow);
+    }
 
     // eprintln!("Set");
     // bench::<T, impls::BTreeSet<T>>(minpow, maxpow);
