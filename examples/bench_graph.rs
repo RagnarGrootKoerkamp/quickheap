@@ -92,13 +92,13 @@ fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u
 
 pub fn bench<H: Heap<u64>>(graphs: &Vec<(String, Graph<u32>)>) {
     for (instance, graph) in graphs {
-        eprint!("{:<80} {}", type_name::<H>(), instance);
+        eprint!("{:<90} {:<30}", type_name::<H>(), instance);
 
         let t = time_workload::<H, DijkstraWorkload>(instance, graph);
-        eprint!(" {t:>8.2}");
+        eprint!(" {t:>12.0}");
         if !H::MONOTONE {
             let t = time_workload::<H, PrimWorkload>(instance, graph);
-            eprint!(" {t:>8.2}");
+            eprint!(" {t:>12.0}");
         }
 
         eprintln!();
@@ -136,6 +136,12 @@ fn main() {
     // Load all the graphs into memory
     for path in paths {
         let graph = Graph::from_dimacs_instance(&path);
+        eprintln!(
+            "Loaded graph {} with {} vertices and {} edges",
+            path.to_string_lossy(),
+            graph.num_vertices(),
+            graph.num_edges()
+        );
         graphs.push((path.to_string_lossy().to_string(), graph));
     }
 
@@ -143,8 +149,6 @@ fn main() {
 
     #[cfg(feature = "avx2")]
     bench::<simd_quickheap::SimdQuickHeap<u64, Avx2, 16, 1>>(&graphs);
-    #[cfg(feature = "avx512")]
-    bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<false>, 16, 1>>(&graphs);
     #[cfg(feature = "avx512")]
     bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, 16, 1>>(&graphs);
 
