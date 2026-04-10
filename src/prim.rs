@@ -99,7 +99,7 @@ impl<'g, HeapT: Heap<u64>> PrimMST<'g, HeapT> {
             }
 
             let weight = self.graph.weight(first + i);
-            let tup = pack_id_key_tuple_to_u64((first + i) as u32, weight);
+            let tup = pack_id_key_tuple_to_u64(first + i, weight);
             self.heap.push(tup);
         }
     }

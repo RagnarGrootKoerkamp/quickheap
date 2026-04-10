@@ -153,13 +153,14 @@ pub fn convert_dimacs_to_static_graph(path: &str) -> Graph<u32> {
 }
 
 #[inline(always)]
-pub fn pack_id_key_tuple_to_u64(id: u32, key: u32) -> u64 {
+pub fn pack_id_key_tuple_to_u64(id: usize, key: u32) -> u64 {
+    assert!(id < (1 << 32));
     (key as u64) << 32 | id as u64
 }
 
 #[inline(always)]
-pub fn unpack_id_key_tuple_from_u64(tup: u64) -> (u32, u32) {
-    let id = tup as u32;
+pub fn unpack_id_key_tuple_from_u64(tup: u64) -> (usize, u32) {
+    let id = tup as u32 as usize;
     let key = (tup >> 32) as u32;
     (id, key)
 }

@@ -1,13 +1,13 @@
 use std::fmt::Debug;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Edge<WeightT: Ord + Debug + Copy> {
+pub struct Edge<WeightT: Debug + Copy> {
     pub from: usize,
     pub to: usize,
     pub weight: WeightT,
 }
 
-pub struct Graph<WeightT: Clone + Debug> {
+pub struct Graph<WeightT: Copy + Debug> {
     num_vertices: usize,
     num_edges: usize,
     first_out: Vec<usize>,
@@ -16,7 +16,7 @@ pub struct Graph<WeightT: Clone + Debug> {
     weights: Vec<WeightT>,
 }
 
-impl<WeightT: Clone + Debug> Graph<WeightT> {
+impl<WeightT: Copy + Debug> Graph<WeightT> {
     pub fn new(
         first_out: Vec<usize>,
         heads: Vec<usize>,
@@ -76,5 +76,15 @@ impl<WeightT: Clone + Debug> Graph<WeightT> {
                 println!("{} -> {} w = {:?}", v, head, weight);
             }
         }
+    }
+
+    pub fn outgoing_edges(&self, v: usize) -> impl Iterator<Item = Edge<WeightT>> {
+        let first_edge = self.first_out[v];
+        let last_edge = self.first_out[v + 1];
+        (first_edge..last_edge).map(move |e| Edge {
+            from: v,
+            to: self.heads[e],
+            weight: self.weights[e].clone(),
+        })
     }
 }
