@@ -6,11 +6,11 @@ use std::{
 
 use min_max_traits::Max;
 
-use crate::graph::{Edge, Graph, StaticGraph};
+use crate::graph::{Edge, Graph};
 
 pub fn convert_directed_graph_to_undirected<WeightT: Max + Ord + Copy + Debug>(
-    graph: &StaticGraph<WeightT>,
-) -> StaticGraph<WeightT> {
+    graph: &Graph<WeightT>,
+) -> Graph<WeightT> {
     let mut edges: Vec<Edge<WeightT>> = vec![];
 
     let mut current_edge: usize = 0;
@@ -59,7 +59,7 @@ pub fn convert_directed_graph_to_undirected<WeightT: Max + Ord + Copy + Debug>(
 pub fn construct_graph_from_edge_list<WeightT: Max + Ord + Clone + Copy + Debug>(
     edges: &Vec<Edge<WeightT>>,
     num_vertices: usize,
-) -> StaticGraph<WeightT> {
+) -> Graph<WeightT> {
     let mut new_first_out = vec![];
     let mut new_heads = vec![];
     let mut new_tails = vec![];
@@ -88,10 +88,10 @@ pub fn construct_graph_from_edge_list<WeightT: Max + Ord + Clone + Copy + Debug>
         current_tail += 1;
     }
 
-    StaticGraph::new(new_first_out, new_heads, new_tails, weights)
+    Graph::new(new_first_out, new_heads, new_tails, weights)
 }
 
-pub fn convert_dimacs_to_static_graph(path: &str) -> StaticGraph<u32> {
+pub fn convert_dimacs_to_static_graph(path: &str) -> Graph<u32> {
     let error_msg = &format!("File with path {} could not be opened.", path);
     let file = File::open(path).expect(error_msg);
     let file_reader = BufReader::new(file);

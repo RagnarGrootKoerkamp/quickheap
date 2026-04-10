@@ -1,6 +1,6 @@
-use crate::Heap;
 use crate::graph::Graph;
 use crate::graph_util::{pack_id_key_tuple_to_u64, unpack_id_key_tuple_from_u64};
+use crate::Heap;
 
 use min_max_traits::Max;
 
@@ -47,17 +47,15 @@ pub trait DistanceLabel<DistT> {
     fn set(&mut self, id: usize, dist: DistT);
 }
 
-pub struct DijkstraQuery<'g, HeapT: Heap<u64>, DistanceT: DistanceLabel<u32>, GraphT: Graph<u32>> {
+pub struct DijkstraQuery<'g, HeapT: Heap<u64>, DistanceT: DistanceLabel<u32>> {
     heap: HeapT,
     distances: DistanceT,
-    graph: &'g GraphT,
+    graph: &'g Graph<u32>,
     best_distances: Vec<u32>,
 }
 
-impl<'g, HeapT: Heap<u64>, DistanceT: DistanceLabel<u32>, GraphT: Graph<u32>>
-    DijkstraQuery<'g, HeapT, DistanceT, GraphT>
-{
-    pub fn new(graph_: &'g GraphT) -> Self {
+impl<'g, HeapT: Heap<u64>, DistanceT: DistanceLabel<u32>> DijkstraQuery<'g, HeapT, DistanceT> {
+    pub fn new(graph_: &'g Graph<u32>) -> Self {
         Self {
             heap: HeapT::default(),
             distances: DistanceT::new(graph_.num_vertices()),
@@ -125,7 +123,7 @@ mod test {
     use crate::{
         binary_heap::CustomBinaryHeap,
         dijkstra::{DijkstraQuery, FastResetDistanceLabel},
-        graph::StaticGraph,
+        graph::Graph,
     };
 
     #[test]
@@ -135,12 +133,9 @@ mod test {
         let tails = vec![0, 0, 1, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5];
         let weights = vec![2, 3, 3, 6, 6, 9, 10, 1, 11, 6, 12, 3, 2];
 
-        let graph = StaticGraph::new(fo, heads, tails, weights);
-        let mut query = DijkstraQuery::<
-            CustomBinaryHeap<u64>,
-            FastResetDistanceLabel<u32>,
-            StaticGraph<u32>,
-        >::new(&graph);
+        let graph = Graph::new(fo, heads, tails, weights);
+        let mut query =
+            DijkstraQuery::<CustomBinaryHeap<u64>, FastResetDistanceLabel<u32>>::new(&graph);
 
         query.run_all(2);
 

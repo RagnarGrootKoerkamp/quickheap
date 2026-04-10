@@ -1,32 +1,30 @@
 use std::fmt::Debug;
 
-use crate::Heap;
 use crate::graph::{Edge, Graph};
 use crate::graph_util::{pack_id_key_tuple_to_u64, unpack_id_key_tuple_from_u64};
+use crate::Heap;
 
 pub struct MST<WeightT: Ord + Debug + Copy> {
     edges: Vec<Edge<WeightT>>,
     parents: Vec<usize>,
 }
 
-pub trait MSTAlgorithm<'g, WeightT: Ord + Debug + Copy, GraphT: Graph<WeightT>> {
-    fn new(graph: &'g GraphT) -> Self;
+pub trait MSTAlgorithm<'g, WeightT: Ord + Debug + Copy> {
+    fn new(graph: &'g Graph<u32>) -> Self;
     fn compute_mst_from_vertex(&mut self, v: usize);
     fn get_tree(&self) -> MST<WeightT>;
 }
 
-pub struct PrimMST<'g, HeapT: Heap<u64>, GraphT: Graph<u32>> {
+pub struct PrimMST<'g, HeapT: Heap<u64>> {
     heap: HeapT,
-    graph: &'g GraphT,
+    graph: &'g Graph<u32>,
     contained: Vec<bool>,
     mst_edges: Vec<Edge<u32>>,
     parents: Vec<usize>,
 }
 
-impl<'g, HeapT: Heap<u64>, GraphT: Graph<u32>> MSTAlgorithm<'g, u32, GraphT>
-    for PrimMST<'g, HeapT, GraphT>
-{
-    fn new(graph_: &'g GraphT) -> Self {
+impl<'g, HeapT: Heap<u64>> MSTAlgorithm<'g, u32> for PrimMST<'g, HeapT> {
+    fn new(graph_: &'g Graph<u32>) -> Self {
         Self {
             graph: graph_,
             heap: HeapT::default(),
@@ -81,7 +79,7 @@ impl<'g, HeapT: Heap<u64>, GraphT: Graph<u32>> MSTAlgorithm<'g, u32, GraphT>
     }
 }
 
-impl<'g, HeapT: Heap<u64>, GraphT: Graph<u32>> PrimMST<'g, HeapT, GraphT> {
+impl<'g, HeapT: Heap<u64>> PrimMST<'g, HeapT> {
     fn init(&mut self) {
         self.heap = HeapT::default();
         self.contained = vec![false; self.graph.num_vertices()];
@@ -111,7 +109,7 @@ impl<'g, HeapT: Heap<u64>, GraphT: Graph<u32>> PrimMST<'g, HeapT, GraphT> {
 mod test {
     use crate::{
         binary_heap::CustomBinaryHeap,
-        graph::StaticGraph,
+        graph::Graph,
         graph_util::convert_directed_graph_to_undirected,
         prim::{MSTAlgorithm, PrimMST},
         scalar_quickheap::ScalarQuickHeap,
@@ -124,15 +122,13 @@ mod test {
         let tails = vec![0, 0, 1, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5];
         let weights = vec![2, 3, 3, 6, 6, 9, 10, 1, 11, 6, 12, 3, 2];
 
-        let graph = StaticGraph::new(fo, heads, tails, weights);
+        let graph = Graph::new(fo, heads, tails, weights);
 
         let undirected_graph = convert_directed_graph_to_undirected(&graph);
 
-        let mut prim_algo =
-            PrimMST::<CustomBinaryHeap<u64>, StaticGraph<u32>>::new(&undirected_graph);
+        let mut prim_algo = PrimMST::<CustomBinaryHeap<u64>>::new(&undirected_graph);
 
-        let mut prim_algo2 =
-            PrimMST::<ScalarQuickHeap<u64, 3>, StaticGraph<u32>>::new(&undirected_graph);
+        let mut prim_algo2 = PrimMST::<ScalarQuickHeap<u64, 3, false>>::new(&undirected_graph);
 
         prim_algo.compute_mst_from_vertex(4);
         prim_algo2.compute_mst_from_vertex(4);
