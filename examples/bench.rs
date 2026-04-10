@@ -1,11 +1,11 @@
 #![feature(where_clause_attrs)]
 
 use clap::Parser;
+use quickheap::scalar_quickheap::Search;
 #[cfg(feature = "avx512")]
 use quickheap::simd::Avx512;
 #[cfg(feature = "avx2")]
 use quickheap::simd::{Avx2, SimdElem};
-use quickheap::{impls::NoHeap, scalar_quickheap::Search};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -31,7 +31,7 @@ struct Result {
     repeat: usize,
     nanos: f64,
     push_comparisons: f64,
-    comparisons: f64,
+    pop_comparisons: f64,
     branch_misses: f64,
     l1_cache_misses: f64,
     hw_cache_misses: f64,
@@ -54,39 +54,6 @@ where
     let mut all_nanos = vec![];
 
     for repeat in 0..REPEATS {
-        let (comparisons, push_comparisons) = {
-            type T2<T> = CountComparisons<T>;
-            #[allow(type_alias_bounds)]
-            type H2<T, H: Heap<T>> = H::Casted<T2<T>>;
-            T2::<T>::reset_count();
-            if TypeId::of::<H2<T, H>>() != TypeId::of::<NoHeap>() {
-                let f = W::setup::<T2<T>, H2<T, H>>(n);
-                T2::<T>::reset_count();
-                f();
-            }
-            let (comparisons, push_comparisons) = T2::<T>::get_counts();
-            (comparisons as f64, push_comparisons as f64)
-        };
-
-        if ARGS.comparisons {
-            let result = Result {
-                elem: type_name::<T>(),
-                heap: type_name::<H>(),
-                n,
-                workload: type_name::<W>(),
-                repeat,
-                nanos: 0.0,
-                push_comparisons,
-                comparisons,
-                branch_misses: 0.0,
-                l1_cache_misses: 0.0,
-                hw_cache_misses: 0.0,
-                l3_cache_misses: 0.0,
-            };
-            CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
-            return 0.0;
-        }
-
         let f = W::setup::<T, H>(n);
 
         let result;
@@ -103,7 +70,8 @@ where
                 workload: type_name::<W>(),
                 repeat,
                 nanos,
-                comparisons,
+                push_comparisons: 0.0,
+                pop_comparisons: 0.0,
                 branch_misses: 0.0,
                 l1_cache_misses: 0.0,
                 hw_cache_misses: 0.0,
@@ -161,8 +129,8 @@ where
                 workload: type_name::<W>(),
                 repeat,
                 nanos,
-                push_comparisons,
-                comparisons,
+                push_comparisons: 0.0,
+                pop_comparisons: 0.0,
                 branch_misses: branch_misses.read().unwrap() as f64,
                 l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
                 hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
@@ -179,6 +147,31 @@ where
 
     all_nanos.sort_by(|a, b| a.partial_cmp(b).unwrap());
     all_nanos[all_nanos.len() / 2]
+}
+
+fn comparisons_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
+    type H2<T, H> = CountingHeap<T, <H as Heap<T>>::Casted<CountComparisons<T>>>;
+    let f = W::setup::<T, H2<T, H>>(n);
+    H2::<T, H>::reset_comparisons();
+    f();
+    let (push_comparisons, pop_comparisons) = H2::<T, H>::get_comparisons();
+
+    let result = Result {
+        elem: type_name::<T>(),
+        heap: type_name::<H>(),
+        n,
+        workload: type_name::<W>(),
+        repeat: 0,
+        nanos: 0.0,
+        push_comparisons: push_comparisons as f64,
+        pop_comparisons: pop_comparisons as f64,
+        branch_misses: 0.0,
+        l1_cache_misses: 0.0,
+        hw_cache_misses: 0.0,
+        l3_cache_misses: 0.0,
+    };
+    CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
+    (push_comparisons + pop_comparisons) as f64
 }
 
 pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32)
@@ -200,8 +193,12 @@ where
                 eprint!("{:>9}", "");
                 return;
             }
-            let ops = n as f64 * (n as f64).log2();
-            let median_nanos = time_workload::<T, H, W>(n);
+            let ops = n as f64 * (n as f64).log2() * W::NORMALIZATION as f64;
+            let median_nanos = if ARGS.comparisons {
+                comparisons_workload::<T, H, W>(n)
+            } else {
+                time_workload::<T, H, W>(n)
+            };
             let t = median_nanos / ops;
             eprint!(" {t:>8.2}");
 
@@ -247,7 +244,10 @@ where
     #[cfg(feature = "avx512")]
     Avx512<true>: SimdElem<T>,
 {
-    let minpow = args.min;
+    let mut minpow = args.min;
+    if args.comparisons {
+        minpow = args.max;
+    }
     let maxpow = args.max;
 
     // QUICKHEAP
@@ -343,7 +343,7 @@ where
 
 fn main() {
     let args = &*ARGS;
-    if !args.r#i64 {
+    if !args.r#i64 && !args.comparisons {
         test::<i32>(&args);
     }
     if !args.r#i32 {

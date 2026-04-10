@@ -1,4 +1,4 @@
-use crate::workloads::{Elem, COMPARISONS, PUSH_COMPARISONS};
+use crate::workloads::{COMPARISONS, Elem};
 
 use super::Heap;
 use std::array::from_fn;
@@ -12,7 +12,12 @@ pub enum Search {
 /// A non-SIMD implementation that works for any type.
 /// M: Use median of M pivots.
 /// S: Strategy for finding the target bucket in push.
-pub struct ScalarQuickHeap<T: Ord, const M: usize, const PERFECT: bool, const S: Search = { Search::BinarySearch }> {
+pub struct ScalarQuickHeap<
+    T: Ord,
+    const M: usize,
+    const PERFECT: bool,
+    const S: Search = { Search::BinarySearch },
+> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -38,7 +43,6 @@ impl<T: Elem, const M: usize, const PERFECT: bool, const S: Search> Heap<T>
     fn push(&mut self, t: T) {
         // Push on the last layer with a pivot >= t,
         // i.e. the index of first pivot < t.
-        let old_comparison_count = COMPARISONS.with(|c| c.get());
         let target_layer = match S {
             Search::BinarySearch => self
                 .pivots
@@ -56,8 +60,6 @@ impl<T: Elem, const M: usize, const PERFECT: bool, const S: Search> Heap<T>
                 .position(|p| *p < t)
                 .unwrap_or(self.pivots.len()),
         };
-        let new_comparison_count = COMPARISONS.with(|c| c.get());
-        PUSH_COMPARISONS.with(|c| c.set(c.get() + (new_comparison_count - old_comparison_count)));
 
         self.buckets[target_layer].push(t);
     }

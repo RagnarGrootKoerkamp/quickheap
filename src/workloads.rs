@@ -2,6 +2,7 @@ use radix_heap::Radix;
 
 use super::Heap;
 use std::hint::black_box;
+use std::marker::PhantomData;
 
 /// Small wrapper type for elements to support random numbers in the workloads.
 pub trait Elem: Ord + std::fmt::Debug + Clone + Copy + Radix + 'static {
@@ -48,24 +49,10 @@ impl_elem!(i64);
 
 thread_local! {
     pub(crate) static COMPARISONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
-    pub(crate) static PUSH_COMPARISONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
 }
 
 #[derive(Clone, Copy, Debug, Ord, Eq)]
 pub struct CountComparisons<T: Elem>(T);
-
-impl<T: Elem> CountComparisons<T> {
-    pub fn reset_count() {
-        COMPARISONS.with(|c| c.set(0));
-        PUSH_COMPARISONS.with(|c| c.set(0));
-    }
-    pub fn get_counts() -> (u64, u64) {
-        (
-            COMPARISONS.with(|c| c.get()),
-            PUSH_COMPARISONS.with(|c| c.get()),
-        )
-    }
-}
 
 impl<T: Elem> PartialEq for CountComparisons<T> {
     #[inline(always)]
@@ -123,6 +110,62 @@ impl<T: Elem> Elem for CountComparisons<T> {
     #[inline(always)]
     fn stride() -> u64 {
         T::stride()
+    }
+}
+
+/// A heap wrapper that counts comparisons during push and pop separately.
+///
+/// Wraps `H: Heap<CountComparisons<T>>` and implements `Heap<T>`.
+/// `push_comparisons` and `pop_comparisons` accumulate the per-operation
+/// counts on this instance.
+pub struct CountingHeap<T: Elem, H: Heap<CountComparisons<T>>> {
+    inner: H,
+    _phantom: PhantomData<T>,
+}
+
+thread_local! {
+    pub(crate) static PUSH_COMPARISONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    pub(crate) static POP_COMPARISONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+impl<T: Elem, H: Heap<CountComparisons<T>>> Heap<T> for CountingHeap<T, H> {
+    const MONOTONE: bool = H::MONOTONE;
+    type Casted<T2: Elem> = CountingHeap<T2, H::Casted<CountComparisons<T2>>>;
+
+    fn default() -> Self {
+        Self {
+            inner: H::default(),
+            _phantom: PhantomData,
+        }
+    }
+
+    fn push(&mut self, t: T) {
+        COMPARISONS.with(|c| c.set(0));
+        self.inner.push(CountComparisons(t));
+        let delta = COMPARISONS.with(|c| c.get());
+        PUSH_COMPARISONS.with(|c| c.set(c.get() + delta));
+    }
+
+    fn pop(&mut self) -> Option<T> {
+        COMPARISONS.with(|c| c.set(0));
+        let result = self.inner.pop().map(|c| c.0);
+        let delta = COMPARISONS.with(|c| c.get());
+        POP_COMPARISONS.with(|c| c.set(c.get() + delta));
+        result
+    }
+}
+
+impl<T: Elem, H: Heap<CountComparisons<T>>> CountingHeap<T, H> {
+    pub fn reset_comparisons() {
+        PUSH_COMPARISONS.with(|c| c.set(0));
+        POP_COMPARISONS.with(|c| c.set(0));
+    }
+
+    pub fn get_comparisons() -> (u64, u64) {
+        (
+            PUSH_COMPARISONS.with(|c| c.get()),
+            POP_COMPARISONS.with(|c| c.get()),
+        )
     }
 }
 
