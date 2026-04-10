@@ -296,12 +296,12 @@ where
     }
 
     // REIMPLS
-    bench::<T, binary_heap::CustomBinaryHeap<T>>(minpow, maxpow);
-    bench::<T, dary_heap::CustomDaryHeap<T, 2>>(minpow, maxpow);
-    bench::<T, dary_heap::CustomDaryHeap<T, 3>>(minpow, maxpow);
-    bench::<T, dary_heap::CustomDaryHeap<T, 4>>(minpow, maxpow);
-    bench::<T, dary_heap::CustomDaryHeap<T, 8>>(minpow, maxpow);
-    bench::<T, dary_heap::CustomDaryHeap<T, 16>>(minpow, maxpow);
+    // bench::<T, binary_heap::CustomBinaryHeap<T>>(minpow, maxpow);
+    // bench::<T, dary_heap::CustomDaryHeap<T, 2>>(minpow, maxpow);
+    // bench::<T, dary_heap::CustomDaryHeap<T, 3>>(minpow, maxpow);
+    // bench::<T, dary_heap::CustomDaryHeap<T, 4>>(minpow, maxpow);
+    // bench::<T, dary_heap::CustomDaryHeap<T, 8>>(minpow, maxpow);
+    // bench::<T, dary_heap::CustomDaryHeap<T, 16>>(minpow, maxpow);
 
     // FIXME: Investigate why this is so slow.
     // bench::<T, original_quickheap::OriginalQuickHeap<T>>(minpow, maxpow);

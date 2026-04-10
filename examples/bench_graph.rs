@@ -162,12 +162,12 @@ fn main() {
     bench::<s3q::S3qHeapU64>(&graphs);
 
     // REIMPLS
-    bench::<binary_heap::CustomBinaryHeap<u64>>(&graphs);
-    bench::<dary_heap::CustomDaryHeap<u64, 2>>(&graphs);
-    bench::<dary_heap::CustomDaryHeap<u64, 3>>(&graphs);
-    bench::<dary_heap::CustomDaryHeap<u64, 4>>(&graphs);
-    bench::<dary_heap::CustomDaryHeap<u64, 8>>(&graphs);
-    bench::<dary_heap::CustomDaryHeap<u64, 16>>(&graphs);
+    // bench::<binary_heap::CustomBinaryHeap<u64>>(&graphs);
+    // bench::<dary_heap::CustomDaryHeap<u64, 2>>(&graphs);
+    // bench::<dary_heap::CustomDaryHeap<u64, 3>>(&graphs);
+    // bench::<dary_heap::CustomDaryHeap<u64, 4>>(&graphs);
+    // bench::<dary_heap::CustomDaryHeap<u64, 8>>(&graphs);
+    // bench::<dary_heap::CustomDaryHeap<u64, 16>>(&graphs);
 
     // BASELINE
     bench::<impls::BinaryHeap<u64>>(&graphs);
