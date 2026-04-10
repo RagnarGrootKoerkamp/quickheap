@@ -2,6 +2,8 @@ use std::fmt::Debug;
 
 use itertools::izip;
 
+use crate::graph_util::{construct_graph_from_dimacs_file, construct_graph_from_edge_list};
+
 #[derive(Clone, Copy, Debug)]
 pub struct Edge<WeightT: Debug + Copy> {
     pub from: usize,
@@ -14,6 +16,12 @@ pub struct Graph<WeightT: Copy + Debug> {
     num_edges: usize,
     first_out: Vec<usize>,
     edges: Vec<Edge<WeightT>>,
+}
+
+impl Graph<u32> {
+    pub fn from_dimacs_instance(path: &str) -> Self {
+        construct_graph_from_dimacs_file(path)
+    }
 }
 
 impl<WeightT: Copy + Debug> Graph<WeightT> {

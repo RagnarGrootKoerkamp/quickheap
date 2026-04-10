@@ -13,24 +13,15 @@ pub fn convert_directed_graph_to_undirected<WeightT: Max + Ord + Copy + Debug>(
 ) -> Graph<WeightT> {
     let mut edges: Vec<Edge<WeightT>> = vec![];
 
-    let mut current_edge: usize = 0;
     for v in 0..graph.num_vertices() {
-        let deg = graph.degree(v);
-        for _ in 0..deg {
-            let head = graph.to(current_edge);
-            let weight_ = graph.weight(current_edge);
+        for (_id, Edge { from, to, weight }) in graph.outgoing_edges(v) {
+            // Insert the edge in both directions
+            edges.push(Edge { from, to, weight });
             edges.push(Edge {
-                from: v,
-                to: head,
-                weight: weight_,
+                from: to,
+                to: from,
+                weight,
             });
-            edges.push(Edge {
-                from: head,
-                to: v,
-                weight: weight_,
-            });
-
-            current_edge += 1;
         }
     }
 
@@ -91,7 +82,7 @@ pub fn construct_graph_from_edge_list<WeightT: Max + Ord + Clone + Copy + Debug>
     Graph::new(new_first_out, new_heads, new_tails, weights)
 }
 
-pub fn convert_dimacs_to_static_graph(path: &str) -> Graph<u32> {
+pub fn construct_graph_from_dimacs_file(path: &str) -> Graph<u32> {
     let error_msg = &format!("File with path {} could not be opened.", path);
     let file = File::open(path).expect(error_msg);
     let file_reader = BufReader::new(file);
@@ -149,6 +140,7 @@ pub fn convert_dimacs_to_static_graph(path: &str) -> Graph<u32> {
         }
     }
 
+    edges.sort_by_key(|a| (a.from, a.to, a.weight));
     construct_graph_from_edge_list(&edges, num_vertices)
 }
 
