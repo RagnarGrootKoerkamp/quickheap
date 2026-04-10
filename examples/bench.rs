@@ -5,7 +5,7 @@ use clap::Parser;
 use quickheap::simd::Avx512;
 #[cfg(feature = "avx2")]
 use quickheap::simd::{Avx2, SimdElem};
-use quickheap::{impls::NoHeap, original_quickheap::OriginalQuickHeap, scalar_quickheap::Search};
+use quickheap::{impls::NoHeap, scalar_quickheap::Search};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -306,7 +306,7 @@ where
     bench::<T, dary_heap::CustomDaryHeap<T, 16>>(minpow, maxpow);
 
     // FIXME: Investigate why this is so slow.
-    // bench::<T, OriginalQuickHeap<T>>(minpow, maxpow);
+    // bench::<T, original_quickheap::OriginalQuickHeap<T>>(minpow, maxpow);
 
     eprintln!("BASELINE");
     bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
