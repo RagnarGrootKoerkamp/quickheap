@@ -373,6 +373,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
+name = "min_max_traits"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ad269bd6e7a39d200bd8efbef2ff6e4fa7b99fc5468d70b8649203b680627c3"
+
+[[package]]
 name = "mmap"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -512,6 +518,7 @@ dependencies = [
  "fibonacci_heap",
  "indexset",
  "itertools",
+ "min_max_traits",
  "orx-priority-queue",
  "perfcnt",
  "pheap",

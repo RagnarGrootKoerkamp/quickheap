@@ -20,9 +20,10 @@ pub mod simd_quickheap;
 pub mod binary_heap;
 pub mod dary_heap;
 
-// pub mod dijkstra;
-// pub mod graph;
-// pub mod prim;
+pub mod dijkstra;
+pub mod graph;
+pub mod graph_util;
+pub mod prim;
 
 pub trait Heap<T> {
     const MONOTONE: bool = false;

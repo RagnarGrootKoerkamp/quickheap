@@ -13,7 +13,9 @@ authors = ["Ragnar Groot Koerkamp"]
 description = "A SIMD-accelerated priority queue"
 
 [features]
-default = ["avx2", "ffi", "perf"]
+# default = ["avx2", "ffi", "perf"]
+default = []
+
 # Enable SimdQuickHeap with AVX2 backend
 avx2 = []
 # Enable SimdQuickHeap with AVX-512 backend
@@ -46,5 +48,4 @@ wide = "1.2.0"
 s3q-sys = { path = "s3q-sys", optional = true}
 sequence-heap-sys = { path = "sequence-heap-sys", optional = true }
 clap = { version = "4.6.0", features = ["derive"] }
-
-
+min_max_traits = "0.1.0"

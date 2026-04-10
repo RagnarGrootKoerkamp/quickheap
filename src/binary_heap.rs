@@ -33,19 +33,6 @@ impl<T: Elem> Heap<T> for CustomBinaryHeap<T> {
 
         Some(res)
     }
-
-    // fn clear(&mut self) {
-    //     self.elements = vec![self.default; self.capacity];
-    //     self.size = 0;
-    // }
-
-    // fn empty(&self) -> bool {
-    //     self.size == 0
-    // }
-
-    // fn size(&self) -> usize {
-    //     self.size
-    // }
 }
 
 impl<T: Elem> CustomBinaryHeap<T> {

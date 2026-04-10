@@ -1,4 +1,4 @@
-use crate::{workloads::Elem, Heap};
+use crate::{Heap, workloads::Elem};
 
 pub struct CustomDaryHeap<T: Elem, const D: usize> {
     elements: Vec<T>,
@@ -132,7 +132,7 @@ impl<T: Elem, const D: usize> CustomDaryHeap<T, D> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{dary_heap::CustomDaryHeap, Heap};
+    use crate::{Heap, dary_heap::CustomDaryHeap};
 
     #[test]
     fn test_dary_heap() {
@@ -167,119 +167,3 @@ mod tests {
         heap.print();
     }
 }
-
-// fn clear(&mut self) {
-//     self.elements = vec![self.default; self.capacity];
-//     self.size = 0;
-// }
-// fn empty(&self) -> bool {
-//     self.size == 0
-// }
-// fn size(&self) -> usize {
-//     self.size
-// }
-
-// impl<ElemT: Clone + Copy + PartialOrd + Debug> BinaryMinHeap<ElemT> {
-//     fn swap(&mut self, i: usize, j: usize) {
-//         self.elements.swap(i, j);
-//     }
-
-//     #[allow(dead_code)]
-//     fn bubble_up_rec(&mut self, pos: usize) {
-//         if pos == 0 {
-//             return;
-//         }
-
-//         let parent_pos = (pos - 1) / 2;
-
-//         if self.elements[pos] < self.elements[parent_pos] {
-//             self.swap(pos, parent_pos);
-//             self.bubble_up_rec(parent_pos);
-//         }
-//     }
-
-//     #[allow(dead_code)]
-//     fn bubble_up_it(&mut self, pos: usize) {
-//         if pos == 0 {
-//             return;
-//         }
-
-//         let mut parent_pos = pos;
-//         let mut child_pos = pos;
-
-//         while child_pos > 0 {
-//             parent_pos = (parent_pos - 1) / 2;
-
-//             if self.elements[child_pos] >= self.elements[parent_pos] {
-//                 break;
-//             }
-
-//             self.swap(child_pos, parent_pos);
-
-//             child_pos = parent_pos;
-//         }
-//     }
-
-//     #[allow(dead_code)]
-//     fn bubble_down_rec(&mut self, pos: usize) {
-//         if pos >= self.size {
-//             return;
-//         }
-
-//         let left_child = 2 * pos + 1;
-//         let right_child = 2 * pos + 2;
-
-//         let smaller_left = left_child < self.size && self.elements[pos] > self.elements[left_child];
-//         let smaller_right =
-//             right_child < self.size && self.elements[pos] > self.elements[right_child];
-
-//         if !smaller_left && !smaller_right {
-//             return;
-//         }
-
-//         if !smaller_right
-//             || (smaller_left && self.elements[left_child] < self.elements[right_child])
-//         {
-//             self.swap(pos, left_child);
-//             self.bubble_down_rec(left_child);
-//         } else {
-//             self.swap(pos, right_child);
-//             self.bubble_down_rec(right_child);
-//         }
-//     }
-
-//     #[allow(dead_code)]
-//     fn bubble_down_it(&mut self, pos: usize) {
-//         if pos >= self.size {
-//             return;
-//         }
-
-//         let mut parent_pos = pos;
-//         let mut left_child;
-//         let mut right_child;
-
-//         while parent_pos < self.size {
-//             left_child = 2 * parent_pos + 1;
-//             right_child = 2 * parent_pos + 2;
-
-//             let smaller_left =
-//                 left_child < self.size && self.elements[parent_pos] > self.elements[left_child];
-//             let smaller_right =
-//                 right_child < self.size && self.elements[parent_pos] > self.elements[right_child];
-
-//             if !smaller_left && !smaller_right {
-//                 return;
-//             }
-
-//             if !smaller_right
-//                 || (smaller_left && self.elements[left_child] < self.elements[right_child])
-//             {
-//                 self.swap(parent_pos, left_child);
-//                 parent_pos = left_child;
-//             } else {
-//                 self.swap(parent_pos, right_child);
-//                 parent_pos = right_child;
-//             }
-//         }
-//     }
-// }
