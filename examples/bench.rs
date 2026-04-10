@@ -1,11 +1,11 @@
 #![feature(where_clause_attrs)]
 
 use clap::Parser;
-use quickheap::impls::NoHeap;
 #[cfg(feature = "avx512")]
 use quickheap::simd::Avx512;
 #[cfg(feature = "avx2")]
 use quickheap::simd::{Avx2, SimdElem};
+use quickheap::{impls::NoHeap, scalar_quickheap::Search};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -251,9 +251,18 @@ where
 
     eprintln!("QUICKHEAP");
     if args.comparisons {
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
+            minpow, maxpow,
+        );
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>(
+            minpow, maxpow,
+        );
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true, { Search::LinearScan }>>(
+            minpow, maxpow,
+        );
         bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false>>(minpow, maxpow);
         bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>(minpow, maxpow);
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
     }
 
     if !args.comparisons {

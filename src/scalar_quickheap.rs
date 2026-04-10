@@ -3,9 +3,16 @@ use crate::workloads::{Elem, COMPARISONS, PUSH_COMPARISONS};
 use super::Heap;
 use std::array::from_fn;
 
+#[derive(PartialEq, Eq, std::marker::ConstParamTy)]
+pub enum Search {
+    LinearScan,
+    BinarySearch,
+}
+
 /// A non-SIMD implementation that works for any type.
 /// M: Use median of M pivots.
-pub struct ScalarQuickHeap<T: Ord, const M: usize, const PERFECT: bool> {
+/// S: Strategy for finding the target bucket in push.
+pub struct ScalarQuickHeap<T: Ord, const M: usize, const PERFECT: bool, const S: Search = { Search::BinarySearch }> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -16,8 +23,10 @@ pub struct ScalarQuickHeap<T: Ord, const M: usize, const PERFECT: bool> {
     pub buckets: Vec<Vec<T>>,
 }
 
-impl<T: Elem, const M: usize, const PERFECT: bool> Heap<T> for ScalarQuickHeap<T, M, PERFECT> {
-    type Casted<T2: Elem> = ScalarQuickHeap<T2, M, PERFECT>;
+impl<T: Elem, const M: usize, const PERFECT: bool, const S: Search> Heap<T>
+    for ScalarQuickHeap<T, M, PERFECT, S>
+{
+    type Casted<T2: Elem> = ScalarQuickHeap<T2, M, PERFECT, S>;
 
     fn default() -> Self {
         Self {
@@ -30,16 +39,23 @@ impl<T: Elem, const M: usize, const PERFECT: bool> Heap<T> for ScalarQuickHeap<T
         // Push on the last layer with a pivot >= t,
         // i.e. the index of first pivot < t.
         let old_comparison_count = COMPARISONS.with(|c| c.get());
-        let target_layer = self
-            .pivots
-            .binary_search_by(|p| {
-                if *p < t {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            })
-            .unwrap_err();
+        let target_layer = match S {
+            Search::BinarySearch => self
+                .pivots
+                .binary_search_by(|p| {
+                    if *p < t {
+                        std::cmp::Ordering::Greater
+                    } else {
+                        std::cmp::Ordering::Less
+                    }
+                })
+                .unwrap_err(),
+            Search::LinearScan => self
+                .pivots
+                .iter()
+                .position(|p| *p < t)
+                .unwrap_or(self.pivots.len()),
+        };
         let new_comparison_count = COMPARISONS.with(|c| c.get());
         PUSH_COMPARISONS.with(|c| c.set(c.get() + (new_comparison_count - old_comparison_count)));
 
@@ -72,7 +88,9 @@ impl<T: Elem, const M: usize, const PERFECT: bool> Heap<T> for ScalarQuickHeap<T
     }
 }
 
-impl<T: Ord + Copy, const M: usize, const PERFECT: bool> ScalarQuickHeap<T, M, PERFECT> {
+impl<T: Ord + Copy, const M: usize, const PERFECT: bool, const S: Search>
+    ScalarQuickHeap<T, M, PERFECT, S>
+{
     #[inline(never)]
     fn partition(&mut self) {
         // Alias the current layer (to be split) and the next layer.

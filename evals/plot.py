@@ -62,7 +62,6 @@ metrics = [
     # ),
 ]
 
-df["push_comparisons"], df["comparisons"] = df["comparisons"], df["push_comparisons"]
 df["pop_comparisons"] = df["comparisons"] - df["push_comparisons"]
 metric_cols = [m for m, _ in metrics] + [
     "comparisons",
@@ -105,7 +104,7 @@ elems = ["i32", "i64"]
 
 colours = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 styles = ["-", "--", "-.", ":"]
-widths = [1.5, 1.5, 1.5]
+widths = [1.5, 1.5, 1.5, 1.5, 1.5, 1.5]
 
 
 all_types = df["type"].unique()
@@ -212,7 +211,7 @@ for metric, label in metrics:
         handles,
         labels_leg,
         loc="lower center",
-        ncol=4,
+        ncol=3,
         bbox_to_anchor=(0.5, -0.10),
     )
     fig.supxlabel("n = max #elements in heap", y=0.02)

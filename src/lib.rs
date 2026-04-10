@@ -1,4 +1,4 @@
-#![feature(portable_simd, vec_from_fn)]
+#![feature(portable_simd, vec_from_fn, adt_const_params)]
 
 use workloads::Elem;
 pub mod workloads;
@@ -39,7 +39,7 @@ mod test {
     #[cfg(feature = "avx512")]
     use crate::simd::Avx512;
 
-    use crate::scalar_quickheap::ScalarQuickHeap;
+    use crate::scalar_quickheap::{ScalarQuickHeap, Search};
     use crate::workloads::{Elem, Workload};
 
     #[cfg(feature = "avx2")]
@@ -98,7 +98,9 @@ mod test {
 
         TestHeap::<T, Base, impls::BinaryHeap<T>>::run(n);
 
+        TestHeap::<T, Base, ScalarQuickHeap<T, 1, false>>::run(n);
         TestHeap::<T, Base, ScalarQuickHeap<T, 3, false>>::run(n);
+        TestHeap::<T, Base, ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>::run(n);
 
         #[cfg(feature = "avx2")]
         TestHeap::<T, Base, SimdQuickHeap<T, Avx2, 8, 3>>::run(n);
