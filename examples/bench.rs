@@ -213,8 +213,9 @@ where
 
         bench_one::<T, H, HeapSort>(n, &mut ok[0]);
         bench_one::<T, H, ConstantSize>(n, &mut ok[1]);
+        bench_one::<T, H, MonotoneWiggle>(n, &mut ok[1]);
         if !H::MONOTONE {
-            bench_one::<T, H, Decreasing>(n, &mut ok[2]);
+            bench_one::<T, H, Wiggle>(n, &mut ok[2]);
         }
 
         eprintln!();
@@ -296,9 +297,19 @@ where
         _ => unimplemented!(),
     }
 
+    eprintln!("REIMPLS");
+    bench::<T, binary_heap::CustomBinaryHeap<T>>(minpow, maxpow);
+    bench::<T, dary_heap::CustomDaryHeap<T, 2>>(minpow, maxpow);
+    bench::<T, dary_heap::CustomDaryHeap<T, 3>>(minpow, maxpow);
+    bench::<T, dary_heap::CustomDaryHeap<T, 4>>(minpow, maxpow);
+    bench::<T, dary_heap::CustomDaryHeap<T, 8>>(minpow, maxpow);
+    bench::<T, dary_heap::CustomDaryHeap<T, 16>>(minpow, maxpow);
+
+    // FIXME: Investigate why this is so slow.
+    // bench::<T, OriginalQuickHeap<T>>(minpow, maxpow);
+
     eprintln!("BASELINE");
     bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
-    bench::<T, OriginalQuickHeap<T>>(minpow, maxpow);
 
     eprintln!("DARY");
     // bench::<T, impls::DaryHeap<T, 2>>(minpow, maxpow);

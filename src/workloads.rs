@@ -168,25 +168,51 @@ impl Workload for ConstantSize {
     }
 }
 
-/// bench: (push pop push)^(n/3) (pop push pop)^(n/3)
-/// values: n..0
-pub struct Decreasing;
+/// bench: (push pop push)^n (pop push pop)^n
+/// values: last + (0..C)
+/// TODO: Exponential distribution?
+pub struct MonotoneWiggle;
 
-impl Workload for Decreasing {
+impl Workload for MonotoneWiggle {
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
-        let mut i = n;
+        let mut rng = fastrand::Rng::new();
+        let stride = T::stride();
         move || {
-            for _ in 0..n / 3 {
-                h.push(T::from(i));
-                i -= 1;
-                h.pop().unwrap().get();
-                h.push(T::from(i));
+            let mut l = 0;
+            for _ in 0..n {
+                h.push(T::from(l + rng.u64(0..stride)));
+                l = h.pop().unwrap().get();
+                h.push(T::from(l + rng.u64(0..stride)));
             }
-            for _ in 0..n / 3 {
+            for _ in 0..n {
+                l = h.pop().unwrap().get();
+                h.push(T::from(l + rng.u64(0..stride)));
                 h.pop().unwrap().get();
-                h.push(T::from(i));
-                i -= 1;
+            }
+            black_box(h);
+        }
+    }
+}
+
+/// bench: (push pop push)^n (pop push pop)^n
+/// values: random
+pub struct Wiggle;
+
+impl Workload for Wiggle {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+        let mut h = H::default();
+        let mut rng = fastrand::Rng::new();
+        let stride = T::stride();
+        move || {
+            for _ in 0..n {
+                h.push(T::from(rng.u64(0..stride)));
+                h.pop().unwrap().get();
+                h.push(T::from(rng.u64(0..stride)));
+            }
+            for _ in 0..n {
+                h.pop().unwrap().get();
+                h.push(T::from(rng.u64(0..stride)));
                 h.pop().unwrap().get();
             }
             black_box(h);

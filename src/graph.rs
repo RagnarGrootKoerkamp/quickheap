@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use itertools::izip;
 
-use crate::graph_util::{construct_graph_from_dimacs_file, construct_graph_from_edge_list};
+use crate::graph_util::construct_graph_from_dimacs_file;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Edge<WeightT: Debug + Copy> {

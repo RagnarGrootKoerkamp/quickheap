@@ -36,6 +36,7 @@ impl<T: Elem> Heap<T> for CustomBinaryHeap<T> {
 }
 
 impl<T: Elem> CustomBinaryHeap<T> {
+    #[inline(always)]
     fn bubble_up_it(&mut self, pos: usize) {
         if pos == 0 {
             return;
@@ -57,6 +58,7 @@ impl<T: Elem> CustomBinaryHeap<T> {
         }
     }
 
+    #[inline(always)]
     fn bubble_down_it(&mut self, pos: usize) {
         if pos >= self.size {
             return;

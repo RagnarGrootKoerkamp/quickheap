@@ -73,13 +73,11 @@ mod test {
     impl<T: Elem + Copy, H0: Heap<T>, H1: Heap<T>> TestHeap<T, H0, H1> {
         fn run(n: u64) {
             eprintln!("Test: {:?}", std::any::type_name::<Self>());
-            eprintln!("HEAP SORT");
             workloads::HeapSort::setup::<T, Self>(n)();
-            eprintln!("CONSTANT");
             workloads::ConstantSize::setup::<T, Self>(n)();
+            workloads::MonotoneWiggle::setup::<T, Self>(n)();
             if !Self::MONOTONE {
-                eprintln!("DECREASING");
-                workloads::Decreasing::setup::<T, Self>(n)();
+                workloads::Wiggle::setup::<T, Self>(n)();
             }
         }
     }

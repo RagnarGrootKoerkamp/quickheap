@@ -74,9 +74,8 @@ impl<T: Elem> OriginalQuickHeap<T> {
         let pivot = self.data[pivot_idx];
         {
             // swap pivot to the end of range
-            let x = self.data[n - 1];
+            self.data[pivot_idx] = self.data[n - 1];
             self.data[n - 1] = pivot;
-            self.data[pivot_idx] = x;
         }
         // Partition the range 0..n-1 by the pivot value using Hoare's algorithm.
         let mut i = 0;
