@@ -32,7 +32,6 @@ df["name"] = df["name"].str.replace(r"<\(\), T", "<T", regex=True)
 df["name"] = df["name"].str.replace(r", \(\)", "", regex=True)
 df["name"] = df["name"].str.replace(r", 16, 1", "", regex=True)
 df["name"] = df["name"].str.replace(r"Generic", "", regex=True)
-df["type"] = df["name"].str.split("<").str[0]
 
 # clean up ScalarQuickHeap for comparisons
 df["name"] = df["name"].str.replace("Search::", "", regex=False)
@@ -57,6 +56,8 @@ df["workload"] = (
 df = df[~df["name"].str.contains("SimdQuickHeap<T, Avx512>")]
 df["name"] = df["name"].str.replace(r"<true>", "", regex=True)
 
+df["type"] = df["name"].str.split("<").str[0]
+
 # Sort by type
 type_order = [
     "BinaryHeap",
@@ -74,11 +75,10 @@ type_order = [
 ]
 
 colours = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-styles = ["-", "--", "-.", ":"]
-widths = [1.5, 1.5, 1.5, 1.5, 1.5, 1.5]
 
 # Assign colours from the fixed type_order so they are consistent across all plots
 type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(type_order)}
+type_colour["ScalarQuickHeap"] = "black"
 type_colour["SimdQuickHeap"] = "black"
 
 is_categorical = "graph" in df.columns
@@ -355,16 +355,13 @@ else:
     }
 
     def width_for_type(tp):
-        if tp == "SimdQuickHeap":
-            return 2.0
-        if tp == "SimdQuickHeap512":
-            return 2.0
         if tp == "RadixHeapMap":
-            return 1.4
-        return 2.0
+            return 1.0
+        return 1.5
 
-    def style_for_type(tp):
-        if tp == "RadixHeapMap":
+    def style_for_name(tp, name):
+        names = all_names_by_type[tp]
+        if len(names) >= 2 and names.index(name) == 0:
             return "--"
         return "-"
 
@@ -386,7 +383,7 @@ else:
                 for tp, tgroup in wdf.groupby("type", sort=False):
                     c = type_colour[tp]
                     for name, ngroup in tgroup.groupby("name", sort=False):
-                        lw = widths[all_names_by_type[tp].index(name)]
+                        lw = width_for_type(tp)
                         ngroup.plot(
                             kind="line",
                             x="n",
@@ -395,34 +392,10 @@ else:
                             ax=axs[j][i],
                             title=workload if j == 0 else None,
                             label=name if i == 0 and j == 0 else None,
-                            # color=c,
-                            ls=style_for_type(tp),
+                            color=c,
+                            ls=style_for_name(tp, name),
                             lw=lw,
                         )
-                        c = axs[j][i].get_lines()[-1].get_color()
-                        if metric == "comparisons":
-                            ngroup.plot(
-                                kind="line",
-                                x="n",
-                                y="push_comparisons",
-                                logx=True,
-                                ax=axs[j][i],
-                                label="_nolegend_",
-                                color=c,
-                                ls=":",
-                                lw=lw,
-                            )
-                            ngroup.plot(
-                                kind="line",
-                                x="n",
-                                y="pop_comparisons",
-                                logx=True,
-                                label="_nolegend_",
-                                ax=axs[j][i],
-                                color=c,
-                                ls="--",
-                                lw=lw,
-                            )
 
                 # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
                 cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
@@ -430,8 +403,7 @@ else:
                 for cn in cache_n:
                     axs[j][i].axvline(cn, color="gray", ls="-", lw=0.5, alpha=0.5)
 
-                if metric != "comparisons":
-                    axs[j][i].set_yscale("log", base=2)
+                axs[j][i].set_yscale("log", base=2)
                 axs[j][i].set_xscale("log", base=2)
                 axs[j][i].set_xticks([2**i for i in [10, 15, 20, 25]])
                 axs[j][i].legend().remove()
@@ -447,7 +419,7 @@ else:
             handles,
             labels_leg,
             loc="lower center",
-            ncol=3,
+            ncol=4,
             bbox_to_anchor=(0.5, -0.10),
         )
         fig.supxlabel("n = max #elements in heap", y=0.02)
