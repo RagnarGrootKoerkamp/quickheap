@@ -9,8 +9,7 @@ pub type OrxDaryHeap<T, const N: usize> = orx_priority_queue::DaryHeap<(), T, N>
 pub type PairingHeap<T> = pheap::PairingHeap<(), T>;
 pub type RadixHeap<T> = radix_heap::RadixHeapMap<Reverse<T>, ()>;
 pub type WeakHeap<T> = weakheap::WeakHeap<Reverse<T>>;
-/// only for i32
-pub use fibonacci_heap::FibonacciHeap;
+pub type FibonacciHeap<T> = fibonacci_heap::GenericFibonacciHeap<T>;
 
 /// set-based, so do not support duplicate elements.
 pub type BTreeSet<T> = std::collections::BTreeSet<T>;
@@ -85,23 +84,23 @@ impl<T: Ord + Clone, const N: usize> Heap<T> for OrxDaryHeap<T, N> {
     type Casted<T2: Elem> = OrxDaryHeap<T2, N>;
 }
 
-impl Heap<i32> for FibonacciHeap {
+impl<T: Ord + Clone + std::fmt::Debug + 'static> Heap<T> for FibonacciHeap<T> {
     #[inline(always)]
     fn default() -> Self {
         Default::default()
     }
 
     #[inline(always)]
-    fn push(&mut self, t: i32) {
+    fn push(&mut self, t: T) {
         let _ = self.insert(t);
     }
 
     #[inline(always)]
-    fn pop(&mut self) -> Option<i32> {
+    fn pop(&mut self) -> Option<T> {
         self.extract_min()
     }
 
-    type Casted<T2: Elem> = NoHeap;
+    type Casted<T2: Elem> = FibonacciHeap<T2>;
 }
 
 pub struct NoHeap;

@@ -130,7 +130,7 @@ mod test {
         TestHeap::<T, Base, impls::OrxDaryHeap<T, 8>>::run(n);
         TestHeap::<T, Base, impls::PairingHeap<T>>::run(n);
         TestHeap::<T, Base, impls::WeakHeap<T>>::run(n);
-        TestHeap::<i32, impls::BinaryHeap<i32>, impls::FibonacciHeap>::run(n); // broken
+        TestHeap::<T, Base, impls::FibonacciHeap<T>>::run(n); // broken
 
         if false {
             // Set-based implementations without support for duplicate elements.

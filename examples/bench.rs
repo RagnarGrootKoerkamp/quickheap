@@ -321,13 +321,12 @@ where
     bench::<T, impls::OrxDaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, impls::OrxDaryHeap<T, 16>>(minpow, maxpow);
 
-    // eprintln!("Amortized");
-    // bench::<T, impls::PairingHeap<T>>(minpow, maxpow);
-
-    // if TypeId::of::<T>(minpow, maxpow) == TypeId::of::<i32>() {
-    //     bench::<i32, impls::FibonacciHeap>(minpow, maxpow);
-    // }
-    // bench::<T, impls::WeakHeap<T>>(minpow, maxpow);
+    // AMORTIZED
+    if args.comparisons {
+        bench::<T, impls::PairingHeap<T>>(minpow, maxpow);
+        bench::<T, impls::FibonacciHeap<T>>(minpow, maxpow);
+        bench::<T, impls::WeakHeap<T>>(minpow, maxpow);
+    }
 
     // MONOTONE
     if !args.comparisons {
