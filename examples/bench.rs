@@ -250,7 +250,7 @@ where
     let minpow = args.min;
     let maxpow = args.max;
 
-    eprintln!("QUICKHEAP");
+    // QUICKHEAP
     if args.comparisons {
         bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
             minpow, maxpow,
@@ -282,7 +282,7 @@ where
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(minpow, maxpow);
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(minpow, maxpow);
 
-    eprintln!("Engineered");
+    // ENGINEERED
     #[cfg(feature = "ffi")]
     match TypeId::of::<T>() {
         // TODO: Figure out if we can count comparisons here.
@@ -297,7 +297,7 @@ where
         _ => unimplemented!(),
     }
 
-    eprintln!("REIMPLS");
+    // REIMPLS
     bench::<T, binary_heap::CustomBinaryHeap<T>>(minpow, maxpow);
     bench::<T, dary_heap::CustomDaryHeap<T, 2>>(minpow, maxpow);
     bench::<T, dary_heap::CustomDaryHeap<T, 3>>(minpow, maxpow);
@@ -308,10 +308,10 @@ where
     // FIXME: Investigate why this is so slow.
     // bench::<T, original_quickheap::OriginalQuickHeap<T>>(minpow, maxpow);
 
-    eprintln!("BASELINE");
+    // BASELINE
     bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
 
-    eprintln!("DARY");
+    // DARY
     // bench::<T, impls::DaryHeap<T, 2>>(minpow, maxpow);
     // bench::<T, impls::DaryHeap<T, 4>>(minpow, maxpow);
     // bench::<T, impls::DaryHeap<T, 8>>(minpow, maxpow);
@@ -329,7 +329,7 @@ where
     // }
     // bench::<T, impls::WeakHeap<T>>(minpow, maxpow);
 
-    eprintln!("Monotone");
+    // MONOTONE
     bench::<T, impls::RadixHeap<T>>(minpow, maxpow);
 
     // eprintln!("Set");

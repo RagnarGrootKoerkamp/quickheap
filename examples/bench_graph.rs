@@ -14,7 +14,7 @@ use std::any::type_name;
 use std::cell::RefCell;
 use std::hint::black_box;
 
-const REPEATS: usize = 10;
+const REPEATS: usize = 3;
 
 const BASE_PATH: &'static str = "./input/";
 const SUFF: &'static str = ".gr";
@@ -94,7 +94,7 @@ fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u
 
 pub fn bench<H: Heap<u64>>(graphs: &Vec<(String, Graph<u32>)>) {
     for (instance, graph) in graphs {
-        eprint!("{:<70} {}", type_name::<H>(), instance);
+        eprint!("{:<80} {}", type_name::<H>(), instance);
 
         let t = time_workload::<H, DijkstraWorkload>(instance, graph);
         eprint!(" {t:>8.2}");
@@ -113,10 +113,11 @@ fn main() {
     // Load all the graphs into memory
     for instance in GRAPH_INSTANCES {
         let path = format!("{}{}{}", BASE_PATH, instance, SUFF);
-        graphs.push((instance.to_string(), Graph::from_dimacs_instance(&path)));
+        let graph = Graph::from_dimacs_instance(&path);
+        graphs.push((instance.to_string(), graph));
     }
 
-    eprintln!("QUICKHEAP");
+    // QUICKHEAP
 
     #[cfg(feature = "avx2")]
     bench::<simd_quickheap::SimdQuickHeap<u64, Avx2, 16, 1>>(&graphs);
@@ -128,16 +129,24 @@ fn main() {
     // bench::<simd_quickheap::SimdQuickHeap<u64, 8, 1>>(&graphs);
     // bench::<simd_quickheap::SimdQuickHeap<u64, 8, 3>>(&graphs);
 
-    eprintln!("Engineered");
+    // ENGINEERED
     #[cfg(feature = "ffi")]
     bench::<sequence_heap::SequenceHeapU64>(&graphs);
     #[cfg(feature = "ffi")]
     bench::<s3q::S3qHeapU64>(&graphs);
 
-    eprintln!("BASELINE");
+    // REIMPLS
+    bench::<binary_heap::CustomBinaryHeap<u64>>(&graphs);
+    bench::<dary_heap::CustomDaryHeap<u64, 2>>(&graphs);
+    bench::<dary_heap::CustomDaryHeap<u64, 3>>(&graphs);
+    bench::<dary_heap::CustomDaryHeap<u64, 4>>(&graphs);
+    bench::<dary_heap::CustomDaryHeap<u64, 8>>(&graphs);
+    bench::<dary_heap::CustomDaryHeap<u64, 16>>(&graphs);
+
+    // BASELINE
     bench::<impls::BinaryHeap<u64>>(&graphs);
 
-    eprintln!("DARY");
+    // DARY
     // bench::<impls::DaryHeap<u64, 2>>(&graphs);
     // bench::<impls::DaryHeap<u64, 4>>(&graphs);
     // bench::<impls::DaryHeap<u64, 8>>(&graphs);
@@ -147,14 +156,14 @@ fn main() {
     bench::<impls::OrxDaryHeap<u64, 8>>(&graphs);
     // bench::<impls::OrxDaryHeap<u64, 16>>(&graphs);
 
-    // eprintln!("Amortized");
+    // AMORTIZED
     // bench::<impls::PairingHeap<u64>>(&graphs);
     // bench::<impls::WeakHeap<u64>>(&graphs);
 
-    eprintln!("Monotone");
+    // MONOTONE
     bench::<impls::RadixHeap<u64>>(&graphs);
 
-    // eprintln!("Set");
+    // SET
     // bench::<impls::BTreeSet<u64>>(&graphs);
     // bench::<impls::RevBTreeSet<u64>>(&graphs);
     // bench::<impls::IndexSetBTreeSet<u64>>(&graphs);
