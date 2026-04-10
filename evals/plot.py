@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 import sys
@@ -14,7 +15,7 @@ df["name"] = df["name"].str.replace(r"quickheap::\w+::", "", regex=True)
 df["name"] = df["name"].str.replace(
     "alloc::collections::binary_heap::", "", regex=False
 )
-df["name"] = df["name"].str.replace(r"core::cmp::Reverse<i(32|64)>", "T", regex=True)
+df["name"] = df["name"].str.replace(r"core::cmp::Reverse<[iu](32|64)>", "T", regex=True)
 df["name"] = df["name"].str.replace(
     "orx_priority_queue::dary::daryheap::DaryHeap", "DaryHeapOrx", regex=False
 )
@@ -23,15 +24,18 @@ df["name"] = df["name"].str.replace("pheap::ph::", "", regex=False)
 df["name"] = df["name"].str.replace("fibonacci_heap::", "", regex=False)
 df["name"] = df["name"].str.replace("weakheap::", "", regex=False)
 df["name"] = df["name"].str.replace("radix_heap::", "", regex=False)
-df["name"] = df["name"].str.replace(r"\bi(32|64)\b", "T", regex=True)
-df["name"] = df["name"].str.replace(r"I(32|64)", "<T>", regex=True)
+df["name"] = df["name"].str.replace(r"\b[iu](32|64)\b", "T", regex=True)
+df["name"] = df["name"].str.replace(r"[IU](32|64)", "<T>", regex=True)
+df["name"] = df["name"].str.replace(r"<T><", "<T, ", regex=True)
 df["name"] = df["name"].str.replace(r"<\(\), T", "<T", regex=True)
 df["name"] = df["name"].str.replace(r", \(\)", "", regex=True)
 df["name"] = df["name"].str.replace(r", 16, 1", "", regex=True)
 df["type"] = df["name"].str.split("<").str[0]
 
 # Shorten workload names
-df["workload"] = df["workload"].str.split("::").str[-1]
+df["workload"] = (
+    df["workload"].str.split("::").str[-1].str.replace("Workload", "", regex=False)
+)
 
 # Filter out some overly slow heaps
 # df = df[
@@ -43,178 +47,268 @@ df["workload"] = df["workload"].str.split("::").str[-1]
 df = df[~df["name"].str.contains("SimdQuickHeap<T, Avx512>")]
 df["name"] = df["name"].str.replace(r"<true>", "", regex=True)
 
-
-# Take median over repeats, then normalize each metric by n*log2(n)
-metrics = [
-    ("nanos", r"ns / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
-    # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
-    # (
-    #     "l1_cache_misses",
-    #     r"L1 cache misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
-    # ),
-    # # (
-    # #     "hw_cache_misses",
-    # #     r"HW cache misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
-    # # ),
-    # (
-    #     "l3_cache_misses",
-    #     r"L3 cache misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
-    # ),
-]
-
-df["pop_comparisons"] = df["comparisons"] - df["push_comparisons"]
-metric_cols = [m for m, _ in metrics] + [
-    "comparisons",
-    "push_comparisons",
-    "pop_comparisons",
-]
-
-
-if df["nanos"].max() == 0:
-    # only report comparisons
-    metrics = [
-        ("comparisons", r"comparisons / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$")
-    ]
-
-
-df = (
-    df.groupby(["elem", "name", "type", "n", "workload"])[metric_cols]
-    .median()
-    .reset_index()
-)
-
-
 # Sort by type
 type_order = [
     "BinaryHeap",
+    "CustomBinaryHeap",
     "RadixHeapMap",
     "DaryHeapOrx",
+    "CustomDaryHeap",
     "SequenceHeap",
     "S3qHeap",
     "SimdQuickHeap",
 ]
-df["order"] = pd.Categorical(df["type"], categories=type_order, ordered=True)
-df = df.sort_values(["order", "name"])
-ops = df["n"] * np.log2(df["n"])
-for m in metric_cols:
-    df[m] = df[m] / ops
-
-workloads = ["HeapSort", "ConstantSize", "Decreasing"]
-elems = ["i32", "i64"]
 
 colours = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 styles = ["-", "--", "-.", ":"]
 widths = [1.5, 1.5, 1.5, 1.5, 1.5, 1.5]
 
-
-all_types = df["type"].unique()
-type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(all_types)}
-# type_colour["DaryHeapOrx"] = "black"
-# blogyellow = "#fcc007"
+# Assign colours from the fixed type_order so they are consistent across all plots
+type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(type_order)}
 type_colour["SimdQuickHeap"] = "black"
-all_names_by_type = {
-    tp: list(df[df["type"] == tp]["name"].unique()) for tp in all_types
-}
+
+is_categorical = "graph" in df.columns
 
 
-def width_for_type(tp):
-    if tp == "SimdQuickHeap":
-        return 2.0
-    if tp == "SimdQuickHeap512":
-        return 2.0
-    if tp == "RadixHeapMap":
-        return 1.4
-    return 2.0
+if is_categorical:
+    # Shorten graph input names: "input/GER_graph.gr" -> "GER"
+    df["graph_name"] = df["graph"].str.replace(
+        r".*/(.*?)(?:_graph)?\.gr$", r"\1", regex=True
+    )
 
+    df["millis"] = df["nanos"] / 1e6
+    df = df[~df["graph"].str.contains("small")]
+    df = df[~df["name"].str.contains("Custom")]
 
-def style_for_type(tp):
-    if tp == "RadixHeapMap":
-        return "--"
-    return "-"
+    # Take median over repeats
+    df = (
+        df.groupby(["name", "type", "graph_name", "workload"])["millis"]
+        .median()
+        .reset_index()
+    )
 
+    # Sort methods by type order then name
+    df["order"] = pd.Categorical(df["type"], categories=type_order, ordered=True)
+    df = df.sort_values(["order", "name"])
 
-for metric, label in metrics:
+    # Normalize: for each (graph_name, workload), divide by the minimum nanos
+    min_millis = df.groupby(["graph_name", "workload"])["millis"].transform("min")
+    df["rel"] = df["millis"] / min_millis
+
+    all_types = df["type"].unique()
+
+    workloads = sorted(df["workload"].unique())
+    graph_names = sorted(df["graph_name"].unique())
+    methods = list(df["name"].unique())  # already sorted by type/name above
+
+    hatches = ["", "///", "xxx", "..."]
+    graph_hatch = {gn: hatches[k % len(hatches)] for k, gn in enumerate(graph_names)}
+    graph_alpha = {gn: (1.0 if k == 0 else 0.6) for k, gn in enumerate(graph_names)}
+
+    n_methods = len(methods)
+    bar_width = 0.8 / len(graph_names)
+    method_type = {m: df[df["name"] == m]["type"].iloc[0] for m in methods}
+    bar_colors = [type_colour.get(method_type[m], "gray") for m in methods]
+    x = np.arange(n_methods)
+
     plt.close("all")
     fig, axs = plt.subplots(
-        len(elems),
         len(workloads),
-        figsize=(4 * len(workloads), 6),
+        1,
+        figsize=(max(8, n_methods * 0.7), 4 * len(workloads)),
         sharex=True,
-        sharey=True,
     )
-    fig.suptitle(label)
+    if len(workloads) == 1:
+        axs = [axs]
 
-    for j, elem in enumerate(elems):
-        edf = df[df["elem"] == elem]
-        for i, workload in enumerate(workloads):
-            wdf = edf[edf["workload"] == workload]
-            for tp, tgroup in wdf.groupby("type", sort=False):
-                c = type_colour[tp]
-                for name, ngroup in tgroup.groupby("name", sort=False):
-                    lw = widths[all_names_by_type[tp].index(name)]
-                    ngroup.plot(
-                        kind="line",
-                        x="n",
-                        y=metric,
-                        logx=True,
-                        ax=axs[j][i],
-                        title=workload if j == 0 else None,
-                        label=name if i == 0 and j == 0 else None,
-                        ls=style_for_type(tp),
-                        lw=lw,
-                    )
-                    c = axs[j][i].get_lines()[-1].get_color()
-                    if metric == "comparisons":
+    for ax, workload in zip(axs, workloads):
+        wdf = df[df["workload"] == workload]
+
+        for gi, gn in enumerate(graph_names):
+            gdf = wdf[wdf["graph_name"] == gn].set_index("name")
+            heights = [
+                gdf.loc[m, "rel"] if m in gdf.index else float("nan") for m in methods
+            ]
+            offset = (gi - (len(graph_names) - 1) / 2) * bar_width
+            ax.bar(
+                x + offset,
+                heights,
+                bar_width,
+                label=gn,
+                color=bar_colors,
+                hatch=graph_hatch[gn],
+                alpha=graph_alpha[gn],
+                edgecolor="white",
+            )
+
+        ax.axhline(1.0, color="gray", ls="--", lw=0.8)
+        ax.set_yscale("log")
+        ax.yaxis.set_major_locator(ticker.LinearLocator(1, numticks=5))
+        ax.yaxis.set_minor_locator(ticker.NullLocator())
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
+        ax.set_ylabel("time (ms)")
+        ax.set_title(workload)
+        ax.grid(axis="y", which="major", linestyle="-", alpha=0.4)
+        if workload == workloads[0]:
+            ax.legend(title="Graph", loc="upper right")
+
+    axs[-1].set_xticks(x)
+    axs[-1].set_xticklabels(methods, rotation=35, ha="right", fontsize=8)
+
+    # Color-coded type labels along x-axis
+    for tick, method in zip(axs[-1].get_xticklabels(), methods):
+        tick.set_color(type_colour.get(method_type[method], "black"))
+
+    fig.tight_layout()
+    fig.savefig(f"plot-{benchname}.svg", bbox_inches="tight")
+    fig.savefig(f"plot-{benchname}.png", bbox_inches="tight", dpi=300)
+
+else:
+    # Take median over repeats, then normalize each metric by n*log2(n)
+    metrics = [
+        ("nanos", r"ns / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
+        # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
+        # (
+        #     "l1_cache_misses",
+        #     r"L1 cache misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
+        # ),
+        # (
+        #     "l3_cache_misses",
+        #     r"L3 cache misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
+        # ),
+    ]
+
+    if "push_comparisons" not in df.columns:
+        df["push_comparisons"] = 0
+    df["pop_comparisons"] = df["comparisons"] - df["push_comparisons"]
+    metric_cols = [m for m, _ in metrics] + [
+        "comparisons",
+        "push_comparisons",
+        "pop_comparisons",
+    ]
+
+    if df["nanos"].max() == 0:
+        metrics = [
+            ("comparisons", r"comparisons / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$")
+        ]
+
+    df = (
+        df.groupby(["elem", "name", "type", "n", "workload"])[metric_cols]
+        .median()
+        .reset_index()
+    )
+
+    df["order"] = pd.Categorical(df["type"], categories=type_order, ordered=True)
+    df = df.sort_values(["order", "name"])
+    ops = df["n"] * np.log2(df["n"])
+    for m in metric_cols:
+        df[m] = df[m] / ops
+
+    workloads = ["HeapSort", "ConstantSize", "Decreasing"]
+    elems = ["i32", "i64"]
+
+    all_types = df["type"].unique()
+    all_names_by_type = {
+        tp: list(df[df["type"] == tp]["name"].unique()) for tp in all_types
+    }
+
+    def width_for_type(tp):
+        if tp == "SimdQuickHeap":
+            return 2.0
+        if tp == "SimdQuickHeap512":
+            return 2.0
+        if tp == "RadixHeapMap":
+            return 1.4
+        return 2.0
+
+    def style_for_type(tp):
+        if tp == "RadixHeapMap":
+            return "--"
+        return "-"
+
+    for metric, label in metrics:
+        plt.close("all")
+        fig, axs = plt.subplots(
+            len(elems),
+            len(workloads),
+            figsize=(4 * len(workloads), 6),
+            sharex=True,
+            sharey=True,
+        )
+        fig.suptitle(label)
+
+        for j, elem in enumerate(elems):
+            edf = df[df["elem"] == elem]
+            for i, workload in enumerate(workloads):
+                wdf = edf[edf["workload"] == workload]
+                for tp, tgroup in wdf.groupby("type", sort=False):
+                    c = type_colour[tp]
+                    for name, ngroup in tgroup.groupby("name", sort=False):
+                        lw = widths[all_names_by_type[tp].index(name)]
                         ngroup.plot(
                             kind="line",
                             x="n",
-                            y="push_comparisons",
+                            y=metric,
                             logx=True,
                             ax=axs[j][i],
-                            label="_nolegend_",
+                            title=workload if j == 0 else None,
+                            label=name if i == 0 and j == 0 else None,
                             color=c,
-                            ls=":",
+                            ls=style_for_type(tp),
                             lw=lw,
                         )
-                        ngroup.plot(
-                            kind="line",
-                            x="n",
-                            y="pop_comparisons",
-                            logx=True,
-                            label="_nolegend_",
-                            ax=axs[j][i],
-                            color=c,
-                            ls="--",
-                            lw=lw,
-                        )
+                        # c = axs[j][i].get_lines()[-1].get_color()
+                        if metric == "comparisons":
+                            ngroup.plot(
+                                kind="line",
+                                x="n",
+                                y="push_comparisons",
+                                logx=True,
+                                ax=axs[j][i],
+                                label="_nolegend_",
+                                color=c,
+                                ls=":",
+                                lw=lw,
+                            )
+                            ngroup.plot(
+                                kind="line",
+                                x="n",
+                                y="pop_comparisons",
+                                logx=True,
+                                label="_nolegend_",
+                                ax=axs[j][i],
+                                color=c,
+                                ls="--",
+                                lw=lw,
+                            )
 
-            # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
-            cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
-            cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
-            for cn in cache_n:
-                axs[j][i].axvline(cn, color="gray", ls="-", lw=0.5, alpha=0.5)
+                # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
+                cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
+                cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
+                for cn in cache_n:
+                    axs[j][i].axvline(cn, color="gray", ls="-", lw=0.5, alpha=0.5)
 
-            if metric != "comparisons":
-                axs[j][i].set_yscale("log", base=2)
-            axs[j][i].set_xscale("log", base=2)
-            axs[j][i].set_xticks([2**i for i in [10, 15, 20, 25]])
-            axs[j][i].legend().remove()
-            axs[j][i].set_xlabel(None)
-            axs[j][i].grid(axis="y", which="both", linestyle="-")
-            if j > 0:
-                axs[j][i].set_title(None)
+                if metric != "comparisons":
+                    axs[j][i].set_yscale("log", base=2)
+                axs[j][i].set_xscale("log", base=2)
+                axs[j][i].set_xticks([2**i for i in [10, 15, 20, 25]])
+                axs[j][i].legend().remove()
+                axs[j][i].set_xlabel(None)
+                axs[j][i].grid(axis="y", which="both", linestyle="-")
+                if j > 0:
+                    axs[j][i].set_title(None)
 
-        axs[j][0].set_ylabel(elem)
+            axs[j][0].set_ylabel(elem)
 
-    handles, labels_leg = axs[0][0].get_legend_handles_labels()
-    fig.legend(
-        handles,
-        labels_leg,
-        loc="lower center",
-        ncol=3,
-        bbox_to_anchor=(0.5, -0.10),
-    )
-    fig.supxlabel("n = max #elements in heap", y=0.02)
+        handles, labels_leg = axs[0][0].get_legend_handles_labels()
+        fig.legend(
+            handles,
+            labels_leg,
+            loc="lower center",
+            ncol=3,
+            bbox_to_anchor=(0.5, -0.10),
+        )
+        fig.supxlabel("n = max #elements in heap", y=0.02)
 
-    fig.savefig(f"plot-{benchname}-{metric}.svg", bbox_inches="tight")
-    fig.savefig(f"plot-{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
+        fig.savefig(f"plot-{benchname}-{metric}.svg", bbox_inches="tight")
+        fig.savefig(f"plot-{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
