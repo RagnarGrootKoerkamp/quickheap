@@ -1,5 +1,7 @@
 use radix_heap::Radix;
 
+use crate::impls::NoHeap;
+
 use super::Heap;
 use std::hint::black_box;
 use std::marker::PhantomData;
@@ -113,6 +115,11 @@ impl<T: Elem> Elem for CountComparisons<T> {
     }
 }
 
+pub trait CountingHeapT<T: Elem>: Heap<T> {
+    fn reset_comparisons();
+    fn get_comparisons() -> (u64, u64);
+}
+
 /// A heap wrapper that counts comparisons during push and pop separately.
 ///
 /// Wraps `H: Heap<CountComparisons<T>>` and implements `Heap<T>`.
@@ -130,7 +137,7 @@ thread_local! {
 
 impl<T: Elem, H: Heap<CountComparisons<T>>> Heap<T> for CountingHeap<T, H> {
     const MONOTONE: bool = H::MONOTONE;
-    type Casted<T2: Elem> = CountingHeap<T2, H::Casted<CountComparisons<T2>>>;
+    type CountedHeap = NoHeap;
 
     fn default() -> Self {
         Self {
@@ -155,23 +162,18 @@ impl<T: Elem, H: Heap<CountComparisons<T>>> Heap<T> for CountingHeap<T, H> {
     }
 }
 
-impl<T: Elem, H: Heap<CountComparisons<T>>> CountingHeap<T, H> {
-    pub fn reset_comparisons() {
+impl<T: Elem, H: Heap<CountComparisons<T>>> CountingHeapT<T> for CountingHeap<T, H> {
+    fn reset_comparisons() {
         PUSH_COMPARISONS.with(|c| c.set(0));
         POP_COMPARISONS.with(|c| c.set(0));
     }
 
-    pub fn get_comparisons() -> (u64, u64) {
+    fn get_comparisons() -> (u64, u64) {
         (
             PUSH_COMPARISONS.with(|c| c.get()),
             POP_COMPARISONS.with(|c| c.get()),
         )
     }
-}
-
-pub trait FfiCounting {
-    fn reset_comparisons();
-    fn get_comparisons() -> (u64, u64);
 }
 
 /// Random element from u64.

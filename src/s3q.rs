@@ -1,6 +1,6 @@
 use crate::Heap;
 use crate::impls::NoHeap;
-use crate::workloads::{Elem, FfiCounting};
+use crate::workloads::CountingHeapT;
 use s3q_sys::{
     S3qI32Pq, S3qI64Pq, S3qU32Pq, S3qU64Pq, s3q_i32_pq_empty, s3q_i32_pq_free, s3q_i32_pq_new,
     s3q_i32_pq_pop, s3q_i32_pq_push, s3q_i64_pq_empty, s3q_i64_pq_free, s3q_i64_pq_new,
@@ -10,7 +10,7 @@ use s3q_sys::{
 };
 
 macro_rules! impl_s3q_heap {
-    ($heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident) => {
+    ($heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident, $counting:ty) => {
         pub struct $heap(*mut $pq);
 
         impl Drop for $heap {
@@ -20,7 +20,7 @@ macro_rules! impl_s3q_heap {
         }
 
         impl Heap<$t> for $heap {
-            type Casted<T2: Elem> = NoHeap;
+            type CountedHeap = $counting;
 
             #[inline(always)]
             fn default() -> Self {
@@ -59,7 +59,8 @@ impl_s3q_heap!(
     s3q_i32_pq_free,
     s3q_i32_pq_push,
     s3q_i32_pq_pop,
-    s3q_i32_pq_empty
+    s3q_i32_pq_empty,
+    NoHeap
 );
 impl_s3q_heap!(
     S3qHeapI64,
@@ -69,7 +70,8 @@ impl_s3q_heap!(
     s3q_i64_pq_free,
     s3q_i64_pq_push,
     s3q_i64_pq_pop,
-    s3q_i64_pq_empty
+    s3q_i64_pq_empty,
+    S3qHeapI64Counting
 );
 impl_s3q_heap!(
     S3qHeapU32,
@@ -79,7 +81,8 @@ impl_s3q_heap!(
     s3q_u32_pq_free,
     s3q_u32_pq_push,
     s3q_u32_pq_pop,
-    s3q_u32_pq_empty
+    s3q_u32_pq_empty,
+    NoHeap
 );
 impl_s3q_heap!(
     S3qHeapU64,
@@ -89,7 +92,8 @@ impl_s3q_heap!(
     s3q_u64_pq_free,
     s3q_u64_pq_push,
     s3q_u64_pq_pop,
-    s3q_u64_pq_empty
+    s3q_u64_pq_empty,
+    NoHeap
 );
 
 use s3q_sys::{
@@ -108,7 +112,7 @@ impl Drop for S3qHeapI64Counting {
 
 impl Heap<i64> for S3qHeapI64Counting {
     const MONOTONE: bool = false;
-    type Casted<T2: Elem> = NoHeap;
+    type CountedHeap = NoHeap;
 
     fn default() -> Self {
         let pq = unsafe { s3q_i64_counting_pq_new() };
@@ -133,7 +137,7 @@ impl Heap<i64> for S3qHeapI64Counting {
     }
 }
 
-impl FfiCounting for S3qHeapI64Counting {
+impl CountingHeapT<i64> for S3qHeapI64Counting {
     fn reset_comparisons() {
         unsafe { s3q_i64_counting_pq_reset_comparisons() }
     }

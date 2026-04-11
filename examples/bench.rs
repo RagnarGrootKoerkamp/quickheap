@@ -47,10 +47,7 @@ thread_local! {
 
 /// Runs the workload `REPEATS` times, writes each run as a CSV row, and
 /// returns the median nanos (used to decide whether to skip larger `n`).
-fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64
-where
-    <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
-{
+fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
     let mut all_nanos = vec![];
 
     for repeat in 0..REPEATS {
@@ -145,7 +142,7 @@ where
 }
 
 fn comparisons_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
-    type H2<T, H> = CountingHeap<T, <H as Heap<T>>::Casted<CountComparisons<T>>>;
+    type H2<T, H> = <H as Heap<T>>::CountedHeap;
     let f = W::setup::<T, H2<T, H>>(n);
     H2::<T, H>::reset_comparisons();
     f();
@@ -164,59 +161,7 @@ fn comparisons_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
     (push_comparisons + pop_comparisons) as f64
 }
 
-#[cfg(feature = "ffi")]
-fn comparisons_workload_ffi<H, W>(n: u64) -> f64
-where
-    H: Heap<i64> + FfiCounting,
-    W: Workload,
-{
-    H::reset_comparisons();
-    let f = W::setup::<i64, H>(n);
-    f();
-    let (push, pop) = H::get_comparisons();
-
-    let result = Result {
-        elem: type_name::<i64>(),
-        heap: type_name::<H>(),
-        n,
-        workload: type_name::<W>(),
-        push_comparisons: push as f64,
-        pop_comparisons: pop as f64,
-        ..Default::default()
-    };
-    CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
-    (push + pop) as f64
-}
-
-#[cfg(feature = "ffi")]
-fn bench_ffi<H>(minpow: u32, maxpow: u32)
-where
-    H: Heap<i64> + FfiCounting + 'static,
-{
-    let ns: Vec<_> = (minpow..=maxpow).map(|i| 2u64.pow(i)).collect();
-
-    for n in ns {
-        eprint!("{:<70} {} {n:>10}", type_name::<H>(), type_name::<i64>());
-
-        fn bench_one<H: Heap<i64> + FfiCounting + 'static, W: Workload>(n: u64) {
-            let ops = n as f64 * (n as f64).log2() * W::NORMALIZATION as f64;
-            let total = comparisons_workload_ffi::<H, W>(n);
-            let t = total / ops;
-            eprint!(" {t:>8.2}");
-        }
-
-        bench_one::<H, HeapSort>(n);
-        bench_one::<H, ConstantSize>(n);
-        bench_one::<H, MonotoneWiggle>(n);
-        bench_one::<H, Wiggle>(n);
-        eprintln!();
-    }
-}
-
-pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32)
-where
-    <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
-{
+pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
 
     let mut ok = [true; 3];
@@ -224,10 +169,7 @@ where
     for n in ns {
         eprint!("{:<70} {} {n:>10}", type_name::<H>(), type_name::<T>());
 
-        fn bench_one<T: Elem, H: Heap<T>, W: Workload>(n: u64, ok: &mut bool)
-        where
-            <H as quickheap::Heap<T>>::Casted<quickheap::workloads::CountComparisons<T>>: 'static,
-        {
+        fn bench_one<T: Elem, H: Heap<T>, W: Workload>(n: u64, ok: &mut bool) {
             if !*ok {
                 eprint!("{:>9}", "");
                 return;
@@ -321,21 +263,16 @@ where
 
     // ENGINEERED
     #[cfg(feature = "ffi")]
-    if args.comparisons {
-        bench_ffi::<sequence_heap::SequenceHeapI64Counting>(minpow, maxpow);
-        bench_ffi::<s3q::S3qHeapI64Counting>(minpow, maxpow);
-    } else {
-        match TypeId::of::<T>() {
-            x if x == TypeId::of::<i32>() => {
-                bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
-                bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
-            }
-            x if x == TypeId::of::<i64>() => {
-                bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
-                bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
-            }
-            _ => unimplemented!(),
+    match TypeId::of::<T>() {
+        x if x == TypeId::of::<i32>() => {
+            bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
+            bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
         }
+        x if x == TypeId::of::<i64>() => {
+            bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
+            bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
+        }
+        _ => unimplemented!(),
     }
 
     // REIMPLS

@@ -1,5 +1,5 @@
 use crate::impls::NoHeap;
-use crate::simd::{position_min, push_position, SimdElem};
+use crate::simd::{SimdElem, position_min, push_position};
 use crate::workloads::Elem;
 
 use super::Heap;
@@ -28,7 +28,7 @@ pub struct SimdQuickHeap<T: Elem, S: SimdElem<T>, const N: usize, const M: usize
 impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> Heap<T>
     for SimdQuickHeap<T, S, N, M>
 {
-    type Casted<T2: Elem> = NoHeap;
+    type CountedHeap = NoHeap;
 
     fn default() -> Self {
         Self {

@@ -1,6 +1,6 @@
 use crate::Heap;
 use crate::impls::NoHeap;
-use crate::workloads::{Elem, FfiCounting};
+use crate::workloads::CountingHeapT;
 use sequence_heap_sys::{
     SeqHeapI32, SeqHeapI64, SeqHeapU32, SeqHeapU64, seq_heap_i32_empty, seq_heap_i32_free,
     seq_heap_i32_new, seq_heap_i32_pop, seq_heap_i32_push, seq_heap_i64_empty, seq_heap_i64_free,
@@ -10,7 +10,7 @@ use sequence_heap_sys::{
 };
 
 macro_rules! impl_sequence_heap {
-    ($heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident) => {
+    ($heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident, $counting:ty) => {
         pub struct $heap(*mut $pq);
 
         impl Drop for $heap {
@@ -20,7 +20,7 @@ macro_rules! impl_sequence_heap {
         }
 
         impl Heap<$t> for $heap {
-            type Casted<T2: Elem> = NoHeap;
+            type CountedHeap = $counting;
 
             #[inline(always)]
             fn default() -> Self {
@@ -59,7 +59,8 @@ impl_sequence_heap!(
     seq_heap_i32_free,
     seq_heap_i32_push,
     seq_heap_i32_pop,
-    seq_heap_i32_empty
+    seq_heap_i32_empty,
+    NoHeap
 );
 impl_sequence_heap!(
     SequenceHeapI64,
@@ -69,7 +70,8 @@ impl_sequence_heap!(
     seq_heap_i64_free,
     seq_heap_i64_push,
     seq_heap_i64_pop,
-    seq_heap_i64_empty
+    seq_heap_i64_empty,
+    SequenceHeapI64Counting
 );
 impl_sequence_heap!(
     SequenceHeapU32,
@@ -79,7 +81,8 @@ impl_sequence_heap!(
     seq_heap_u32_free,
     seq_heap_u32_push,
     seq_heap_u32_pop,
-    seq_heap_u32_empty
+    seq_heap_u32_empty,
+    NoHeap
 );
 impl_sequence_heap!(
     SequenceHeapU64,
@@ -89,14 +92,15 @@ impl_sequence_heap!(
     seq_heap_u64_free,
     seq_heap_u64_push,
     seq_heap_u64_pop,
-    seq_heap_u64_empty
+    seq_heap_u64_empty,
+    NoHeap
 );
 
 use sequence_heap_sys::{
-    SeqHeapI64Counting, seq_heap_i64_counting_new, seq_heap_i64_counting_free,
-    seq_heap_i64_counting_push, seq_heap_i64_counting_pop, seq_heap_i64_counting_empty,
+    SeqHeapI64Counting, seq_heap_i64_counting_empty, seq_heap_i64_counting_free,
+    seq_heap_i64_counting_new, seq_heap_i64_counting_pop, seq_heap_i64_counting_pop_comparisons,
+    seq_heap_i64_counting_push, seq_heap_i64_counting_push_comparisons,
     seq_heap_i64_counting_reset_comparisons,
-    seq_heap_i64_counting_push_comparisons, seq_heap_i64_counting_pop_comparisons,
 };
 
 pub struct SequenceHeapI64Counting(*mut SeqHeapI64Counting);
@@ -109,11 +113,14 @@ impl Drop for SequenceHeapI64Counting {
 
 impl Heap<i64> for SequenceHeapI64Counting {
     const MONOTONE: bool = false;
-    type Casted<T2: Elem> = NoHeap;
+    type CountedHeap = NoHeap;
 
     fn default() -> Self {
         let pq = unsafe { seq_heap_i64_counting_new() };
-        assert!(!pq.is_null(), "seq_heap_i64_counting_new: allocation failed");
+        assert!(
+            !pq.is_null(),
+            "seq_heap_i64_counting_new: allocation failed"
+        );
         SequenceHeapI64Counting(pq)
     }
 
@@ -134,7 +141,7 @@ impl Heap<i64> for SequenceHeapI64Counting {
     }
 }
 
-impl FfiCounting for SequenceHeapI64Counting {
+impl CountingHeapT<i64> for SequenceHeapI64Counting {
     fn reset_comparisons() {
         unsafe { seq_heap_i64_counting_reset_comparisons() }
     }

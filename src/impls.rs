@@ -1,4 +1,4 @@
-use crate::workloads::Elem;
+use crate::workloads::{CountComparisons, CountingHeap, CountingHeapT, Elem};
 
 use super::Heap;
 use std::cmp::Reverse;
@@ -17,7 +17,8 @@ pub type RevBTreeSet<T> = std::collections::BTreeSet<Reverse<T>>;
 pub type IndexSetBTreeSet<T> = indexset::BTreeSet<T>;
 pub type IndexSetRevBTreeSet<T> = indexset::BTreeSet<Reverse<T>>;
 
-impl<T: Ord> Heap<T> for BinaryHeap<T> {
+impl<T: Elem> Heap<T> for BinaryHeap<T> {
+    type CountedHeap = CountingHeap<T, BinaryHeap<CountComparisons<T>>>;
     fn default() -> Self {
         BinaryHeap::with_capacity(1 << 20)
     }
@@ -29,11 +30,10 @@ impl<T: Ord> Heap<T> for BinaryHeap<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop()?.0)
     }
-
-    type Casted<T2: Elem> = BinaryHeap<T2>;
 }
 
-impl<T: Ord> Heap<T> for BTreeSet<T> {
+impl<T: Elem> Heap<T> for BTreeSet<T> {
+    type CountedHeap = CountingHeap<T, BTreeSet<CountComparisons<T>>>;
     fn default() -> Self {
         Default::default()
     }
@@ -45,11 +45,10 @@ impl<T: Ord> Heap<T> for BTreeSet<T> {
     fn pop(&mut self) -> Option<T> {
         self.pop_first()
     }
-
-    type Casted<T2: Elem> = BTreeSet<T2>;
 }
 
-impl<T: Ord> Heap<T> for RevBTreeSet<T> {
+impl<T: Elem> Heap<T> for RevBTreeSet<T> {
+    type CountedHeap = CountingHeap<T, RevBTreeSet<CountComparisons<T>>>;
     fn default() -> Self {
         Default::default()
     }
@@ -61,11 +60,10 @@ impl<T: Ord> Heap<T> for RevBTreeSet<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop_last()?.0)
     }
-
-    type Casted<T2: Elem> = RevBTreeSet<T2>;
 }
 
-impl<T: Ord + Clone, const N: usize> Heap<T> for OrxDaryHeap<T, N> {
+impl<T: Elem, const N: usize> Heap<T> for OrxDaryHeap<T, N> {
+    type CountedHeap = CountingHeap<T, OrxDaryHeap<CountComparisons<T>, N>>;
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -80,11 +78,10 @@ impl<T: Ord + Clone, const N: usize> Heap<T> for OrxDaryHeap<T, N> {
     fn pop(&mut self) -> Option<T> {
         orx_priority_queue::PriorityQueue::pop(self).map(|((), y)| y)
     }
-
-    type Casted<T2: Elem> = OrxDaryHeap<T2, N>;
 }
 
-impl<T: Ord + Clone + std::fmt::Debug + 'static> Heap<T> for FibonacciHeap<T> {
+impl<T: Elem> Heap<T> for FibonacciHeap<T> {
+    type CountedHeap = CountingHeap<T, FibonacciHeap<CountComparisons<T>>>;
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -99,12 +96,11 @@ impl<T: Ord + Clone + std::fmt::Debug + 'static> Heap<T> for FibonacciHeap<T> {
     fn pop(&mut self) -> Option<T> {
         self.extract_min()
     }
-
-    type Casted<T2: Elem> = FibonacciHeap<T2>;
 }
 
 pub struct NoHeap;
-impl<T> Heap<T> for NoHeap {
+impl<T: Elem> Heap<T> for NoHeap {
+    type CountedHeap = NoHeap;
     fn default() -> Self {
         unimplemented!()
     }
@@ -114,10 +110,18 @@ impl<T> Heap<T> for NoHeap {
     fn pop(&mut self) -> Option<T> {
         unimplemented!()
     }
-    type Casted<T2: Elem> = Self;
+}
+impl<T: Elem> CountingHeapT<T> for NoHeap {
+    fn reset_comparisons() {
+        unimplemented!()
+    }
+    fn get_comparisons() -> (u64, u64) {
+        unimplemented!()
+    }
 }
 
-impl<T: Ord> Heap<T> for PairingHeap<T> {
+impl<T: Elem> Heap<T> for PairingHeap<T> {
+    type CountedHeap = CountingHeap<T, PairingHeap<CountComparisons<T>>>;
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -132,11 +136,10 @@ impl<T: Ord> Heap<T> for PairingHeap<T> {
     fn pop(&mut self) -> Option<T> {
         self.delete_min().map(|(_x, y)| y)
     }
-
-    type Casted<T2: Elem> = PairingHeap<T2>;
 }
 
-impl<T: Ord + Copy + radix_heap::Radix> Heap<T> for RadixHeap<T> {
+impl<T: Elem> Heap<T> for RadixHeap<T> {
+    type CountedHeap = CountingHeap<T, RadixHeap<CountComparisons<T>>>;
     const MONOTONE: bool = true;
 
     #[inline(always)]
@@ -153,11 +156,10 @@ impl<T: Ord + Copy + radix_heap::Radix> Heap<T> for RadixHeap<T> {
     fn pop(&mut self) -> Option<T> {
         self.pop().map(|(k, _v)| k.0)
     }
-
-    type Casted<T2: Elem> = RadixHeap<T2>;
 }
 
-impl<T: Ord, const N: usize> Heap<T> for DaryHeap<T, N> {
+impl<T: Elem, const N: usize> Heap<T> for DaryHeap<T, N> {
+    type CountedHeap = CountingHeap<T, DaryHeap<CountComparisons<T>, N>>;
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -172,11 +174,10 @@ impl<T: Ord, const N: usize> Heap<T> for DaryHeap<T, N> {
     fn pop(&mut self) -> Option<T> {
         self.pop().map(|x| x.0)
     }
-
-    type Casted<T2: Elem> = DaryHeap<T2, N>;
 }
 
-impl<T: Ord> Heap<T> for IndexSetBTreeSet<T> {
+impl<T: Elem> Heap<T> for IndexSetBTreeSet<T> {
+    type CountedHeap = CountingHeap<T, IndexSetBTreeSet<CountComparisons<T>>>;
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -191,11 +192,10 @@ impl<T: Ord> Heap<T> for IndexSetBTreeSet<T> {
     fn pop(&mut self) -> Option<T> {
         self.pop_first()
     }
-
-    type Casted<T2: Elem> = IndexSetBTreeSet<T2>;
 }
 
-impl<T: Ord> Heap<T> for IndexSetRevBTreeSet<T> {
+impl<T: Elem> Heap<T> for IndexSetRevBTreeSet<T> {
+    type CountedHeap = CountingHeap<T, IndexSetRevBTreeSet<CountComparisons<T>>>;
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -210,11 +210,10 @@ impl<T: Ord> Heap<T> for IndexSetRevBTreeSet<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop_last()?.0)
     }
-
-    type Casted<T2: Elem> = IndexSetRevBTreeSet<T2>;
 }
 
-impl<T: Ord> Heap<T> for WeakHeap<T> {
+impl<T: Elem> Heap<T> for WeakHeap<T> {
+    type CountedHeap = CountingHeap<T, WeakHeap<CountComparisons<T>>>;
     #[inline(always)]
     fn default() -> Self {
         Default::default()
@@ -229,6 +228,4 @@ impl<T: Ord> Heap<T> for WeakHeap<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop()?.0)
     }
-
-    type Casted<T2: Elem> = WeakHeap<T2>;
 }

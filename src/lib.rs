@@ -1,6 +1,6 @@
-#![feature(portable_simd, vec_from_fn, adt_const_params)]
+#![feature(portable_simd, vec_from_fn, adt_const_params, associated_type_defaults)]
 
-use workloads::Elem;
+use workloads::{CountComparisons, CountingHeapT, Elem};
 pub mod workloads;
 
 pub mod impls;
@@ -26,9 +26,13 @@ pub mod graph_util;
 pub mod original_quickheap;
 pub mod prim;
 
-pub trait Heap<T> {
+pub trait Heap<T: Elem>
+where
+    <Self as Heap<T>>::CountedType: Elem,
+{
     const MONOTONE: bool = false;
-    type Casted<T2: Elem>: Heap<T2>;
+    type CountedType = CountComparisons<T>;
+    type CountedHeap: CountingHeapT<T>;
     fn default() -> Self;
     fn push(&mut self, t: T);
     fn pop(&mut self) -> Option<T>;
@@ -37,6 +41,7 @@ pub trait Heap<T> {
 #[cfg(test)]
 mod test {
 
+    use crate::impls::NoHeap;
     use crate::original_quickheap::OriginalQuickHeap;
     #[cfg(feature = "avx512")]
     use crate::simd::Avx512;
@@ -53,6 +58,7 @@ mod test {
     struct TestHeap<T, H0, H1>(H0, H1, PhantomData<T>);
     impl<T: Elem + Copy, H0: Heap<T>, H1: Heap<T>> Heap<T> for TestHeap<T, H0, H1> {
         const MONOTONE: bool = H0::MONOTONE || H1::MONOTONE;
+        type CountedHeap = NoHeap;
         fn default() -> Self {
             TestHeap(H0::default(), H1::default(), PhantomData)
         }
@@ -67,7 +73,6 @@ mod test {
             assert_eq!(a0, a1);
             a0
         }
-        type Casted<T2: Elem> = TestHeap<T2, H0::Casted<T2>, H1::Casted<T2>>;
     }
 
     impl<T: Elem + Copy, H0: Heap<T>, H1: Heap<T>> TestHeap<T, H0, H1> {

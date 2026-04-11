@@ -1,11 +1,14 @@
-use crate::{Heap, workloads::Elem};
+use crate::{
+    Heap,
+    workloads::{CountComparisons, CountingHeap, Elem},
+};
 pub struct CustomBinaryHeap<T: Elem> {
     elements: Vec<T>,
     size: usize,
 }
 
 impl<T: Elem> Heap<T> for CustomBinaryHeap<T> {
-    type Casted<T2: Elem> = CustomBinaryHeap<T2>;
+    type CountedHeap = CountingHeap<T, CustomBinaryHeap<CountComparisons<T>>>;
 
     fn default() -> Self {
         Self {

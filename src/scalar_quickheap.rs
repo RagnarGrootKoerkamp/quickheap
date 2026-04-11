@@ -1,4 +1,4 @@
-use crate::workloads::{COMPARISONS, Elem};
+use crate::workloads::{COMPARISONS, CountComparisons, CountingHeap, Elem};
 
 use super::Heap;
 use std::array::from_fn;
@@ -31,7 +31,7 @@ pub struct ScalarQuickHeap<
 impl<T: Elem, const M: usize, const PERFECT: bool, const S: Search> Heap<T>
     for ScalarQuickHeap<T, M, PERFECT, S>
 {
-    type Casted<T2: Elem> = ScalarQuickHeap<T2, M, PERFECT, S>;
+    type CountedHeap = CountingHeap<T, ScalarQuickHeap<CountComparisons<T>, M, PERFECT, S>>;
 
     fn default() -> Self {
         Self {

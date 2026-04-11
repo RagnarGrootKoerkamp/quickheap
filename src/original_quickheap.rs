@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::workloads::Elem;
+use crate::workloads::{CountComparisons, CountingHeap, Elem};
 
 use super::Heap;
 
@@ -14,7 +14,7 @@ pub struct OriginalQuickHeap<T: Elem> {
 }
 
 impl<T: Elem> Heap<T> for OriginalQuickHeap<T> {
-    type Casted<T2: Elem> = OriginalQuickHeap<T2>;
+    type CountedHeap = CountingHeap<T, OriginalQuickHeap<CountComparisons<T>>>;
 
     fn default() -> Self {
         Self {

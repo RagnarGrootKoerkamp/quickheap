@@ -1,4 +1,7 @@
-use crate::{Heap, workloads::Elem};
+use crate::{
+    Heap,
+    workloads::{CountComparisons, CountingHeap, Elem},
+};
 
 pub struct CustomDaryHeap<T: Elem, const D: usize> {
     elements: Vec<T>,
@@ -6,7 +9,7 @@ pub struct CustomDaryHeap<T: Elem, const D: usize> {
 }
 
 impl<T: Elem, const D: usize> Heap<T> for CustomDaryHeap<T, D> {
-    type Casted<T2: Elem> = CustomDaryHeap<T2, D>;
+    type CountedHeap = CountingHeap<T, CustomDaryHeap<CountComparisons<T>, D>>;
 
     fn default() -> Self {
         Self {
