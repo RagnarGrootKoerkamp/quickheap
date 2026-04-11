@@ -185,8 +185,8 @@ if is_categorical:
         tick.set_color(type_colour.get(method_type[method], "black"))
 
     fig.tight_layout()
-    fig.savefig(f"plot-{benchname}.svg", bbox_inches="tight")
-    fig.savefig(f"plot-{benchname}.png", bbox_inches="tight", dpi=300)
+    fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)
 
 elif "comparisons" in benchname:
     n_max = df["n"].max()
