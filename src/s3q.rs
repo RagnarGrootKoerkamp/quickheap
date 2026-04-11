@@ -1,6 +1,6 @@
 use crate::Heap;
 use crate::impls::NoHeap;
-use crate::workloads::Elem;
+use crate::workloads::{Elem, FfiCounting};
 use s3q_sys::{
     S3qI32Pq, S3qI64Pq, S3qU32Pq, S3qU64Pq, s3q_i32_pq_empty, s3q_i32_pq_free, s3q_i32_pq_new,
     s3q_i32_pq_pop, s3q_i32_pq_push, s3q_i64_pq_empty, s3q_i64_pq_free, s3q_i64_pq_new,
@@ -91,3 +91,58 @@ impl_s3q_heap!(
     s3q_u64_pq_pop,
     s3q_u64_pq_empty
 );
+
+use s3q_sys::{
+    S3qI64CountingPq, s3q_i64_counting_pq_empty, s3q_i64_counting_pq_free, s3q_i64_counting_pq_new,
+    s3q_i64_counting_pq_pop, s3q_i64_counting_pq_pop_comparisons, s3q_i64_counting_pq_push,
+    s3q_i64_counting_pq_push_comparisons, s3q_i64_counting_pq_reset_comparisons,
+};
+
+pub struct S3qHeapI64Counting(*mut S3qI64CountingPq);
+
+impl Drop for S3qHeapI64Counting {
+    fn drop(&mut self) {
+        unsafe { s3q_i64_counting_pq_free(self.0) }
+    }
+}
+
+impl Heap<i64> for S3qHeapI64Counting {
+    const MONOTONE: bool = false;
+    type Casted<T2: Elem> = NoHeap;
+
+    fn default() -> Self {
+        let pq = unsafe { s3q_i64_counting_pq_new() };
+        assert!(!pq.is_null(), "s3q_i64_counting_pq_new: allocation failed");
+        S3qHeapI64Counting(pq)
+    }
+
+    #[inline(always)]
+    fn push(&mut self, t: i64) {
+        unsafe { s3q_i64_counting_pq_push(self.0, t + 1) }
+    }
+
+    #[inline(always)]
+    fn pop(&mut self) -> Option<i64> {
+        unsafe {
+            if s3q_i64_counting_pq_empty(self.0) {
+                None
+            } else {
+                Some(s3q_i64_counting_pq_pop(self.0) - 1)
+            }
+        }
+    }
+}
+
+impl FfiCounting for S3qHeapI64Counting {
+    fn reset_comparisons() {
+        unsafe { s3q_i64_counting_pq_reset_comparisons() }
+    }
+    fn get_comparisons() -> (u64, u64) {
+        unsafe {
+            (
+                s3q_i64_counting_pq_push_comparisons(),
+                s3q_i64_counting_pq_pop_comparisons(),
+            )
+        }
+    }
+}

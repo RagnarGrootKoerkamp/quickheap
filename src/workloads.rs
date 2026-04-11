@@ -169,6 +169,11 @@ impl<T: Elem, H: Heap<CountComparisons<T>>> CountingHeap<T, H> {
     }
 }
 
+pub trait FfiCounting {
+    fn reset_comparisons();
+    fn get_comparisons() -> (u64, u64);
+}
+
 /// Random element from u64.
 fn get<T: Elem>(rng: &mut fastrand::Rng) -> T {
     T::from(rng.u64(..))

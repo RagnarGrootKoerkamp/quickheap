@@ -22,7 +22,7 @@ use std::{any::TypeId, sync::LazyLock};
 
 const REPEATS: usize = 3;
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 struct Result {
     elem: &'static str,
     heap: &'static str,
@@ -70,12 +70,7 @@ where
                 workload: type_name::<W>(),
                 repeat,
                 nanos,
-                push_comparisons: 0.0,
-                pop_comparisons: 0.0,
-                branch_misses: 0.0,
-                l1_cache_misses: 0.0,
-                hw_cache_misses: 0.0,
-                l3_cache_misses: 0.0,
+                ..Default::default()
             };
         }
 
@@ -161,17 +156,61 @@ fn comparisons_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
         heap: type_name::<H>(),
         n,
         workload: type_name::<W>(),
-        repeat: 0,
-        nanos: 0.0,
         push_comparisons: push_comparisons as f64,
         pop_comparisons: pop_comparisons as f64,
-        branch_misses: 0.0,
-        l1_cache_misses: 0.0,
-        hw_cache_misses: 0.0,
-        l3_cache_misses: 0.0,
+        ..Default::default()
     };
     CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
     (push_comparisons + pop_comparisons) as f64
+}
+
+#[cfg(feature = "ffi")]
+fn comparisons_workload_ffi<H, W>(n: u64) -> f64
+where
+    H: Heap<i64> + FfiCounting,
+    W: Workload,
+{
+    H::reset_comparisons();
+    let f = W::setup::<i64, H>(n);
+    f();
+    let (push, pop) = H::get_comparisons();
+
+    let result = Result {
+        elem: type_name::<i64>(),
+        heap: type_name::<H>(),
+        n,
+        workload: type_name::<W>(),
+        push_comparisons: push as f64,
+        pop_comparisons: pop as f64,
+        ..Default::default()
+    };
+    CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
+    (push + pop) as f64
+}
+
+#[cfg(feature = "ffi")]
+fn bench_ffi<H>(minpow: u32, maxpow: u32)
+where
+    H: Heap<i64> + FfiCounting + 'static,
+{
+    let ns: Vec<_> = (minpow..=maxpow).map(|i| 2u64.pow(i)).collect();
+
+    for n in ns {
+        eprint!("{:<70} {} {n:>10}", type_name::<H>(), type_name::<i64>());
+
+        fn bench_one<H: Heap<i64> + FfiCounting + 'static, W: Workload>(n: u64) {
+            let ops = n as f64 * (n as f64).log2() * W::NORMALIZATION as f64;
+            let total = comparisons_workload_ffi::<H, W>(n);
+            let t = total / ops;
+            eprint!(" {t:>8.2}");
+        }
+
+        bench_one::<H, HeapSort>(n);
+        bench_one::<H, ConstantSize>(n);
+        bench_one::<H, MonotoneWiggle>(n);
+        bench_one::<H, Wiggle>(n);
+        eprintln!();
+    }
 }
 
 pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32)
@@ -281,10 +320,12 @@ where
     }
 
     // ENGINEERED
-    if !args.comparisons {
-        #[cfg(feature = "ffi")]
+    #[cfg(feature = "ffi")]
+    if args.comparisons {
+        bench_ffi::<sequence_heap::SequenceHeapI64Counting>(minpow, maxpow);
+        bench_ffi::<s3q::S3qHeapI64Counting>(minpow, maxpow);
+    } else {
         match TypeId::of::<T>() {
-            // TODO: Figure out if we can count comparisons here.
             x if x == TypeId::of::<i32>() => {
                 bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
                 bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));

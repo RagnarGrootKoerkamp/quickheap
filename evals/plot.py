@@ -178,7 +178,7 @@ if is_categorical:
             ax.legend(title="Graph", loc="upper right")
 
     axs[-1].set_xticks(x)
-    axs[-1].set_xticklabels(methods, rotation=35, ha="right", fontsize=8)
+    axs[-1].set_xticklabels(methods, rotation=0, ha="center", fontsize=8)
 
     # Color-coded type labels along x-axis
     for tick, method in zip(axs[-1].get_xticklabels(), methods):
@@ -188,7 +188,7 @@ if is_categorical:
     fig.savefig(f"plot-{benchname}.svg", bbox_inches="tight")
     fig.savefig(f"plot-{benchname}.png", bbox_inches="tight", dpi=300)
 
-elif benchname == "comparisons":
+elif "comparisons" in benchname:
     n_max = df["n"].max()
     df = df[df["n"] == n_max].copy()
 
@@ -226,20 +226,11 @@ elif benchname == "comparisons":
     # Build per-method offsets with extra gaps:
     #   - a small gap before the first ScalarQuickHeap bar
     #   - another small gap between the 3rd and 4th ScalarQuickHeap bar
-    sqh_gap = bar_width * 0.3  # gap size
-    sqh_indices = [
-        mi for mi, m in enumerate(methods) if method_type[m] == "ScalarQuickHeap"
-    ]
-    sqh_split = (
-        sqh_indices[3] if len(sqh_indices) >= 4 else None
-    )  # index of 4th SQH bar
-
+    sqh_gap = bar_width * 0.5  # gap size
     offsets = []
     extra = 0.0
     for mi in range(n_methods):
-        if sqh_indices and mi == sqh_indices[0]:
-            extra += sqh_gap
-        if sqh_split is not None and mi == sqh_split:
+        if mi in [3, 6, 8, 11]:
             extra += sqh_gap
         offsets.append(mi * bar_width + extra)
     total = offsets[-1] + bar_width
@@ -280,7 +271,7 @@ elif benchname == "comparisons":
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(workloads, rotation=15, ha="right", fontsize=9)
+    ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=9)
 
     ax.set_ylabel(r"comparisons / (push∘pop) / lg n")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
