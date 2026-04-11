@@ -77,6 +77,20 @@ s3q_ffi!(
     s3q_u64_pq_empty
 );
 
+#[repr(C)]
+pub struct S3qI64CountingPq(c_void);
+
+unsafe extern "C" {
+    pub fn s3q_i64_counting_pq_new() -> *mut S3qI64CountingPq;
+    pub fn s3q_i64_counting_pq_free(pq: *mut S3qI64CountingPq);
+    pub fn s3q_i64_counting_pq_push(pq: *mut S3qI64CountingPq, item: i64);
+    pub fn s3q_i64_counting_pq_pop(pq: *mut S3qI64CountingPq) -> i64;
+    pub fn s3q_i64_counting_pq_empty(pq: *const S3qI64CountingPq) -> bool;
+    pub fn s3q_i64_counting_pq_reset_comparisons();
+    pub fn s3q_i64_counting_pq_push_comparisons() -> u64;
+    pub fn s3q_i64_counting_pq_pop_comparisons() -> u64;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,6 +140,39 @@ mod tests {
             assert_eq!(out, vec![-3, -1, 4, 5, 8]);
 
             s3q_i64_pq_free(pq);
+        }
+    }
+}
+
+#[cfg(test)]
+mod counting_tests {
+    use super::*;
+
+    #[test]
+    fn counting_works() {
+        unsafe {
+            let pq = s3q_i64_counting_pq_new();
+            assert!(!pq.is_null());
+            s3q_i64_counting_pq_reset_comparisons();
+            
+            for i in 0..100i64 {
+                s3q_i64_counting_pq_push(pq, (i * 7) % 100 + 1);
+            }
+            
+            let push_cmp = s3q_i64_counting_pq_push_comparisons();
+            eprintln!("push comparisons: {push_cmp}");
+            
+            for _ in 0..100 {
+                s3q_i64_counting_pq_pop(pq);
+            }
+            
+            let pop_cmp = s3q_i64_counting_pq_pop_comparisons();
+            eprintln!("pop comparisons: {pop_cmp}");
+            
+            assert!(push_cmp > 0, "expected push_cmp > 0, got {push_cmp}");
+            assert!(pop_cmp > 0, "expected pop_cmp > 0, got {pop_cmp}");
+            
+            s3q_i64_counting_pq_free(pq);
         }
     }
 }

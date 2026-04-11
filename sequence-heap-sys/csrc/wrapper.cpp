@@ -162,3 +162,67 @@ bool seq_heap_u64_empty(const SeqHeapU64 *pq) {
 }
 
 } // extern "C"
+
+// ---- Counting variant for i64 ----
+
+thread_local uint64_t seq_push_cmp = 0;
+thread_local uint64_t seq_pop_cmp = 0;
+thread_local uint64_t* seq_cmp_target = nullptr;
+
+struct CntI64 {
+    int64_t v;
+    CntI64 operator-() const noexcept { return {-v}; }
+    bool operator<(CntI64 o) const { if (seq_cmp_target) ++(*seq_cmp_target); return v < o.v; }
+    bool operator>(CntI64 o) const { if (seq_cmp_target) ++(*seq_cmp_target); return v > o.v; }
+    bool operator<=(CntI64 o) const { if (seq_cmp_target) ++(*seq_cmp_target); return v <= o.v; }
+    bool operator>=(CntI64 o) const { if (seq_cmp_target) ++(*seq_cmp_target); return v >= o.v; }
+    bool operator==(CntI64 o) const { return v == o.v; }
+    bool operator!=(CntI64 o) const { return v != o.v; }
+};
+
+namespace std {
+template <> struct numeric_limits<CntI64> {
+    static constexpr bool is_specialized = true;
+    static constexpr CntI64 min()      noexcept { return {INT64_MIN}; }
+    static constexpr CntI64 max()      noexcept { return {INT64_MAX}; }
+    static constexpr CntI64 lowest()   noexcept { return {INT64_MIN}; }
+    static constexpr CntI64 infinity() noexcept { return {INT64_MAX}; }
+    static constexpr bool has_infinity = false;
+};
+} // namespace std
+
+using I64CntHeap = KNHeap<CntI64, NoValue>;
+
+struct SeqI64CountingOpaque {
+    I64CntHeap inner;
+    SeqI64CountingOpaque() : inner({INT64_MAX}, {INT64_MIN}) {}
+};
+
+extern "C" {
+
+SeqHeapI64Counting* seq_heap_i64_counting_new() {
+    return reinterpret_cast<SeqHeapI64Counting*>(new (std::nothrow) SeqI64CountingOpaque());
+}
+void seq_heap_i64_counting_free(SeqHeapI64Counting* pq) {
+    delete reinterpret_cast<SeqI64CountingOpaque*>(pq);
+}
+void seq_heap_i64_counting_push(SeqHeapI64Counting* pq, int64_t key) {
+    seq_cmp_target = &seq_push_cmp;
+    reinterpret_cast<SeqI64CountingOpaque*>(pq)->inner.insert({key}, NoValue{});
+    seq_cmp_target = nullptr;
+}
+int64_t seq_heap_i64_counting_pop(SeqHeapI64Counting* pq) {
+    seq_cmp_target = &seq_pop_cmp;
+    CntI64 key; NoValue value;
+    reinterpret_cast<SeqI64CountingOpaque*>(pq)->inner.deleteMin(&key, &value);
+    seq_cmp_target = nullptr;
+    return key.v;
+}
+bool seq_heap_i64_counting_empty(const SeqHeapI64Counting* pq) {
+    return reinterpret_cast<const SeqI64CountingOpaque*>(pq)->inner.getSize() == 0;
+}
+void seq_heap_i64_counting_reset_comparisons() { seq_push_cmp = 0; seq_pop_cmp = 0; }
+uint64_t seq_heap_i64_counting_push_comparisons() { return seq_push_cmp; }
+uint64_t seq_heap_i64_counting_pop_comparisons()  { return seq_pop_cmp; }
+
+} // extern "C" (counting)

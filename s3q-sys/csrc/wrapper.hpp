@@ -48,6 +48,17 @@ uint64_t s3q_u64_pq_top(const S3qU64Pq *pq);
 size_t s3q_u64_pq_size(const S3qU64Pq *pq);
 bool s3q_u64_pq_empty(const S3qU64Pq *pq);
 
+typedef struct S3qI64CountingPq S3qI64CountingPq;
+
+S3qI64CountingPq* s3q_i64_counting_pq_new(void);
+void s3q_i64_counting_pq_free(S3qI64CountingPq* pq);
+void s3q_i64_counting_pq_push(S3qI64CountingPq* pq, int64_t item);
+int64_t s3q_i64_counting_pq_pop(S3qI64CountingPq* pq);
+bool s3q_i64_counting_pq_empty(const S3qI64CountingPq* pq);
+void s3q_i64_counting_pq_reset_comparisons(void);
+uint64_t s3q_i64_counting_pq_push_comparisons(void);
+uint64_t s3q_i64_counting_pq_pop_comparisons(void);
+
 #ifdef __cplusplus
 }
 #endif

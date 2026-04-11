@@ -47,6 +47,17 @@ uint64_t seq_heap_u64_top(SeqHeapU64 *pq);
 int seq_heap_u64_size(const SeqHeapU64 *pq);
 bool seq_heap_u64_empty(const SeqHeapU64 *pq);
 
+typedef struct SeqHeapI64Counting SeqHeapI64Counting;
+
+SeqHeapI64Counting* seq_heap_i64_counting_new(void);
+void seq_heap_i64_counting_free(SeqHeapI64Counting* pq);
+void seq_heap_i64_counting_push(SeqHeapI64Counting* pq, int64_t key);
+int64_t seq_heap_i64_counting_pop(SeqHeapI64Counting* pq);
+bool seq_heap_i64_counting_empty(const SeqHeapI64Counting* pq);
+void seq_heap_i64_counting_reset_comparisons(void);
+uint64_t seq_heap_i64_counting_push_comparisons(void);
+uint64_t seq_heap_i64_counting_pop_comparisons(void);
+
 #ifdef __cplusplus
 }
 #endif

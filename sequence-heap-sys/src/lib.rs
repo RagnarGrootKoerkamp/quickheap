@@ -78,6 +78,20 @@ seq_heap_ffi!(
     seq_heap_u64_empty
 );
 
+#[repr(C)]
+pub struct SeqHeapI64Counting(c_void);
+
+unsafe extern "C" {
+    pub fn seq_heap_i64_counting_new() -> *mut SeqHeapI64Counting;
+    pub fn seq_heap_i64_counting_free(pq: *mut SeqHeapI64Counting);
+    pub fn seq_heap_i64_counting_push(pq: *mut SeqHeapI64Counting, key: i64);
+    pub fn seq_heap_i64_counting_pop(pq: *mut SeqHeapI64Counting) -> i64;
+    pub fn seq_heap_i64_counting_empty(pq: *const SeqHeapI64Counting) -> bool;
+    pub fn seq_heap_i64_counting_reset_comparisons();
+    pub fn seq_heap_i64_counting_push_comparisons() -> u64;
+    pub fn seq_heap_i64_counting_pop_comparisons() -> u64;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
