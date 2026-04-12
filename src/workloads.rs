@@ -1,4 +1,5 @@
 use radix_heap::Radix;
+use rand_distr::{Distribution, Geometric};
 
 use crate::impls::NoHeap;
 
@@ -176,11 +177,6 @@ impl<T: Elem, H: Heap<CountComparisons<T>>> CountingHeapT<T> for CountingHeap<T,
     }
 }
 
-/// Random element from u64.
-fn get<T: Elem>(rng: &mut fastrand::Rng) -> T {
-    T::from(rng.u64(..))
-}
-
 pub trait Workload {
     /// The default is one push-pop pair per `n`.
     const NORMALIZATION: u64 = 1;
@@ -196,9 +192,13 @@ impl Workload for HeapSort {
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
         let mut rng = fastrand::Rng::new();
+        let values = std::iter::repeat_with(|| T::from(rng.u64(..)))
+            .take(n as usize)
+            .collect::<Vec<_>>()
+            .into_iter();
         move || {
-            for _ in 0..n {
-                h.push(get(&mut rng));
+            for value in values {
+                h.push(value);
             }
             for _ in 0..n {
                 h.pop().unwrap().get();
@@ -217,15 +217,19 @@ pub struct ConstantSize;
 impl Workload for ConstantSize {
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
-        let mut rng = fastrand::Rng::new();
         let stride = T::stride();
+        let mut rng = fastrand::Rng::new();
         for _ in 0..n {
             h.push(T::from(rng.u64(0..stride)));
         }
+        let values = std::iter::repeat_with(|| rng.u64(0..stride))
+            .take(n as usize)
+            .collect::<Vec<_>>()
+            .into_iter();
         move || {
-            for _ in 0..n {
+            for value in values {
                 let l = h.pop().unwrap().get();
-                h.push(T::try_from(l + rng.u64(0..stride)));
+                h.push(T::try_from(l + value));
             }
             black_box(h);
         }
@@ -234,25 +238,63 @@ impl Workload for ConstantSize {
 
 /// bench: (push pop push)^n (pop push pop)^n
 /// values: last + (0..C)
-/// TODO: Exponential distribution?
 pub struct MonotoneWiggle;
 
 impl Workload for MonotoneWiggle {
     const NORMALIZATION: u64 = 3;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
-        let mut rng = fastrand::Rng::new();
         let stride = T::stride();
+        let mut rng = fastrand::Rng::new();
+        let mut values = std::iter::repeat_with(|| rng.u64(0..stride))
+            .take(3 * n as usize)
+            .collect::<Vec<_>>()
+            .into_iter();
         move || {
             let mut l = 0;
             for _ in 0..n {
-                h.push(T::try_from(l + rng.u64(0..stride)));
+                h.push(T::try_from(l + values.next().unwrap()));
                 l = h.pop().unwrap().get();
-                h.push(T::try_from(l + rng.u64(0..stride)));
+                h.push(T::try_from(l + values.next().unwrap()));
             }
             for _ in 0..n {
                 l = h.pop().unwrap().get();
-                h.push(T::try_from(l + rng.u64(0..stride)));
+                h.push(T::try_from(l + values.next().unwrap()));
+                h.pop().unwrap().get();
+            }
+            black_box(h);
+        }
+    }
+}
+
+/// bench: (push pop push)^n (pop push pop)^n
+/// values: last + geometric(C)
+pub struct GeometricMonotoneWiggle;
+
+impl Workload for GeometricMonotoneWiggle {
+    const NORMALIZATION: u64 = 3;
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+        let mut h = H::default();
+        let stride = T::stride();
+        let geometric = Geometric::new(1.0 / stride as f64).unwrap();
+        let values = {
+            let mut rng = rand::rng();
+            geometric
+                .sample_iter(&mut rng)
+                .take(3 * n as usize)
+                .collect::<Vec<u64>>()
+        };
+        move || {
+            let mut values = values.into_iter();
+            let mut l = 0;
+            for _ in 0..n {
+                h.push(T::try_from(l + values.next().unwrap()));
+                l = h.pop().unwrap().get();
+                h.push(T::try_from(l + values.next().unwrap()));
+            }
+            for _ in 0..n {
+                l = h.pop().unwrap().get();
+                h.push(T::try_from(l + values.next().unwrap()));
                 h.pop().unwrap().get();
             }
             black_box(h);
@@ -268,17 +310,21 @@ impl Workload for Wiggle {
     const NORMALIZATION: u64 = 3;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
-        let mut rng = fastrand::Rng::new();
         let stride = T::stride();
+        let mut rng = fastrand::Rng::new();
+        let mut values = std::iter::repeat_with(|| T::from(rng.u64(0..stride)))
+            .take(3 * n as usize)
+            .collect::<Vec<T>>()
+            .into_iter();
         move || {
             for _ in 0..n {
-                h.push(T::from(rng.u64(0..stride)));
+                h.push(values.next().unwrap());
                 h.pop().unwrap().get();
-                h.push(T::from(rng.u64(0..stride)));
+                h.push(values.next().unwrap());
             }
             for _ in 0..n {
                 h.pop().unwrap().get();
-                h.push(T::from(rng.u64(0..stride)));
+                h.push(values.next().unwrap());
                 h.pop().unwrap().get();
             }
             black_box(h);

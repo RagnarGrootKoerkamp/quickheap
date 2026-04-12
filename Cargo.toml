@@ -42,6 +42,7 @@ pheap = "0.3.0"
 radix-heap = "0.4.2"
 rand = "0.10.0"
 random = "0.14.0"
+rand_distr = "0.6.0"
 weakheap = "0.1.0"
 
 wide = "1.2.0"

@@ -192,6 +192,7 @@ pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
         bench_one::<T, H, HeapSort>(n, &mut ok[0]);
         bench_one::<T, H, ConstantSize>(n, &mut ok[1]);
         bench_one::<T, H, MonotoneWiggle>(n, &mut ok[1]);
+        bench_one::<T, H, GeometricMonotoneWiggle>(n, &mut ok[1]);
         if !H::MONOTONE {
             bench_one::<T, H, Wiggle>(n, &mut ok[2]);
         }
