@@ -233,27 +233,31 @@ where
     let maxpow = args.max;
 
     // QUICKHEAP
-    if args.comparisons {
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
-            minpow, maxpow,
-        );
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>(
-            minpow, maxpow,
-        );
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true, { Search::LinearScan }>>(
-            minpow, maxpow,
-        );
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false>>(minpow, maxpow);
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>(minpow, maxpow);
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
-    }
+    //* if args.comparisons {
+    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
+    //*         minpow, maxpow,
+    //*     );
+    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>(
+    //*         minpow, maxpow,
+    //*     );
+    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true, { Search::LinearScan }>>(
+    //*         minpow, maxpow,
+    //*     );
+    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false>>(minpow, maxpow);
+    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>(minpow, maxpow);
+    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
+    //* } else {
+    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
+    //*         minpow, maxpow,
+    //*     );
+    //* }
 
-    if !args.comparisons {
-        #[cfg(feature = "avx2")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(minpow, maxpow);
-        #[cfg(feature = "avx512")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(minpow, maxpow);
-    }
+    //* if !args.comparisons {
+    //*     #[cfg(feature = "avx2")]
+    //*     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(minpow, maxpow);
+    //*     #[cfg(feature = "avx512")]
+    //*     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(minpow, maxpow);
+    //* }
 
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(minpow, maxpow);
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(minpow, maxpow);
@@ -263,18 +267,18 @@ where
     }
 
     // ENGINEERED
-    #[cfg(feature = "ffi")]
-    match TypeId::of::<T>() {
-        x if x == TypeId::of::<i32>() => {
-            bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
-            bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
-        }
-        x if x == TypeId::of::<i64>() => {
-            bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
-            bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
-        }
-        _ => unimplemented!(),
-    }
+    //* #[cfg(feature = "ffi")]
+    //* match TypeId::of::<T>() {
+    //*     x if x == TypeId::of::<i32>() => {
+    //*         bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
+    //*         bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
+    //*     }
+    //*     x if x == TypeId::of::<i64>() => {
+    //*         bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
+    //*         bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
+    //*     }
+    //*     _ => unimplemented!(),
+    //* }
 
     // REIMPLS
     // bench::<T, binary_heap::CustomBinaryHeap<T>>(minpow, maxpow);
@@ -284,11 +288,11 @@ where
     // bench::<T, dary_heap::CustomDaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, dary_heap::CustomDaryHeap<T, 16>>(minpow, maxpow);
 
-    // FIXME: Investigate why this is so slow.
-    // bench::<T, original_quickheap::OriginalQuickHeap<T>>(minpow, maxpow);
+    // TODO: Investigate why this is so slow.
+    bench::<T, original_quickheap::OriginalQuickHeap<T>>(minpow, maxpow);
 
     // BASELINE
-    bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
+    //* bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
 
     // DARY
     // bench::<T, impls::DaryHeap<T, 2>>(minpow, maxpow);
@@ -296,21 +300,21 @@ where
     // bench::<T, impls::DaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, impls::DaryHeap<T, 16>>(minpow, maxpow);
     // bench::<T, impls::OrxDaryHeap<T, 2>>(minpow, maxpow);
-    bench::<T, impls::OrxDaryHeap<T, 4>>(minpow, maxpow);
-    bench::<T, impls::OrxDaryHeap<T, 8>>(minpow, maxpow);
+    //* bench::<T, impls::OrxDaryHeap<T, 4>>(minpow, maxpow);
+    //* bench::<T, impls::OrxDaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, impls::OrxDaryHeap<T, 16>>(minpow, maxpow);
 
     // AMORTIZED
-    if args.comparisons {
-        bench::<T, impls::PairingHeap<T>>(minpow, maxpow);
-        bench::<T, impls::FibonacciHeap<T>>(minpow, maxpow);
-        bench::<T, impls::WeakHeap<T>>(minpow, maxpow);
-    }
+    // if args.comparisons {
+    bench::<T, impls::PairingHeap<T>>(minpow, maxpow);
+    bench::<T, impls::FibonacciHeap<T>>(minpow, maxpow);
+    bench::<T, impls::WeakHeap<T>>(minpow, maxpow);
+    // }
 
     // MONOTONE
-    if !args.comparisons {
-        bench::<T, impls::RadixHeap<T>>(minpow, maxpow);
-    }
+    //* if !args.comparisons {
+    //*     bench::<T, impls::RadixHeap<T>>(minpow, maxpow);
+    //* }
 
     // eprintln!("Set");
     // bench::<T, impls::BTreeSet<T>>(minpow, maxpow);
@@ -329,3 +333,5 @@ fn main() {
     }
     CSV_WRITER.with(|w| w.borrow_mut().flush().unwrap());
 }
+
+// TODO: Include Binom, Pairing, Weak, ...
