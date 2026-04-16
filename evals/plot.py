@@ -186,6 +186,7 @@ if is_categorical:
 
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)
 
 elif "comparisons" in benchname:
@@ -291,6 +292,7 @@ elif "comparisons" in benchname:
 
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)
 
 else:
@@ -416,4 +418,5 @@ else:
         fig.supxlabel("n = max #elements in heap", y=0.02)
 
         fig.savefig(f"plots/{benchname}-{metric}.svg", bbox_inches="tight")
+        fig.savefig(f"plots/{benchname}-{metric}.pdf", bbox_inches="tight")
         fig.savefig(f"plots/{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
