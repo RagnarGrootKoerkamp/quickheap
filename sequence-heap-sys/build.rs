@@ -8,6 +8,7 @@ fn main() {
     build
         .cpp(true)
         .std("c++17")
+        .opt_level(3)
         .warnings(false)
         .extra_warnings(false)
         .file("csrc/wrapper.cpp")
