@@ -80,7 +80,11 @@ type_order = [
     "OriginalQuickHeap",
 ]
 
-colours = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+colours = (
+    list(plt.get_cmap("tab20").colors)
+    + list(plt.get_cmap("tab20b").colors)
+    + list(plt.get_cmap("tab20c").colors)
+)
 
 # Assign colours from the fixed type_order so they are consistent across all plots
 type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(type_order)}
@@ -353,6 +357,8 @@ else:
         return 1.5
 
     def style_for_name(tp, name):
+        if "Boost" in name:
+            return "--"
         names = all_names_by_type[tp]
         if len(names) >= 2 and names.index(name) == 0:
             return "--"
@@ -366,6 +372,7 @@ else:
             figsize=(4 * len(workloads), 6),
             sharex=True,
             sharey=True,
+            squeeze=False,
         )
         fig.suptitle(label)
 
@@ -415,6 +422,7 @@ else:
             ncol=4,
             bbox_to_anchor=(0.5, -0.10),
         )
+        fig.supylabel(label)
         fig.supxlabel("n = max #elements in heap", y=0.02)
 
         fig.savefig(f"plots/{benchname}-{metric}.svg", bbox_inches="tight")
