@@ -9,6 +9,8 @@ pub mod impls;
 pub mod s3q;
 #[cfg(feature = "ffi")]
 pub mod sequence_heap;
+#[cfg(feature = "ffi")]
+pub mod boost_heap;
 
 pub mod scalar_quickheap;
 
@@ -126,6 +128,17 @@ mod test {
         TestHeap::<T, Base, sequence_heap::SequenceHeapU32>::run(n);
         #[cfg(feature = "ffi")]
         TestHeap::<T, Base, s3q::S3qHeapU32>::run(n);
+
+        #[cfg(feature = "ffi")]
+        TestHeap::<T, Base, boost_heap::BoostDary4HeapU32>::run(n);
+        #[cfg(feature = "ffi")]
+        TestHeap::<T, Base, boost_heap::BoostFibHeapU32>::run(n);
+        #[cfg(feature = "ffi")]
+        TestHeap::<T, Base, boost_heap::BoostPairingHeapU32>::run(n);
+        #[cfg(feature = "ffi")]
+        TestHeap::<T, Base, boost_heap::BoostBinomialHeapU32>::run(n);
+        #[cfg(feature = "ffi")]
+        TestHeap::<T, Base, boost_heap::BoostSkewHeapU32>::run(n);
 
         TestHeap::<T, Base, impls::DaryHeap<T, 2>>::run(n);
         TestHeap::<T, Base, impls::DaryHeap<T, 4>>::run(n);

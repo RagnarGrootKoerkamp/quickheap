@@ -9,6 +9,8 @@ fn main() {
         .cpp(true)
         .std("c++17")
         .opt_level(3)
+        .flag("-march=native")
+        .flag("-flto")
         .warnings(false)
         .extra_warnings(false)
         .file("csrc/wrapper.cpp")

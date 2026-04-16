@@ -68,6 +68,10 @@ thread_local! {
 /// Runs the workload `REPEATS` times, writes each run as a CSV row, and
 /// returns the median nanos (used to decide whether to skip larger `n`).
 fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u32>) -> f64 {
+    // Warmup: run once to populate instruction cache, page tables, and branch predictors.
+    let f = W::setup::<H>(graph);
+    f();
+
     let mut all_nanos = vec![];
 
     for repeat in 0..REPEATS {
@@ -157,10 +161,20 @@ fn main() {
     //* bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, 16, 1>>(&graphs);
 
     // ENGINEERED
-    //* #[cfg(feature = "ffi")]
-    //* bench::<sequence_heap::SequenceHeapU64>(&graphs);
-    //* #[cfg(feature = "ffi")]
-    //* bench::<s3q::S3qHeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<sequence_heap::SequenceHeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<s3q::S3qHeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<boost_heap::BoostDary4HeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<boost_heap::BoostFibHeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<boost_heap::BoostPairingHeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<boost_heap::BoostBinomialHeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<boost_heap::BoostSkewHeapU64>(&graphs);
 
     // REIMPLS
     // bench::<binary_heap::CustomBinaryHeap<u64>>(&graphs);

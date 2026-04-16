@@ -48,6 +48,9 @@ thread_local! {
 /// Runs the workload `REPEATS` times, writes each run as a CSV row, and
 /// returns the median nanos (used to decide whether to skip larger `n`).
 fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
+    let f = W::setup::<T, H>(n);
+    f();
+
     let mut all_nanos = vec![];
 
     for repeat in 0..REPEATS {
@@ -189,13 +192,13 @@ pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
             }
         }
 
-        bench_one::<T, H, HeapSort>(n, &mut ok[0]);
+        // bench_one::<T, H, HeapSort>(n, &mut ok[0]);
         bench_one::<T, H, ConstantSize>(n, &mut ok[1]);
-        bench_one::<T, H, MonotoneWiggle>(n, &mut ok[1]);
-        bench_one::<T, H, GeometricMonotoneWiggle>(n, &mut ok[1]);
-        if !H::MONOTONE {
-            bench_one::<T, H, Wiggle>(n, &mut ok[2]);
-        }
+        // bench_one::<T, H, MonotoneWiggle>(n, &mut ok[1]);
+        // bench_one::<T, H, GeometricMonotoneWiggle>(n, &mut ok[1]);
+        // if !H::MONOTONE {
+        //     bench_one::<T, H, Wiggle>(n, &mut ok[2]);
+        // }
 
         eprintln!();
     }
@@ -233,31 +236,31 @@ where
     let maxpow = args.max;
 
     // QUICKHEAP
-    //* if args.comparisons {
-    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
-    //*         minpow, maxpow,
-    //*     );
-    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>(
-    //*         minpow, maxpow,
-    //*     );
-    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true, { Search::LinearScan }>>(
-    //*         minpow, maxpow,
-    //*     );
-    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false>>(minpow, maxpow);
-    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>(minpow, maxpow);
-    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
-    //* } else {
-    //*     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
-    //*         minpow, maxpow,
-    //*     );
-    //* }
+    if args.comparisons {
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
+            minpow, maxpow,
+        );
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>(
+            minpow, maxpow,
+        );
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true, { Search::LinearScan }>>(
+            minpow, maxpow,
+        );
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false>>(minpow, maxpow);
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>(minpow, maxpow);
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
+    } else {
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
+            minpow, maxpow,
+        );
+    }
 
-    //* if !args.comparisons {
-    //*     #[cfg(feature = "avx2")]
-    //*     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(minpow, maxpow);
-    //*     #[cfg(feature = "avx512")]
-    //*     bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(minpow, maxpow);
-    //* }
+    if !args.comparisons {
+        #[cfg(feature = "avx2")]
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(minpow, maxpow);
+        #[cfg(feature = "avx512")]
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(minpow, maxpow);
+    }
 
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(minpow, maxpow);
     // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(minpow, maxpow);
@@ -267,18 +270,28 @@ where
     }
 
     // ENGINEERED
-    //* #[cfg(feature = "ffi")]
-    //* match TypeId::of::<T>() {
-    //*     x if x == TypeId::of::<i32>() => {
-    //*         bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
-    //*         bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
-    //*     }
-    //*     x if x == TypeId::of::<i64>() => {
-    //*         bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
-    //*         bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
-    //*     }
-    //*     _ => unimplemented!(),
-    //* }
+    #[cfg(feature = "ffi")]
+    match TypeId::of::<T>() {
+        x if x == TypeId::of::<i32>() => {
+            bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
+            bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
+            bench::<i32, boost_heap::BoostDary4HeapI32>(minpow, maxpow);
+            bench::<i32, boost_heap::BoostFibHeapI32>(minpow, maxpow);
+            bench::<i32, boost_heap::BoostPairingHeapI32>(minpow, maxpow);
+            bench::<i32, boost_heap::BoostBinomialHeapI32>(minpow, maxpow);
+            bench::<i32, boost_heap::BoostSkewHeapI32>(minpow, maxpow);
+        }
+        x if x == TypeId::of::<i64>() => {
+            bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
+            bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
+            bench::<i64, boost_heap::BoostDary4HeapI64>(minpow, maxpow);
+            bench::<i64, boost_heap::BoostFibHeapI64>(minpow, maxpow);
+            bench::<i64, boost_heap::BoostPairingHeapI64>(minpow, maxpow);
+            bench::<i64, boost_heap::BoostBinomialHeapI64>(minpow, maxpow);
+            bench::<i64, boost_heap::BoostSkewHeapI64>(minpow, maxpow);
+        }
+        _ => unimplemented!(),
+    }
 
     // REIMPLS
     // bench::<T, binary_heap::CustomBinaryHeap<T>>(minpow, maxpow);
@@ -312,9 +325,9 @@ where
     // }
 
     // MONOTONE
-    //* if !args.comparisons {
-    //*     bench::<T, impls::RadixHeap<T>>(minpow, maxpow);
-    //* }
+    if !args.comparisons {
+        bench::<T, impls::RadixHeap<T>>(minpow, maxpow);
+    }
 
     // eprintln!("Set");
     // bench::<T, impls::BTreeSet<T>>(minpow, maxpow);

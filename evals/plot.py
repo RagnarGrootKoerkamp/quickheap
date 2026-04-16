@@ -72,6 +72,12 @@ type_order = [
     "S3qHeap",
     "ScalarQuickHeap",
     "SimdQuickHeap",
+    "BoostBinomialHeap",
+    "BoostDary4Heap",
+    "BoostFibHeap",
+    "BoostPairingHeap",
+    "BoostSkewHeap",
+    "OriginalQuickHeap",
 ]
 
 colours = plt.rcParams["axes.prop_cycle"].by_key()["color"]

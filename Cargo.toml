@@ -1,5 +1,5 @@
 [workspace]
-members = ["s3q-sys", "sequence-heap-sys"]
+members = ["s3q-sys", "sequence-heap-sys", "boost-heap-sys"]
 
 [package]
 name = "quickheap"
@@ -21,14 +21,14 @@ avx2 = []
 # Enable SimdQuickHeap with AVX-512 backend
 avx512 = ["avx2"]
 # Enable SequenceHeap and S3Q
-ffi = ["dep:s3q-sys", "dep:sequence-heap-sys"]
+ffi = ["dep:s3q-sys", "dep:sequence-heap-sys", "dep:boost-heap-sys"]
 # Enable performance counters
 perf = ["dep:perfcnt"]
 
 [profile.release]
 debug = true
 codegen-units = 1
-lto = 'thin'
+lto = "fat"
 
 [dependencies]
 csv = "1"
@@ -50,5 +50,6 @@ weakheap = "0.1.0"
 wide = "1.2.0"
 s3q-sys = { path = "s3q-sys", optional = true}
 sequence-heap-sys = { path = "sequence-heap-sys", optional = true }
+boost-heap-sys = { path = "boost-heap-sys", optional = true }
 clap = { version = "4.6.0", features = ["derive"] }
 min_max_traits = "0.1.0"
