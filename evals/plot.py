@@ -195,9 +195,7 @@ elif "comparisons" in benchname:
 
     df["push_comparisons"] /= df["normalization"]
     df["pop_comparisons"] /= df["normalization"]
-    # df["pop_comparisons"] = (df["comparisons"] / df["normalization"]) - df[
-    #     "push_comparisons"
-    # ]
+    df["comparisons"] = df["push_comparisons"] + df["pop_comparisons"]
     ops = n_max * np.log2(n_max)
 
     workloads = list(df["workload"].unique())
@@ -310,13 +308,9 @@ else:
         # ),
     ]
 
-    if "push_comparisons" not in df.columns:
-        df["push_comparisons"] = 0
-    df["comparisons"] /= df["normalization"]
+    df["pop_comparisons"] /= df["normalization"]
     df["push_comparisons"] /= df["normalization"]
-    df["pop_comparisons"] = df["comparisons"] - df["push_comparisons"]
     metric_cols = [m for m, _ in metrics] + [
-        "comparisons",
         "push_comparisons",
         "pop_comparisons",
     ]
