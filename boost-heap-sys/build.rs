@@ -15,6 +15,7 @@ fn main() {
         .extra_warnings(false)
         .file("csrc/wrapper.cpp")
         .include("csrc")
+        .include("../.spack-env/view/include")
         .include(&third_party);
 
     // Use clang++ when available for cross-language LTO compatibility with rustc's LLVM backend.
