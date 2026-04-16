@@ -274,7 +274,7 @@ elif "comparisons" in benchname:
     ax.set_xticks(x)
     ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=9)
 
-    ax.set_ylabel(r"comparisons / (push∘pop) / lg n")
+    ax.set_ylabel(r"comparisons / $(\mathsf{push} \circ \mathsf{pop})$ / lg n")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
 
     # Coloured method legend (top-left)
