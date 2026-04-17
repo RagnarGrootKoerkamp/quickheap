@@ -183,7 +183,7 @@ fn main() {
     // bench::<dary_heap::CustomDaryHeap<u64, 4>>(&graphs);
     // bench::<dary_heap::CustomDaryHeap<u64, 8>>(&graphs);
     // bench::<dary_heap::CustomDaryHeap<u64, 16>>(&graphs);
-    bench::<original_quickheap::OriginalQuickHeap<T>>(&graphs);
+    bench::<original_quickheap::OriginalQuickHeap<u64>>(&graphs);
 
     // BASELINE
     //* bench::<impls::BinaryHeap<u64>>(&graphs);
@@ -199,9 +199,9 @@ fn main() {
     // bench::<impls::OrxDaryHeap<u64, 16>>(&graphs);
 
     // AMORTIZED
-    bench::<impls::PairingHeap<T>>(&graphs);
-    bench::<impls::FibonacciHeap<T>>(&graphs);
-    bench::<impls::WeakHeap<T>>(&graphs);
+    bench::<impls::PairingHeap<u64>>(&graphs);
+    bench::<impls::FibonacciHeap<u64>>(&graphs);
+    bench::<impls::WeakHeap<u64>>(&graphs);
 
     // MONOTONE
     //* bench::<impls::RadixHeap<u64>>(&graphs);

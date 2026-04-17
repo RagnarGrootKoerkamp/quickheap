@@ -107,6 +107,9 @@ if is_categorical:
     df = df[~df["graph"].str.contains("small")]
     df = df[~df["name"].str.contains("Custom")]
 
+    df["is_rhg"] = df["graph_name"].str.startswith("rhg").astype(int)
+    graph_names = df.sort_values(["is_rhg", "vertices"])["graph_name"].unique()
+
     # Take median over repeats
     df = (
         df.groupby(["name", "type", "graph_name", "workload"])["millis"]
@@ -125,14 +128,16 @@ if is_categorical:
     all_types = df["type"].unique()
 
     workloads = df["workload"].unique()
-    graph_names = sorted(df["graph_name"].unique())
+    
+    # Old: Graphs just sorted by name: graph_names = sorted(df["graph_name"].unique()
+    
     methods = list(df["name"].unique())  # already sorted by type/name above
 
     # hatches = ["", "//", "--", "xx", "++", "\\\\", "oo", ".."]
     hatches = [""]
     graph_hatch = {gn: hatches[k % len(hatches)] for k, gn in enumerate(graph_names)}
     graph_alpha = {
-        gn: (1.0 if k == 0 or k == 5 else 0.5) for k, gn in enumerate(graph_names)
+        gn: (1.0 if k == 0 or k == 5 else 0.5) for k, gn in enumerate(graph_names) # Change here if graphs are added or removed
     }
 
     n_methods = len(methods)
@@ -172,13 +177,25 @@ if is_categorical:
             )
 
         ax.axhline(1.0, color="gray", ls="--", lw=0.8)
-        ax.set_yscale("log")
+        
+        # Now using linear scale
+        # ax.set_yscale("log")
+
         ymax = df[df["workload"] == workload]["rel"].max()
+        
+        # Even Older:
         # tick_vals = [round(1.0 + i * 0.1, 1) for i in range(int((ymax - 1.0) / 0.1) + 2)]
         # ax.yaxis.set_major_locator(ticker.FixedLocator(tick_vals))
-        ax.yaxis.set_major_locator(
-            ticker.LogLocator(base=2, subs=(1.0, 1.2, 1.5), numticks=10)
-        )
+        
+        # Old: Log Locator
+        # ax.yaxis.set_major_locator(
+        #     # ticker.LogLocator(base=2, subs=(1.0, 1.2, 1.5), numticks=10)
+        #     ticker.LinearLocator(subs=(1.0, 1.2, 1.5), numticks=10)
+        # )
+
+        ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0])
+
+        ax.set_ylim(0.8, 3.8)
         ax.yaxis.set_minor_locator(ticker.NullLocator())
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
         ax.set_ylabel("time (ms)")
@@ -188,7 +205,7 @@ if is_categorical:
             ax.legend(title="Graph", loc="upper right")
 
     axs[-1].set_xticks(x)
-    axs[-1].set_xticklabels(methods, rotation=0, ha="center", fontsize=8)
+    axs[-1].set_xticklabels(methods, rotation=-15, ha="left", fontsize=8)
 
     # Color-coded type labels along x-axis
     for tick, method in zip(axs[-1].get_xticklabels(), methods):
@@ -388,7 +405,6 @@ else:
                             kind="line",
                             x="n",
                             y=metric,
-                            logx=True,
                             ax=axs[j][i],
                             title=workload if j == 0 else None,
                             label=name if i == 0 and j == 0 else None,
@@ -397,18 +413,19 @@ else:
                             lw=lw,
                         )
 
+                
                 # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
                 cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
                 cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
                 for cn in cache_n:
-                    axs[j][i].axvline(cn, color="gray", ls="-", lw=0.5, alpha=0.5)
+                    axs[j][i].axvline(cn, color="blue", ls="-", lw=0.5, alpha=0.5)
 
                 axs[j][i].set_yscale("log", base=2)
                 axs[j][i].set_xscale("log", base=2)
                 axs[j][i].set_xticks([2**i for i in [10, 15, 20, 25]])
                 axs[j][i].legend().remove()
                 axs[j][i].set_xlabel(None)
-                axs[j][i].grid(axis="y", which="both", linestyle="-")
+                axs[j][i].grid(axis="both", which="both", linestyle="-")
                 if j > 0:
                     axs[j][i].set_title(None)
 
@@ -423,8 +440,74 @@ else:
             bbox_to_anchor=(0.5, -0.10),
         )
         fig.supylabel(label)
-        fig.supxlabel("n = max #elements in heap", y=0.02)
+        fig.supxlabel("$n$ = max # elements in heap", y=0.02)
 
         fig.savefig(f"plots/{benchname}-{metric}.svg", bbox_inches="tight")
         fig.savefig(f"plots/{benchname}-{metric}.pdf", bbox_inches="tight")
         fig.savefig(f"plots/{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
+    
+    # Filter out the workload column, only keep constant size
+    workload = "ConstantSize"
+    df = df[df["workload"] == "ConstantSize"]
+    df.drop('workload', axis='columns', inplace=True)
+    
+    for metric, label in metrics:
+        plt.close("all")
+        fig, axs = plt.subplots(
+            1, # only one workload
+            len(elems), # ['i32', 'i64']
+            figsize=(10, 4),
+            sharex=True,
+            sharey=True,
+            squeeze=False,
+        )
+        fig.suptitle(label)
+
+        for j, elem in enumerate(elems):
+            edf = df[df["elem"] == elem]
+            wdf = edf
+            for tp, tgroup in wdf.groupby("type", sort=False):
+                c = type_colour[tp]
+                for name, ngroup in tgroup.groupby("name", sort=False):
+                    lw = width_for_type(tp)
+                    # print("NAME: ", name)
+                    ngroup.plot(
+                        kind="line",
+                        x="n",
+                        y=metric,
+                        ax=axs[0, j],
+                        title=elem,
+                        # label=name if i == 0 and j == 0 else None,
+                        label=name,
+                        color=c,
+                        ls=style_for_name(tp, name),
+                        lw=lw,
+                    )
+
+            
+            # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
+            cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
+            cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
+            for cn in cache_n:
+                axs[0, j].axvline(cn, color="blue", ls="-", lw=0.5, alpha=0.5)
+
+            axs[0, j].set_yscale("log", base=2)
+            axs[0, j].set_xscale("log", base=2)
+            axs[0, j].set_xticks([2**i for i in [10, 15, 20, 25]])
+            axs[0, j].legend().remove()
+            axs[0, j].set_xlabel(None)
+            axs[0, j].grid(axis="both", which="both", linestyle="-")
+            axs[0, j].set_ylabel(None)
+
+        handles, labels_leg = axs[0, 0].get_legend_handles_labels()
+        fig.legend(
+            handles,
+            labels_leg,
+            loc="lower center",
+            ncol=4,
+            bbox_to_anchor=(0.5, -0.20),
+        )
+
+        fig.savefig(f"plots/small-{benchname}-{metric}.svg", bbox_inches="tight")
+        fig.savefig(f"plots/small-{benchname}-{metric}.pdf", bbox_inches="tight")
+        fig.savefig(f"plots/small-{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
