@@ -160,6 +160,9 @@ fn main() {
     //* #[cfg(feature = "avx512")]
     //* bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, 16, 1>>(&graphs);
 
+    // SCALAR QUICKHEAP
+    bench::<scalar_quickheap::ScalarQuickHeap<u64, 1, false, { Search::LinearScan }>>(&graphs);
+
     // ENGINEERED
     #[cfg(feature = "ffi")]
     bench::<sequence_heap::SequenceHeapU64>(&graphs);
