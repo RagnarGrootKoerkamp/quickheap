@@ -5,6 +5,7 @@ use original_quickheap::OriginalQuickHeap;
 use quickheap::dijkstra::DijkstraQuery;
 use quickheap::graph::Graph;
 use quickheap::prim::PrimMST;
+use quickheap::scalar_quickheap::Search;
 #[cfg(feature = "avx2")]
 use quickheap::simd::Avx2;
 #[cfg(feature = "avx512")]

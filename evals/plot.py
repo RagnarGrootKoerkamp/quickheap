@@ -162,7 +162,8 @@ if is_categorical:
         for gi, gn in enumerate(graph_names):
             gdf = wdf[wdf["graph_name"] == gn].set_index("name")
             heights = [
-                gdf.loc[m, "rel"] if m in gdf.index else float("nan") for m in methods
+                gdf.loc[m, "rel"] if m in gdf.index else float("nan") for m in methods # Relative
+                # gdf.loc[m, "millis"] if m in gdf.index else float("nan") for m in methods # Nanos
             ]
             offset = (gi - (len(graph_names) - 1) / 2) * bar_width
             ax.bar(
@@ -198,19 +199,19 @@ if is_categorical:
         ax.set_ylim(0.8, 3.8)
         ax.yaxis.set_minor_locator(ticker.NullLocator())
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
-        ax.set_ylabel("time (ms)")
         ax.set_title(workload)
         ax.grid(axis="y", which="major", linestyle="-", alpha=0.4)
         if workload == workloads[0]:
             ax.legend(title="Graph", loc="upper right")
 
     axs[-1].set_xticks(x)
-    axs[-1].set_xticklabels(methods, rotation=-15, ha="left", fontsize=8)
+    axs[-1].set_xticklabels(methods, rotation=-45, ha="left", fontsize=8)
 
     # Color-coded type labels along x-axis
     for tick, method in zip(axs[-1].get_xticklabels(), methods):
         tick.set_color(type_colour.get(method_type[method], "black"))
 
+    fig.supylabel("rel time on instance (compared to SIMD QuickHeap)")
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
@@ -321,6 +322,8 @@ elif "comparisons" in benchname:
     fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)
 
 else:
+    # Bench Plot
+
     # Take median over repeats, then normalize each metric by n*log2(n)
     metrics = [
         ("nanos", r"ns / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
@@ -342,7 +345,10 @@ else:
         "pop_comparisons",
     ]
 
-    workloads = df["workload"].unique()
+    # TODO: Little bit hacky, cause not all workloads for the boost heaps
+    new_df = df.sort_values(["workload"])
+    workloads = new_df["workload"].unique()
+    print(workloads)
 
     if df["nanos"].max() == 0:
         metrics = [
@@ -399,8 +405,18 @@ else:
                 wdf = edf[edf["workload"] == workload]
                 for tp, tgroup in wdf.groupby("type", sort=False):
                     c = type_colour[tp]
-                    for name, ngroup in tgroup.groupby("name", sort=False):
+                    for name, ngroup in tgroup.groupby("name", sort=False):                        
                         lw = width_for_type(tp)
+
+                        # if ("Boost" in name):
+                        #     print(i, j)
+                        #     print(name)
+                        #     print("Color: ", c)
+                        #     print("TP: ", tp)
+                        #     print("Width: ", lw)
+                        #     print("Style", style_for_name(tp, name))
+                        #     print("Axis", axs[j][i])
+
                         ngroup.plot(
                             kind="line",
                             x="n",
@@ -425,6 +441,7 @@ else:
                 axs[j][i].set_xticks([2**i for i in [10, 15, 20, 25]])
                 axs[j][i].legend().remove()
                 axs[j][i].set_xlabel(None)
+                axs[j][i].set_ylabel(None)
                 axs[j][i].grid(axis="both", which="both", linestyle="-")
                 if j > 0:
                     axs[j][i].set_title(None)
@@ -432,6 +449,7 @@ else:
             axs[j][0].set_ylabel(elem)
 
         handles, labels_leg = axs[0][0].get_legend_handles_labels()
+        print(labels_leg)
         fig.legend(
             handles,
             labels_leg,
@@ -470,7 +488,6 @@ else:
                 c = type_colour[tp]
                 for name, ngroup in tgroup.groupby("name", sort=False):
                     lw = width_for_type(tp)
-                    # print("NAME: ", name)
                     ngroup.plot(
                         kind="line",
                         x="n",
