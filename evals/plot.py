@@ -8,6 +8,13 @@ import sys
 
 benchname = sys.argv[1]
 
+
+all = False
+if len(sys.argv) > 2 and sys.argv[2] == "all":
+    all = True
+
+suff = "-all" if all else ""
+
 df = pd.read_csv(f"test-{benchname}.csv")
 
 # Shorten heap names
@@ -89,6 +96,8 @@ type_order = [
 graph_method_filter = ["FibonacciHeap<T>", "BoostBinomialHeap<T>", "BoostFibHeap<T>", "PairingHeap<T>", "BoostPairingHeap<T>", "BoostSkewHeap<T>"]
 graph_instance_filter = ["NY"]
 
+nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap"]
+
 colours = (
     list(plt.get_cmap("tab20").colors)
     + list(plt.get_cmap("tab20b").colors)
@@ -144,8 +153,6 @@ if is_categorical:
     
     methods = list(filter(filter_graph, df["name"].unique())) # already sorted by type/name above
 
-    print("MET", methods)
-
     # hatches = ["", "//", "--", "xx", "++", "\\\\", "oo", ".."]
     hatches = [""]
     graph_hatch = {gn: hatches[k % len(hatches)] for k, gn in enumerate(graph_names)}
@@ -183,11 +190,6 @@ if is_categorical:
             ]
             offset = (gi - (len(graph_names) - 1) / 2) * bar_width
 
-            # print(gi)
-            # print(ax)
-            # print(workload)
-            # print(graph_hatch[gn])
-
             ax.bar(
                 x + offset,
                 heights,
@@ -202,21 +204,11 @@ if is_categorical:
         ax.axhline(1.0, color="gray", ls="--", lw=0.8)
         
         # Now using linear scale
-        # ax.set_yscale("log")
+        # Old (log scale): ax.set_yscale("log")
 
         ymax = df[df["workload"] == workload]["rel"].max()
         
-        # Even Older:
-        # tick_vals = [round(1.0 + i * 0.1, 1) for i in range(int((ymax - 1.0) / 0.1) + 2)]
-        # ax.yaxis.set_major_locator(ticker.FixedLocator(tick_vals))
-        
-        # Old: Log Locator
-        # ax.yaxis.set_major_locator(
-        #     # ticker.LogLocator(base=2, subs=(1.0, 1.2, 1.5), numticks=10)
-        #     ticker.LinearLocator(subs=(1.0, 1.2, 1.5), numticks=10)
-        # )
-
-        ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0])
+        ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0, 3.5])
 
         ax.set_ylim(0.8, 4)
         ax.yaxis.set_minor_locator(ticker.NullLocator())
@@ -348,7 +340,8 @@ else:
 
     # Take median over repeats, then normalize each metric by n*log2(n)
     metrics = [
-        ("nanos", r"ns / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
+        # ("nanos", r"$(\mathsf{ns} \:/\: \#(\mathsf{pop}\circ\mathsf{push})) \:/\: \lg n$"),
+        ("nanos", r"$ \frac{\mathsf{ns}}{\#(\mathsf{pop}\circ\mathsf{push}) \cdot \lg n}$"),
         # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
         # (
         #     "l1_cache_misses",
@@ -426,6 +419,9 @@ else:
                 wdf = edf[edf["workload"] == workload]
                 for tp, tgroup in wdf.groupby("type", sort=False):
                     c = type_colour[tp]
+                    if not all and tp in nanos_filter:
+                        continue
+
                     for name, ngroup in tgroup.groupby("name", sort=False):                        
                         lw = width_for_type(tp)
 
@@ -443,10 +439,10 @@ else:
 
                 
                 # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
-                cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
-                cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
-                for cn in cache_n:
-                    axs[j][i].axvline(cn, color="blue", ls="-", lw=0.5, alpha=0.5)
+                # cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
+                # cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
+                # for cn in cache_n:
+                #     axs[j][i].axvline(cn, color="blue", ls="-", lw=0.5, alpha=0.5)
 
                 axs[j][i].set_yscale("log", base=2)
                 axs[j][i].set_xscale("log", base=2)
@@ -492,11 +488,15 @@ else:
         )
         fig.suptitle(label)
 
+        print("NEXT")
+
         for j, elem in enumerate(elems):
             edf = df[df["elem"] == elem]
             wdf = edf
             for tp, tgroup in wdf.groupby("type", sort=False):
                 c = type_colour[tp]
+                if not all and tp in nanos_filter:
+                    continue
                 for name, ngroup in tgroup.groupby("name", sort=False):
                     lw = width_for_type(tp)
                     ngroup.plot(
@@ -514,10 +514,10 @@ else:
 
             
             # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
-            cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
-            cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
-            for cn in cache_n:
-                axs[0, j].axvline(cn, color="blue", ls="-", lw=0.5, alpha=0.5)
+            # cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
+            # cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
+            # for cn in cache_n:
+            #     axs[0, j].axvline(cn, color="blue", ls="-", lw=0.5, alpha=0.5)
 
             axs[0, j].set_yscale("log", base=2)
             axs[0, j].set_xscale("log", base=2)
@@ -533,9 +533,9 @@ else:
             labels_leg,
             loc="lower center",
             ncol=4,
-            bbox_to_anchor=(0.5, -0.20),
+            bbox_to_anchor=(0.5, -0.25),
         )
 
-        fig.savefig(f"plots/small-{benchname}-{metric}.svg", bbox_inches="tight")
-        fig.savefig(f"plots/small-{benchname}-{metric}.pdf", bbox_inches="tight")
-        fig.savefig(f"plots/small-{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
+        fig.savefig(f"plots/small-{benchname}-{metric}{suff}.svg", bbox_inches="tight")
+        fig.savefig(f"plots/small-{benchname}-{metric}{suff}.pdf", bbox_inches="tight")
+        fig.savefig(f"plots/small-{benchname}-{metric}{suff}.png", bbox_inches="tight", dpi=300)
