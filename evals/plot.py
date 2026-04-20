@@ -60,25 +60,34 @@ df["type"] = df["name"].str.split("<").str[0]
 
 # Sort by type
 type_order = [
+    # Dary
     "BinaryHeap",
-    "RadixHeapMap",
     "DaryHeapOrx",
+    "BoostDary4Heap",
     # "CustomBinaryHeap",
     # "CustomDaryHeap",
-    "PairingHeap",
-    "FibonacciHeap",
+   
+    # Amortized
     "WeakHeap",
-    "SequenceHeap",
-    "S3qHeap",
-    "ScalarQuickHeap",
-    "SimdQuickHeap",
     "BoostBinomialHeap",
-    "BoostDary4Heap",
+    "FibonacciHeap",
     "BoostFibHeap",
+    "PairingHeap",
     "BoostPairingHeap",
     "BoostSkewHeap",
+    # Actual Competitors 
+    "RadixHeapMap",
+    "SequenceHeap",
+    "S3qHeap",
+    
     "OriginalQuickHeap",
+    "ScalarQuickHeap",
+    "SimdQuickHeap",
 ]
+
+# Filtered out for the graph plot
+graph_method_filter = ["FibonacciHeap<T>", "BoostBinomialHeap<T>", "BoostFibHeap<T>", "PairingHeap<T>", "BoostPairingHeap<T>", "BoostSkewHeap<T>"]
+graph_instance_filter = ["NY"]
 
 colours = (
     list(plt.get_cmap("tab20").colors)
@@ -130,14 +139,18 @@ if is_categorical:
     workloads = df["workload"].unique()
     
     # Old: Graphs just sorted by name: graph_names = sorted(df["graph_name"].unique()
+    def filter_graph(name):
+        return not name in graph_method_filter
     
-    methods = list(df["name"].unique())  # already sorted by type/name above
+    methods = list(filter(filter_graph, df["name"].unique())) # already sorted by type/name above
+
+    print("MET", methods)
 
     # hatches = ["", "//", "--", "xx", "++", "\\\\", "oo", ".."]
     hatches = [""]
     graph_hatch = {gn: hatches[k % len(hatches)] for k, gn in enumerate(graph_names)}
     graph_alpha = {
-        gn: (1.0 if k == 0 or k == 5 else 0.5) for k, gn in enumerate(graph_names) # Change here if graphs are added or removed
+        gn: (1.0 if k == 1 or k == 5 else 0.5) for k, gn in enumerate(graph_names) # Change here if graphs are added or removed
     }
 
     n_methods = len(methods)
@@ -160,12 +173,21 @@ if is_categorical:
         wdf = df[df["workload"] == workload]
 
         for gi, gn in enumerate(graph_names):
+            if (gn in graph_instance_filter):
+                continue
+
             gdf = wdf[wdf["graph_name"] == gn].set_index("name")
             heights = [
                 gdf.loc[m, "rel"] if m in gdf.index else float("nan") for m in methods # Relative
                 # gdf.loc[m, "millis"] if m in gdf.index else float("nan") for m in methods # Nanos
             ]
             offset = (gi - (len(graph_names) - 1) / 2) * bar_width
+
+            # print(gi)
+            # print(ax)
+            # print(workload)
+            # print(graph_hatch[gn])
+
             ax.bar(
                 x + offset,
                 heights,
@@ -196,7 +218,7 @@ if is_categorical:
 
         ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0])
 
-        ax.set_ylim(0.8, 3.8)
+        ax.set_ylim(0.8, 4)
         ax.yaxis.set_minor_locator(ticker.NullLocator())
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
         ax.set_title(workload)
@@ -348,7 +370,6 @@ else:
     # TODO: Little bit hacky, cause not all workloads for the boost heaps
     new_df = df.sort_values(["workload"])
     workloads = new_df["workload"].unique()
-    print(workloads)
 
     if df["nanos"].max() == 0:
         metrics = [
@@ -408,15 +429,6 @@ else:
                     for name, ngroup in tgroup.groupby("name", sort=False):                        
                         lw = width_for_type(tp)
 
-                        # if ("Boost" in name):
-                        #     print(i, j)
-                        #     print(name)
-                        #     print("Color: ", c)
-                        #     print("TP: ", tp)
-                        #     print("Width: ", lw)
-                        #     print("Style", style_for_name(tp, name))
-                        #     print("Axis", axs[j][i])
-
                         ngroup.plot(
                             kind="line",
                             x="n",
@@ -449,7 +461,6 @@ else:
             axs[j][0].set_ylabel(elem)
 
         handles, labels_leg = axs[0][0].get_legend_handles_labels()
-        print(labels_leg)
         fig.legend(
             handles,
             labels_leg,
