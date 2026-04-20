@@ -228,8 +228,7 @@ if is_categorical:
     fig.supylabel("rel time on instance (compared to SIMD QuickHeap)")
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
-    fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
-    fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)
+
 
 elif "comparisons" in benchname:
     n_max = df["n"].max()
@@ -314,7 +313,8 @@ elif "comparisons" in benchname:
     ax.set_xticks(x)
     ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=9)
 
-    ax.set_ylabel(r"comparisons / $(\mathsf{push} \circ \mathsf{pop})$ / lg n")
+    # ax.set_ylabel(r"$\# \mathsf{comparisons} / (\mathsf{pop} \circ \mathsf{push}) / \lg n$")
+    ax.set_ylabel(r"$\frac{\# \mathsf{comparisons}}{\#(\mathsf{pop} \circ \mathsf{push}) \cdot \lg n}$")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
 
     # Coloured method legend (top-left)
