@@ -39,7 +39,6 @@ impl<T: Elem, const M: usize, const PERFECT: bool, const S: Search> Heap<T>
             buckets: vec![vec![]],
         }
     }
-    #[inline(never)]
     fn push(&mut self, t: T) {
         // Push on the last layer with a pivot >= t,
         // i.e. the index of first pivot < t.
@@ -63,7 +62,6 @@ impl<T: Elem, const M: usize, const PERFECT: bool, const S: Search> Heap<T>
 
         self.buckets[target_layer].push(t);
     }
-    #[inline(never)]
     fn pop(&mut self) -> Option<T> {
         // Only the top layer can be empty.
         if self.buckets.len() == 1 && self.buckets[0].is_empty() {

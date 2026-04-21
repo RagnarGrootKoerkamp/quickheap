@@ -23,7 +23,6 @@ impl<T: Elem> Heap<T> for OriginalQuickHeap<T> {
             offset: 0,
         }
     }
-    #[inline(never)]
     fn push(&mut self, t: T) {
         self.pivot_positions[0] += 1;
         self.data.push_back(t);
@@ -44,7 +43,6 @@ impl<T: Elem> Heap<T> for OriginalQuickHeap<T> {
             layer += 1;
         }
     }
-    #[inline(never)]
     fn pop(&mut self) -> Option<T> {
         // Only the top layer can be empty.
         if self.data.is_empty() {

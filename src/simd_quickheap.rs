@@ -37,13 +37,11 @@ impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> Heap<T>
             _backend: PhantomData,
         }
     }
-    #[inline(never)]
     fn push(&mut self, t: T) {
         let target_layer = push_position::<T, S>(&self.pivots, t);
         self.buckets[target_layer].reserve(S::L + 1);
         self.buckets[target_layer].push(t);
     }
-    #[inline(never)]
     fn pop(&mut self) -> Option<T> {
         let layer = self.pivots.len();
         // Only the top layer can be empty.
