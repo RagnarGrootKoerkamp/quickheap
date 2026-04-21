@@ -9,6 +9,9 @@
 
 struct I32Cfg : s3q::DefaultCfg {
     using Item = int32_t;
+    // Override kBufBaseSize to match 64-bit element count (4096) to ensure
+    // consistent memory allocation patterns across 32-bit and 64-bit types
+    static constexpr std::ptrdiff_t kBufBaseSize = (1l << 15) / sizeof(int64_t);
 };
 
 using I32Pq = s3q::PriorityQueue<I32Cfg>;
@@ -21,6 +24,9 @@ using I64Pq = s3q::PriorityQueue<I64Cfg>;
 
 struct U32Cfg : s3q::DefaultCfg {
     using Item = uint32_t;
+    // Override kBufBaseSize to match 64-bit element count (4096) to ensure
+    // consistent memory allocation patterns across 32-bit and 64-bit types
+    static constexpr std::ptrdiff_t kBufBaseSize = (1l << 15) / sizeof(uint64_t);
 };
 
 using U32Pq = s3q::PriorityQueue<U32Cfg>;

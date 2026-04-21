@@ -361,8 +361,8 @@ else:
     ]
 
     # TODO: Little bit hacky, cause not all workloads for the boost heaps
-    new_df = df.sort_values(["workload"])
-    workloads = new_df["workload"].unique()
+    # new_df = df.sort_values(["workload"])
+    workloads = df["workload"].unique()
 
     if df["nanos"].max() == 0:
         metrics = [
@@ -488,8 +488,6 @@ else:
         )
         fig.suptitle(label)
 
-        print("NEXT")
-
         for j, elem in enumerate(elems):
             edf = df[df["elem"] == elem]
             wdf = edf
@@ -526,14 +524,15 @@ else:
             axs[0, j].set_xlabel(None)
             axs[0, j].grid(axis="both", which="both", linestyle="-")
             axs[0, j].set_ylabel(None)
-
+        
+        fig.supxlabel("$n$ = max # elements in heap", y=-0.01)
         handles, labels_leg = axs[0, 0].get_legend_handles_labels()
         fig.legend(
             handles,
             labels_leg,
             loc="lower center",
             ncol=4,
-            bbox_to_anchor=(0.5, -0.25),
+            bbox_to_anchor=(0.5, -0.27),
         )
 
         fig.savefig(f"plots/small-{benchname}-{metric}{suff}.svg", bbox_inches="tight")
