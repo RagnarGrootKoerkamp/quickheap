@@ -467,9 +467,9 @@ else:
         fig.supylabel(label)
         fig.supxlabel("$n$ = max # elements in heap", y=0.02)
 
-        fig.savefig(f"plots/{benchname}-{metric}.svg", bbox_inches="tight")
-        fig.savefig(f"plots/{benchname}-{metric}.pdf", bbox_inches="tight")
-        fig.savefig(f"plots/{benchname}-{metric}.png", bbox_inches="tight", dpi=300)
+        fig.savefig(f"plots/{benchname}-{metric}{suff}.svg", bbox_inches="tight")
+        fig.savefig(f"plots/{benchname}-{metric}{suff}.pdf", bbox_inches="tight")
+        fig.savefig(f"plots/{benchname}-{metric}{suff}.png", bbox_inches="tight", dpi=300)
     
     # Filter out the workload column, only keep constant size
     workload = "ConstantSize"

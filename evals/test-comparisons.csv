@@ -69,3 +69,8 @@ i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,quickheap::workloads::C
 i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,quickheap::workloads::MonotoneWiggle,0,0.0,142692192.0,2371825950.0,0.0,0.0,0.0,0.0
 i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,quickheap::workloads::GeometricMonotoneWiggle,0,0.0,167279163.0,2371025194.0,0.0,0.0,0.0,0.0
 i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,quickheap::workloads::Wiggle,0,0.0,292860509.0,2371644143.0,0.0,0.0,0.0,0.0
+i64,quickheap::original_quickheap::OriginalQuickHeap<i64>,33554432,quickheap::workloads::HeapSort,0,0.0,0.0,1096559499.0,0.0,0.0,0.0,0.0
+i64,quickheap::original_quickheap::OriginalQuickHeap<i64>,33554432,quickheap::workloads::ConstantSize,0,0.0,58615884.0,1095215497.0,0.0,0.0,0.0,0.0
+i64,quickheap::original_quickheap::OriginalQuickHeap<i64>,33554432,quickheap::workloads::MonotoneWiggle,0,0.0,145014917.0,3067646345.0,0.0,0.0,0.0,0.0
+i64,quickheap::original_quickheap::OriginalQuickHeap<i64>,33554432,quickheap::workloads::GeometricMonotoneWiggle,0,0.0,177181615.0,3009021788.0,0.0,0.0,0.0,0.0
+i64,quickheap::original_quickheap::OriginalQuickHeap<i64>,33554432,quickheap::workloads::Wiggle,0,0.0,2901882473.0,1233686139.0,0.0,0.0,0.0,0.0
