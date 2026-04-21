@@ -301,7 +301,6 @@ where
     // bench::<T, dary_heap::CustomDaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, dary_heap::CustomDaryHeap<T, 16>>(minpow, maxpow);
 
-    // TODO: Investigate why this is so slow.
     bench::<T, original_quickheap::OriginalQuickHeap<T>>(minpow, maxpow);
 
     // BASELINE
@@ -346,5 +345,3 @@ fn main() {
     }
     CSV_WRITER.with(|w| w.borrow_mut().flush().unwrap());
 }
-
-// TODO: Include Binom, Pairing, Weak, ...

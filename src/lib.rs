@@ -1,4 +1,4 @@
-#![feature(portable_simd, vec_from_fn, adt_const_params, associated_type_defaults)]
+#![feature(portable_simd, adt_const_params, associated_type_defaults)]
 
 use workloads::{CountComparisons, CountingHeapT, Elem};
 pub mod workloads;
@@ -6,11 +6,11 @@ pub mod workloads;
 pub mod impls;
 
 #[cfg(feature = "ffi")]
+pub mod boost_heap;
+#[cfg(feature = "ffi")]
 pub mod s3q;
 #[cfg(feature = "ffi")]
 pub mod sequence_heap;
-#[cfg(feature = "ffi")]
-pub mod boost_heap;
 
 pub mod scalar_quickheap;
 
