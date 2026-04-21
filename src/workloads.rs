@@ -219,11 +219,14 @@ impl Workload for ConstantSize {
         let mut h = H::default();
         let stride = T::stride();
         let mut rng = fastrand::Rng::new();
+        let mut l = 0;
         for _ in 0..n {
-            h.push(T::from(rng.u64(0..stride)));
+            h.push(T::try_from(l + rng.u64(0..stride)));
+            l = h.pop().unwrap().get();
+            h.push(T::try_from(l + rng.u64(0..stride)));
         }
         let values = std::iter::repeat_with(|| rng.u64(0..stride))
-            .take(n as usize)
+            .take(10 * n as usize)
             .collect::<Vec<_>>()
             .into_iter();
         move || {
