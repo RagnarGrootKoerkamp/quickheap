@@ -3,6 +3,8 @@ use quickheap::simd::Avx2;
 #[cfg(feature = "avx512")]
 use quickheap::simd::Avx512;
 
+use quickheap::pivot_strategies::MedianOfM;
+
 #[cfg(feature = "perf")]
 use perfcnt::{
     AbstractPerfCounter,
@@ -134,7 +136,7 @@ fn main() {
     let n = 1 << 25;
 
     #[cfg(feature = "avx2")]
-    time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>, ConstantSize>(n);
+    time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<1>, 16>, ConstantSize>(n);
     #[cfg(feature = "avx512")]
-    time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>, ConstantSize>(n);
+    time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>, ConstantSize>(n);
 }
