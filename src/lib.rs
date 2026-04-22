@@ -19,6 +19,8 @@ pub mod simd;
 #[cfg(feature = "avx2")]
 pub mod simd_quickheap;
 
+pub mod pivot_strategies;
+
 pub mod binary_heap;
 pub mod dary_heap;
 

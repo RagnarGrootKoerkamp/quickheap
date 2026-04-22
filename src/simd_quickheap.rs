@@ -1,12 +1,12 @@
 use crate::impls::NoHeap;
+use crate::pivot_strategies::PivotStrategy;
 use crate::simd::{SimdElem, position_min, push_position};
 use crate::workloads::Elem;
 
 use super::Heap;
-use std::array::from_fn;
 use std::marker::PhantomData;
 
-pub struct SimdQuickHeap<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> {
+pub struct SimdQuickHeap<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -22,11 +22,13 @@ pub struct SimdQuickHeap<T: Elem, S: SimdElem<T>, const N: usize, const M: usize
     ///
     /// This can be longer than `layer` to reuse allocations.
     pub(crate) buckets: Vec<Vec<T>>,
+
+    _p: PhantomData<P>,
     _backend: PhantomData<S>,
 }
 
-impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> Heap<T>
-    for SimdQuickHeap<T, S, N, M>
+impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> Heap<T>
+    for SimdQuickHeap<T, S, P, N>
 {
     type CountedHeap = NoHeap;
 
@@ -34,6 +36,7 @@ impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> Heap<T>
         Self {
             pivots: Vec::with_capacity(128),
             buckets: vec![vec![]; 128],
+            _p: PhantomData,
             _backend: PhantomData,
         }
     }
@@ -65,7 +68,7 @@ impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> Heap<T>
     }
 }
 
-impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> SimdQuickHeap<T, S, N, M> {
+impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> SimdQuickHeap<T, S, P, N> {
     #[inline(never)]
     pub(crate) fn partition(&mut self) {
         // Reserve space for an additional L layers when needed.
@@ -82,15 +85,8 @@ impl<T: Elem, S: SimdElem<T>, const N: usize, const M: usize> SimdQuickHeap<T, S
         };
         let n = cur_layer.len();
 
-        // Select M random pivots and compute their median.
-        let mut pivots: [(T, usize); M] = from_fn(|_| {
-            let pos = rand::random_range(0..n);
-            (cur_layer[pos], pos)
-        });
-        pivots.sort_by_key(|(pivot, _)| *pivot);
-        // Pivots are exclusive.
-        let pivot = pivots[M / 2].0;
-        let pivot_pos = pivots[M / 2].1;
+        // Sample a pivot using the pivot strategy
+        let (pivot, pivot_pos) = P::pick(&cur_layer);
         self.pivots.push(pivot);
 
         // Reserve space in the next layer,
