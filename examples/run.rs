@@ -3,7 +3,7 @@ use quickheap::simd::Avx2;
 #[cfg(feature = "avx512")]
 use quickheap::simd::Avx512;
 
-use quickheap::pivot_strategies::MedianOfM;
+use quickheap::pivot_strategies::{MedianOfM, CbrtPivot, Log2Pivot};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -16,9 +16,9 @@ use quickheap::*;
 use serde::Serialize;
 use std::any::type_name;
 
-const REPEATS: usize = 3;
+const REPEATS: usize = 1;
 
-#[derive(Serialize, Default)]
+#[derive(Serialize, Default, Debug)]
 struct Result {
     elem: &'static str,
     heap: &'static str,
@@ -124,6 +124,7 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
             };
         }
 
+        println!("{},{},{}", result.heap, result.n, result.nanos);
         all_nanos.push(result.nanos);
     }
 
@@ -133,10 +134,23 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
 
 fn main() {
     type T = i64;
-    let n = 1 << 25;
+    let n = 1 << 22;
 
     #[cfg(feature = "avx2")]
-    time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<1>, 16>, ConstantSize>(n);
+    {
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<1>, 16>, ConstantSize>(n);
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 16>, ConstantSize>(n);
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<5>, 16>, ConstantSize>(n);
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, 16>, ConstantSize>(n);
+
+    }
     #[cfg(feature = "avx512")]
-    time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>, ConstantSize>(n);
+    {
+            time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>, ConstantSize>(n);
+    }
 }

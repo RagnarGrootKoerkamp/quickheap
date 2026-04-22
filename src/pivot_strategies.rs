@@ -1,8 +1,9 @@
 use crate::workloads::Elem;
 
 pub trait PivotStrategy {
+    const CBRT_LOOKUP: [usize; 26] = [1, 1, 1, 2, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 25, 32, 40, 50, 64, 80, 101, 128, 161, 203, 256, 322];
+
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize);
-    fn default() -> Self;
 }
 
 fn get_m_median<T: Elem>(layer: &Vec<T>, m: usize) -> (T, usize) {
@@ -29,15 +30,11 @@ impl<const M: usize> PivotStrategy for MedianOfM<M> {
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
         get_m_median::<T>(layer, M)
     }
-
-    fn default() -> Self {
-        Self {}
-    }
 }
 
 // pub struct PerfectPivot;
-// impl<T: Elem> PivotStrategy for PerfectPivot {
-//     fn pick(layer: &Vec<T>) -> (T, usize) {
+// impl PivotStrategy for PerfectPivot {
+//     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
 //         let n = layer.len();
 //         let mut sorted_layer = layer.clone();
 //         sorted_layer.sort();
@@ -49,17 +46,31 @@ impl<const M: usize> PivotStrategy for MedianOfM<M> {
 //     }
 // }
 
-// pub struct CbrtPivot<const A: usize, const B: usize>;
-// impl<T: Elem, const A: usize, const B: usize> PivotStrategy for CbrtPivot<A, B> {
-//     fn pick(layer: &Vec<T>) -> (T, usize) {
-//         let n = layer.len() as f64;
-//         let cbrt = n.cbrt().floor() as usize;
-// 
-//         let m = A * cbrt + B;
-// 
-//         get_m_median(layer, m)
-//     }
-// }
+pub struct CbrtPivot<const A: usize, const B: usize>;
+impl<const A: usize, const B: usize> PivotStrategy for CbrtPivot<A, B> {
+    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
+        let n = layer.len();
+        let idx = size_of::<T>() * 8 - n.leading_zeros() as usize;
+
+        let cbrt = CbrtPivot::<A, B>::CBRT_LOOKUP[idx];
+        let fac: f64 = 1 as f64 / A as f64;
+
+        let m = (fac * cbrt as f64) as usize + B;
+
+        get_m_median(layer, m)
+    }
+}
+
+pub struct Log2Pivot<const A: usize, const B: usize>;
+impl<const A: usize, const B: usize> PivotStrategy for Log2Pivot<A, B> {
+    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
+        let n = layer.len();
+        let idx = size_of::<T>() * 8 - n.leading_zeros() as usize;
+        let m = A * idx + B;
+
+        get_m_median(layer, m)
+    }
+}
 
 // pub struct SkewedPivot<const A: usize, const B: usize>;
 // impl<T: Elem, const A: usize, const B: usize> PivotStrategy for CbrtPivot<A, B> {
