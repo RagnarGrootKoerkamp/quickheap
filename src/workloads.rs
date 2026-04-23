@@ -251,7 +251,7 @@ impl Workload for RandomConstantSize {
         let mut rng = fastrand::Rng::new();
         for _ in 0..n {
             h.push(T::try_from(rng.u64(0..stride)));
-            l = h.pop().unwrap().get();
+            h.pop().unwrap().get();
             h.push(T::try_from(rng.u64(0..stride)));
         }
         let values = std::iter::repeat_with(|| rng.u64(0..stride))

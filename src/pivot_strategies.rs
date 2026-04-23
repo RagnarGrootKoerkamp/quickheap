@@ -39,7 +39,7 @@ impl<const M: usize> PivotStrategy for MedianOfM<M> {
     }
 }
 
-pub struct RandomPivot<const M: usize>;
+pub struct RandomPivot;
 impl<const M: usize> PivotStrategy for RandomPivot {
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
         let n = layer.len();
