@@ -1,8 +1,10 @@
 use crate::workloads::Elem;
 
 pub trait PivotStrategy {
-    const CBRT_LOOKUP: [usize; 26] = [1, 1, 1, 2, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 25, 32, 40, 50, 64, 80, 101, 128, 161, 203, 256, 322];
-
+    const CBRT_LOOKUP: [usize; 32] = [
+        1, 1, 1, 2, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 25, 32, 40, 50, 64, 80, 101, 128, 161, 203,
+        256, 322, 406, 512, 645, 812, 1024, 1290,
+    ];
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize);
 }
 
@@ -32,19 +34,15 @@ impl<const M: usize> PivotStrategy for MedianOfM<M> {
     }
 }
 
-// pub struct PerfectPivot;
-// impl PivotStrategy for PerfectPivot {
-//     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
-//         let n = layer.len();
-//         let mut sorted_layer = layer.clone();
-//         sorted_layer.sort();
-// 
-//         let pivot_pos = (n - 1) / 2;
-//         let pivot = sorted_layer[pivot_pos];
-// 
-//         (pivot, pivot_pos)
-//     }
-// }
+pub struct RandomPivot<const M: usize>;
+impl<const M: usize> PivotStrategy for RandomPivot {
+    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
+        let n = layer.len();
+        let pivot_pos = rand::random_range(0..n);
+        let pivot = layer[pivot_pos];
+        (pivot, pivot_pos)
+    }
+}
 
 pub struct CbrtPivot<const A: usize, const B: usize>;
 impl<const A: usize, const B: usize> PivotStrategy for CbrtPivot<A, B> {

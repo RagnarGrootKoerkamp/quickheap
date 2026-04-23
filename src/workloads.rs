@@ -239,6 +239,35 @@ impl Workload for ConstantSize {
     }
 }
 
+/// init: push^n
+/// bench: (pop push)^n
+/// values: random
+pub struct RandomConstantSize;
+
+impl Workload for RandomConstantSize {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+        let mut h = H::default();
+        let stride = T::stride();
+        let mut rng = fastrand::Rng::new();
+        for _ in 0..n {
+            h.push(T::try_from(rng.u64(0..stride)));
+            l = h.pop().unwrap().get();
+            h.push(T::try_from(rng.u64(0..stride)));
+        }
+        let values = std::iter::repeat_with(|| rng.u64(0..stride))
+            .take(10 * n as usize)
+            .collect::<Vec<_>>()
+            .into_iter();
+        move || {
+            for value in values {
+                let _l = h.pop().unwrap().get();
+                h.push(T::try_from(value));
+            }
+            black_box(h);
+        }
+    }
+}
+
 /// bench: (push pop push)^n (pop push pop)^n
 /// values: last + (0..C)
 pub struct MonotoneWiggle;

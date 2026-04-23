@@ -5,7 +5,10 @@ use quickheap::scalar_quickheap::Search;
 #[cfg(feature = "avx512")]
 use quickheap::simd::Avx512;
 #[cfg(feature = "avx2")]
-use quickheap::simd::{Avx2, SimdElem};
+use quickheap::{
+    pivot_strategies::{MedianOfM, RandomPivot},
+    simd::{Avx2, SimdElem},
+};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -167,7 +170,7 @@ fn comparisons_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
 pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
     let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
 
-    let mut ok = [true; 3];
+    let mut ok = [true; 5];
 
     for n in ns {
         eprint!("{:<70} {} {n:>10}", type_name::<H>(), type_name::<T>());
@@ -192,13 +195,14 @@ pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
             }
         }
 
-        // bench_one::<T, H, HeapSort>(n, &mut ok[0]);
+        bench_one::<T, H, HeapSort>(n, &mut ok[0]);
         bench_one::<T, H, ConstantSize>(n, &mut ok[1]);
-        // bench_one::<T, H, MonotoneWiggle>(n, &mut ok[1]);
+        bench_one::<T, H, MonotoneWiggle>(n, &mut ok[2]);
         // bench_one::<T, H, GeometricMonotoneWiggle>(n, &mut ok[1]);
-        // if !H::MONOTONE {
-        //     bench_one::<T, H, Wiggle>(n, &mut ok[2]);
-        // }
+        if !H::MONOTONE {
+            bench_one::<T, H, Wiggle>(n, &mut ok[3]);
+            bench_one::<T, H, RandomConstantSize>(n, &mut ok[4]);
+        }
 
         eprintln!();
     }
@@ -257,13 +261,10 @@ where
 
     if !args.comparisons {
         #[cfg(feature = "avx2")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, 16, 1>>(minpow, maxpow);
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, RandomPivot, 16>>(minpow, maxpow);
         #[cfg(feature = "avx512")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, 16, 1>>(minpow, maxpow);
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, RandomPivot, 16>>(minpow, maxpow);
     }
-
-    // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 1>>(minpow, maxpow);
-    // bench::<T, simd_quickheap::SimdQuickHeap<T, 8, 3>>(minpow, maxpow);
 
     if args.quickheap {
         return;
@@ -304,7 +305,7 @@ where
     bench::<T, original_quickheap::OriginalQuickHeap<T>>(minpow, maxpow);
 
     // BASELINE
-    //* bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
+    bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
 
     // DARY
     // bench::<T, impls::DaryHeap<T, 2>>(minpow, maxpow);
@@ -312,8 +313,8 @@ where
     // bench::<T, impls::DaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, impls::DaryHeap<T, 16>>(minpow, maxpow);
     // bench::<T, impls::OrxDaryHeap<T, 2>>(minpow, maxpow);
-    //* bench::<T, impls::OrxDaryHeap<T, 4>>(minpow, maxpow);
-    //* bench::<T, impls::OrxDaryHeap<T, 8>>(minpow, maxpow);
+    bench::<T, impls::OrxDaryHeap<T, 4>>(minpow, maxpow);
+    bench::<T, impls::OrxDaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, impls::OrxDaryHeap<T, 16>>(minpow, maxpow);
 
     // AMORTIZED

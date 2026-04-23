@@ -15,3 +15,7 @@ plot-all:
     cd evals && ./plot.py diffie all
     cd evals && ./plot.py comparisons
     cd evals && ./plot.py graphs-diffie
+
+plot-diffie:
+    cd evals && ./plot.py diffie
+    cd evals && ./plot.py diffie all
