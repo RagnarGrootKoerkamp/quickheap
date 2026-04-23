@@ -2,6 +2,7 @@
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import re
 import numpy as np
 import pandas as pd
 import sys
@@ -144,12 +145,13 @@ if is_categorical:
     df["rel"] = df["millis"] / min_millis
 
     all_types = df["type"].unique()
-
     workloads = df["workload"].unique()
     
     # Old: Graphs just sorted by name: graph_names = sorted(df["graph_name"].unique()
+
     def filter_graph(name):
-        return not name in graph_method_filter
+        cleaned = re.sub(r'<[^>]*>', '', name)
+        return all or not (cleaned in nanos_filter or name in nanos_filter)
     
     methods = list(filter(filter_graph, df["name"].unique())) # already sorted by type/name above
 
@@ -227,7 +229,9 @@ if is_categorical:
 
     fig.supylabel("rel time on instance (compared to SIMD QuickHeap)")
     fig.tight_layout()
-    fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}{suff}.pdf", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}{suff}.png", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}{suff}.svg", bbox_inches="tight")
 
 
 elif "comparisons" in benchname:
@@ -331,9 +335,9 @@ elif "comparisons" in benchname:
     ax.legend(handles=legend_handles, loc="upper right", fontsize=8, ncol=1)
 
     fig.tight_layout()
-    fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
-    fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
-    fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)
+    fig.savefig(f"plots/{benchname}{suff}.svg", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}{suff}.pdf", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}{suff}.png", bbox_inches="tight", dpi=300)
 
 else:
     # Bench Plot
