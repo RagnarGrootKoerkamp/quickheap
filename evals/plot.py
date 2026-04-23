@@ -2,10 +2,12 @@
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib.colors import to_hex
 import re
 import numpy as np
 import pandas as pd
 import sys
+import colorbrewer
 
 benchname = sys.argv[1]
 
@@ -41,6 +43,18 @@ df["name"] = df["name"].str.replace(r", \(\)", "", regex=True)
 df["name"] = df["name"].str.replace(r", 16, 1", "", regex=True)
 df["name"] = df["name"].str.replace(r"Generic", "", regex=True)
 
+# More rigorous rewriting of names
+# df["name"] = df["name"].str.replace(r"<T>", "", regex=False)
+# df["name"] = df["name"].str.replace(r"LinearScan", "L", regex=False)
+# df["name"] = df["name"].str.replace(r"BinarySearch", "B", regex=False)
+# df["name"] = df["name"].str.replace(r"DaryHeapOrx<T, 8>", "8aryHeap", regex=False)
+# df["name"] = df["name"].str.replace(r"DaryHeapOrx<T, 4>", "4aryHeap", regex=False)
+# df["name"] = df["name"].str.replace(r"<T, ", "", regex=False)
+# df["name"] = df["name"].str.replace(r"<T, ", "", regex=False)
+
+
+# df["name"] = df["name"].str.replace(r">", "", regex=False)
+
 # clean up ScalarQuickHeap for comparisons
 df["name"] = df["name"].str.replace("Search::", "", regex=False)
 df["name"] = df["name"].str.replace(", false", "", regex=False)
@@ -72,8 +86,6 @@ type_order = [
     "BinaryHeap",
     "DaryHeapOrx",
     "BoostDary4Heap",
-    # "CustomBinaryHeap",
-    # "CustomDaryHeap",
    
     # Amortized
     "WeakHeap",
@@ -83,6 +95,7 @@ type_order = [
     "PairingHeap",
     "BoostPairingHeap",
     "BoostSkewHeap",
+
     # Actual Competitors 
     "RadixHeapMap",
     "SequenceHeap",
@@ -99,11 +112,8 @@ graph_instance_filter = ["NY"]
 
 nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap", "BoostBinomialHeap", "BoostFibHeap", "PairingHeap", "BoostSkewHeap", "DaryHeapOrx<T, 4>"]
 
-colours = (
-    list(plt.get_cmap("tab20").colors)
-    + list(plt.get_cmap("tab20b").colors)
-    + list(plt.get_cmap("tab20c").colors)
-)
+colours_rgb = list(colorbrewer.Set1[9]) + list(colorbrewer.Set2[7])
+colours = [(x / 255, y / 255, z / 255) for (x, y, z) in colours_rgb]
 
 # Assign colours from the fixed type_order so they are consistent across all plots
 type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(type_order)}
@@ -115,6 +125,17 @@ is_categorical = "graph" in df.columns
 # TODO: Drop this
 df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else 1)
 df["nanos"] /= df["normalization"]
+
+
+def rewrite_legend(s):
+    s = re.sub("<T>", "", s)
+    s = re.sub("DaryHeapOrx<T, 8>", "8aryHeap", s)
+    s = re.sub("LinearScan", "L", s)
+    s = re.sub("BinarySearch", "B", s)
+    s = re.sub("<T, ", "", s)
+    s = re.sub(", 1", "", s)
+    s = re.sub(">", "", s)
+    return s
 
 if is_categorical:
     # Shorten graph input names: "input/GER_graph.gr" -> "GER"
@@ -146,8 +167,6 @@ if is_categorical:
 
     all_types = df["type"].unique()
     workloads = df["workload"].unique()
-    
-    # Old: Graphs just sorted by name: graph_names = sorted(df["graph_name"].unique()
 
     def filter_graph(name):
         cleaned = re.sub(r'<[^>]*>', '', name)
@@ -159,7 +178,7 @@ if is_categorical:
     hatches = [""]
     graph_hatch = {gn: hatches[k % len(hatches)] for k, gn in enumerate(graph_names)}
     graph_alpha = {
-        gn: (1.0 if k == 1 or k == 5 else 0.5) for k, gn in enumerate(graph_names) # Change here if graphs are added or removed
+        gn: (1.0 if k < 5 else 0.5) for k, gn in enumerate(graph_names) # Change here if graphs are added or removed
     }
 
     n_methods = len(methods)
@@ -172,7 +191,9 @@ if is_categorical:
     fig, axs = plt.subplots(
         len(workloads),
         1,
-        figsize=(max(8, n_methods * 0.7), 4 * len(workloads)),
+        # figsize=(max(8, n_methods * 0.7), 4 * len(workloads)),
+        # figsize=(21/2.54, 29.7/2.54), # Size for A4 PDF
+        figsize=(21/2.54, 4 * len(workloads)), # Width for A$ PDF
         sharex=True,
     )
     if len(workloads) == 1:
@@ -204,14 +225,8 @@ if is_categorical:
             )
 
         ax.axhline(1.0, color="gray", ls="--", lw=0.8)
-        
-        # Now using linear scale
-        # Old (log scale): ax.set_yscale("log")
-
         ymax = df[df["workload"] == workload]["rel"].max()
-        
         ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0, 3.5])
-
         ax.set_ylim(0.8, 4)
         ax.yaxis.set_minor_locator(ticker.NullLocator())
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
@@ -220,14 +235,15 @@ if is_categorical:
         if workload == workloads[0]:
             ax.legend(title="Graph", loc="upper right")
 
+    short_methods = [rewrite_legend(method) for method in methods]
     axs[-1].set_xticks(x)
-    axs[-1].set_xticklabels(methods, rotation=-45, ha="left", fontsize=8)
+    axs[-1].set_xticklabels(short_methods, rotation=-45, ha="left", fontsize=8)
 
     # Color-coded type labels along x-axis
     for tick, method in zip(axs[-1].get_xticklabels(), methods):
         tick.set_color(type_colour.get(method_type[method], "black"))
 
-    fig.supylabel("rel time on instance (compared to SIMD QuickHeap)")
+    fig.supylabel(r"Relative Time ($t \:/\: t_{SimdQuickheap}$)")
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}{suff}.pdf", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}{suff}.png", bbox_inches="tight")
@@ -315,10 +331,10 @@ elif "comparisons" in benchname:
         )
 
     ax.set_xticks(x)
-    ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=9)
+    ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=8)
 
     # ax.set_ylabel(r"$\# \mathsf{comparisons} / (\mathsf{pop} \circ \mathsf{push}) / \lg n$")
-    ax.set_ylabel(r"$\frac{\# \mathsf{comparisons}}{I \cdot \lg n}$")
+    ax.set_ylabel(r"$\frac{\# \mathsf{comparisons}}{\mathsf{Ops} \cdot \lg n}$")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
 
     # Coloured method legend (top-left)
@@ -345,7 +361,7 @@ else:
     # Take median over repeats, then normalize each metric by n*log2(n)
     metrics = [
         # ("nanos", r"$(\mathsf{ns} \:/\: \#(\mathsf{pop}\circ\mathsf{push})) \:/\: \lg n$"),
-        ("nanos", r"Runtime / $ \frac{\mathsf{ns}}{I \cdot \lg n}$"),
+        ("nanos", r"Runtime ($\mathsf{ns} \:/\: \mathsf{Ops} \cdot \lg n$)"),
         # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
         # (
         #     "l1_cache_misses",
@@ -391,8 +407,8 @@ else:
     }
 
     def width_for_type(tp):
-        if tp == "RadixHeapMap":
-            return 1.0
+        # if tp == "RadixHeapMap":
+        #     return 1.0
         return 1.5
 
     def style_for_name(tp, name):
@@ -430,16 +446,15 @@ else:
                     for name, ngroup in tgroup.groupby("name", sort=False):                        
                         if not all and name in nanos_filter:
                             continue
-
+                        
                         lw = width_for_type(tp)
-
                         ngroup.plot(
                             kind="line",
                             x="n",
                             y=metric,
                             ax=axs[i][j],
-                            title=elem if i == 0 else None, # TODO Is this right?
-                            label=name if j == 0 else None, # TODO Is this right?
+                            title=elem if i == 0 else None,
+                            label=rewrite_legend(name) if j == 0 else None,
                             color=c,
                             ls=style_for_name(tp, name),
                             lw=lw,
@@ -532,7 +547,6 @@ else:
             axs[0, j].grid(axis="both", which="both", linestyle="-")
             axs[0, j].set_ylabel(None)
         
-        # fig.supxlabel("$n$ = max # elements in heap", y=-0.01)
         fig.supxlabel("$n$", y=-0.2)
         handles, labels_leg = axs[0, 0].get_legend_handles_labels()
         fig.legend(
