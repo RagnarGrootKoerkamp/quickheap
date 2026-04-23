@@ -232,8 +232,6 @@ if is_categorical:
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
         ax.set_title(workload)
         ax.grid(axis="y", which="major", linestyle="-", alpha=0.4)
-        if workload == workloads[0]:
-            ax.legend(title="Graph", loc="upper right")
 
     short_methods = [rewrite_legend(method) for method in methods]
     axs[-1].set_xticks(x)
@@ -243,7 +241,51 @@ if is_categorical:
     for tick, method in zip(axs[-1].get_xticklabels(), methods):
         tick.set_color(type_colour.get(method_type[method], "black"))
 
-    fig.supylabel(r"Relative Time ($t \:/\: t_{SimdQuickheap}$)")
+    # Get legend handles and labels from the last subplot
+    handles, labels = axs[-1].get_legend_handles_labels()
+    
+    # Filter to keep only the desired graph types
+    filtered_handles = []
+    filtered_labels = []
+    for handle, label in zip(handles, labels):
+        if label.startswith("rhg"):
+            filtered_labels.append("Random Hyperbolic Graphs: 20, 22, 24")
+            filtered_handles.append(handle)
+        else:
+            filtered_labels.append(f"Road Networks: CAL, CTR, GER, USA")
+            filtered_handles.append(handle)
+    
+    # Deduplicate labels (keep first occurrence of each unique label)
+    seen = set()
+    final_handles = []
+    final_labels = []
+    for handle, label in zip(filtered_handles, filtered_labels):
+        if label not in seen:
+            final_handles.append(handle)
+            final_labels.append(label)
+            seen.add(label)
+
+
+
+    # Add a single grey proxy for the legend (if you want one grey legend entry)
+    # For example, if you want "Random Hyperbolic Graphs" to be grey in legend only:
+    grey_patch_rn = mpatches.Patch(linewidth=0, color='#444444ff', label="Road Networks: CAL, CTR, GER, USA")
+    grey_patch_rhg = mpatches.Patch(linewidth=0, color="#44444480", label="Random Hyperbolic Graphs: 20, 22, 24")
+
+    # Also, keep the existing road‑networks label
+    road_label = "Road Networks: CAL, CTR, GER, USA"
+    road_handle = [h for h, l in zip(final_handles, final_labels) if l == road_label][0]
+
+    # Replace or adjust final_handles/labels as needed
+    # Example: keep existing road handle, add a grey proxy for RHG
+    new_final_handles = [grey_patch_rn, grey_patch_rhg]
+    new_final_labels = [road_label, "Random Hyperbolic Graphs: 20, 22, 24"]
+
+    # fig.legend(handles=new_final_handles, labels=new_final_labels)
+    
+    fig.legend(new_final_handles, new_final_labels, loc='upper right', bbox_to_anchor=(0.93, 0.96))
+
+    fig.supylabel(r"Relative Time ($t \:/\: t_{min}$)")
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}{suff}.pdf", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}{suff}.png", bbox_inches="tight")
