@@ -10,6 +10,7 @@ pub trait PivotStrategy {
 
 fn get_m_median<T: Elem>(layer: &Vec<T>, m: usize) -> (T, usize) {
     let n = layer.len();
+    let k: usize = m / 2;
 
     let mut pivots: Vec<(T, usize)> = (0..m)
         .map(|_| {
@@ -18,11 +19,15 @@ fn get_m_median<T: Elem>(layer: &Vec<T>, m: usize) -> (T, usize) {
         })
         .collect();
 
-    pivots.sort();
+    pivots.select_nth_unstable(k);
+    let pivot_pos = pivots[k].1;
+    let pivot = pivots[k].0;
 
+    // Old: pivots are sorted
+    // pivots.sort();
     // Pivots are inclusive.
-    let pivot = pivots[m / 2].0;
-    let pivot_pos = pivots[m / 2].1;
+    // let pivot = pivots[m / 2].0;
+    // let pivot_pos = pivots[m / 2].1;
 
     (pivot, pivot_pos)
 }
