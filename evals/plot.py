@@ -96,7 +96,7 @@ type_order = [
 graph_method_filter = ["FibonacciHeap<T>", "BoostBinomialHeap<T>", "BoostFibHeap<T>", "PairingHeap<T>", "BoostPairingHeap<T>", "BoostSkewHeap<T>"]
 graph_instance_filter = ["NY"]
 
-nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap"]
+nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap", "BoostBinomialHeap", "BoostFibHeap", "PairingHeap", "BoostSkewHeap", "DaryHeapOrx<T, 4>"]
 
 colours = (
     list(plt.get_cmap("tab20").colors)
@@ -314,7 +314,7 @@ elif "comparisons" in benchname:
     ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=9)
 
     # ax.set_ylabel(r"$\# \mathsf{comparisons} / (\mathsf{pop} \circ \mathsf{push}) / \lg n$")
-    ax.set_ylabel(r"$\frac{\# \mathsf{comparisons}}{\#(\mathsf{pop} \circ \mathsf{push}) \cdot \lg n}$")
+    ax.set_ylabel(r"$\frac{\# \mathsf{comparisons}}{I \cdot \lg n}$")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
 
     # Coloured method legend (top-left)
@@ -341,7 +341,7 @@ else:
     # Take median over repeats, then normalize each metric by n*log2(n)
     metrics = [
         # ("nanos", r"$(\mathsf{ns} \:/\: \#(\mathsf{pop}\circ\mathsf{push})) \:/\: \lg n$"),
-        ("nanos", r"$ \frac{\mathsf{ns}}{\#(\mathsf{pop}\circ\mathsf{push}) \cdot \lg n}$"),
+        ("nanos", r"Runtime / $ \frac{\mathsf{ns}}{I \cdot \lg n}$"),
         # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
         # (
         #     "l1_cache_misses",
@@ -360,8 +360,6 @@ else:
         "pop_comparisons",
     ]
 
-    # TODO: Little bit hacky, cause not all workloads for the boost heaps
-    # new_df = df.sort_values(["workload"])
     workloads = df["workload"].unique()
 
     if df["nanos"].max() == 0:
@@ -396,6 +394,9 @@ else:
     def style_for_name(tp, name):
         if "Boost" in name:
             return "--"
+        if tp == "ScalarQuickHeap":
+            return ":"
+        
         names = all_names_by_type[tp]
         if len(names) >= 2 and names.index(name) == 0:
             return "--"
@@ -403,15 +404,15 @@ else:
 
     for metric, label in metrics:
         plt.close("all")
+        p_width = 2
         fig, axs = plt.subplots(
-            len(elems),
             len(workloads),
-            figsize=(4 * len(workloads), 6),
+            len(elems),
+            figsize=(21/2.54, 29.7/2.54), # Size for A4 PDF
             sharex=True,
             sharey=True,
             squeeze=False,
         )
-        fig.suptitle(label)
 
         for j, elem in enumerate(elems):
             edf = df[df["elem"] == elem]
@@ -423,49 +424,51 @@ else:
                         continue
 
                     for name, ngroup in tgroup.groupby("name", sort=False):                        
+                        if not all and name in nanos_filter:
+                            continue
+
                         lw = width_for_type(tp)
 
                         ngroup.plot(
                             kind="line",
                             x="n",
                             y=metric,
-                            ax=axs[j][i],
-                            title=workload if j == 0 else None,
-                            label=name if i == 0 and j == 0 else None,
+                            ax=axs[i][j],
+                            title=elem if i == 0 else None, # TODO Is this right?
+                            label=name if j == 0 else None, # TODO Is this right?
                             color=c,
                             ls=style_for_name(tp, name),
                             lw=lw,
                         )
 
+                axs[i][j].set_yscale("log", base=2)
+                axs[i][j].set_xscale("log", base=2)
+                axs[i][j].set_xticks([2**i for i in [10, 15, 20, 25]])
+                axs[i][j].set_xlabel(None)
+                axs[i][j].set_yticks([2**i for i in [0, 1, 2, 3, 4]])
+                axs[i][j].set_ylabel(None)
+                axs[i][j].grid(axis="both", which="both", linestyle="-")
                 
-                # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
-                # cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
-                # cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
-                # for cn in cache_n:
-                #     axs[j][i].axvline(cn, color="blue", ls="-", lw=0.5, alpha=0.5)
+                # Remove all intermediate legends
+                axs[i][j].get_legend().remove()
+                axs[i][j].set_ylabel(workload, fontsize=8)
 
-                axs[j][i].set_yscale("log", base=2)
-                axs[j][i].set_xscale("log", base=2)
-                axs[j][i].set_xticks([2**i for i in [10, 15, 20, 25]])
-                axs[j][i].legend().remove()
-                axs[j][i].set_xlabel(None)
-                axs[j][i].set_ylabel(None)
-                axs[j][i].grid(axis="both", which="both", linestyle="-")
-                if j > 0:
-                    axs[j][i].set_title(None)
+            
 
-            axs[j][0].set_ylabel(elem)
-
+        # handles, labels_leg = axs[len(workloads) - 1][0].get_legend_handles_labels()
         handles, labels_leg = axs[0][0].get_legend_handles_labels()
         fig.legend(
             handles,
             labels_leg,
-            loc="lower center",
-            ncol=4,
-            bbox_to_anchor=(0.5, -0.10),
+            loc="center",
+            ncol=3,
+            fontsize=8,
+            bbox_to_anchor=(0.5, -0.020),
         )
+
         fig.supylabel(label)
-        fig.supxlabel("$n$ = max # elements in heap", y=0.02)
+        fig.supxlabel("$n$", y=0.02)
+        fig.subplots_adjust(left=0.12, bottom=0.055, wspace=0.12, hspace=0.08)
 
         fig.savefig(f"plots/{benchname}-{metric}{suff}.svg", bbox_inches="tight")
         fig.savefig(f"plots/{benchname}-{metric}{suff}.pdf", bbox_inches="tight")
@@ -525,7 +528,8 @@ else:
             axs[0, j].grid(axis="both", which="both", linestyle="-")
             axs[0, j].set_ylabel(None)
         
-        fig.supxlabel("$n$ = max # elements in heap", y=-0.01)
+        # fig.supxlabel("$n$ = max # elements in heap", y=-0.01)
+        fig.supxlabel("$n$", y=-0.2)
         handles, labels_leg = axs[0, 0].get_legend_handles_labels()
         fig.legend(
             handles,
