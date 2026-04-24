@@ -49,13 +49,13 @@ impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize, const SORT: bool
     fn push(&mut self, t: T) {
         let target_layer = push_position::<T, S>(&self.pivots, t);
         let layer = &mut self.buckets[target_layer];
-        if SORT && target_layer == self.pivots.len() {
+        layer.reserve(S::L + 1);
+        if SORT && target_layer == self.pivots.len() && layer.len() < N {
             // Count the number of larger elements in the prefix and insert the new element after them.
             let pos = layer.partition_point(|&x| x > t);
             layer.insert(pos, t);
             // TODO: SIMD
         } else {
-            layer.reserve(S::L + 1);
             layer.push(t);
         }
     }
