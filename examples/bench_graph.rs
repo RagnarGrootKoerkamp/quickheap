@@ -4,6 +4,7 @@ use clap::Parser;
 use original_quickheap::OriginalQuickHeap;
 use quickheap::dijkstra::DijkstraQuery;
 use quickheap::graph::Graph;
+use quickheap::pivot_strategies::MedianOfM;
 use quickheap::prim::PrimMST;
 use quickheap::scalar_quickheap::Search;
 #[cfg(feature = "avx2")]
@@ -156,10 +157,10 @@ fn main() {
     }
 
     // QUICKHEAP
-    //* #[cfg(feature = "avx2")]
-    //* bench::<simd_quickheap::SimdQuickHeap<u64, Avx2, 16, 1>>(&graphs);
-    //* #[cfg(feature = "avx512")]
-    //* bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, 16, 1>>(&graphs);
+    #[cfg(feature = "avx2")]
+    bench::<simd_quickheap::SimdQuickHeap<u64, Avx2, MedianOfM<3>, 16>>(&graphs);
+    #[cfg(feature = "avx512")]
+    bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, MedianOfM<3>, 16>>(&graphs);
 
     // SCALAR QUICKHEAP
     bench::<scalar_quickheap::ScalarQuickHeap<u64, 1, false, { Search::LinearScan }>>(&graphs);

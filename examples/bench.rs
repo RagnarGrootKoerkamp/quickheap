@@ -6,7 +6,7 @@ use quickheap::scalar_quickheap::Search;
 use quickheap::simd::Avx512;
 #[cfg(feature = "avx2")]
 use quickheap::{
-    pivot_strategies::{MedianOfM, RandomPivot},
+    pivot_strategies::MedianOfM,
     simd::{Avx2, SimdElem},
 };
 
@@ -261,9 +261,11 @@ where
 
     if !args.comparisons {
         #[cfg(feature = "avx2")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, RandomPivot, 16>>(minpow, maxpow);
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 16>>(minpow, maxpow);
         #[cfg(feature = "avx512")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, RandomPivot, 16>>(minpow, maxpow);
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, MedianOfM<3>, 16>>(
+            minpow, maxpow,
+        );
     }
 
     if args.quickheap {

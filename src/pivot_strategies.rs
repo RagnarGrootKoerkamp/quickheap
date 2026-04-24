@@ -8,7 +8,10 @@ pub trait PivotStrategy {
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize);
 }
 
-fn get_m_median<T: Elem>(layer: &Vec<T>, m: usize) -> (T, usize) {
+fn get_m_median<T: Elem>(layer: &Vec<T>, mut m: usize) -> (T, usize) {
+    if m % 2 == 0 {
+        m += 1;
+    }
     let n = layer.len();
     let k: usize = m / 2;
 
@@ -32,10 +35,33 @@ fn get_m_median<T: Elem>(layer: &Vec<T>, m: usize) -> (T, usize) {
     (pivot, pivot_pos)
 }
 
+fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
+    assert!(M % 2 == 1, "M must be odd");
+    let n = layer.len();
+    let k: usize = M / 2;
+
+    let mut pivots: [(T, usize); M] = std::array::from_fn(|_| {
+        let pos = rand::random_range(0..n);
+        (layer[pos], pos)
+    });
+
+    pivots.select_nth_unstable(k);
+    let pivot_pos = pivots[k].1;
+    let pivot = pivots[k].0;
+
+    // Old: pivots are sorted
+    // pivots.sort();
+    // Pivots are inclusive.
+    // let pivot = pivots[m / 2].0;
+    // let pivot_pos = pivots[m / 2].1;
+
+    (pivot, pivot_pos)
+}
+
 pub struct MedianOfM<const M: usize>;
 impl<const M: usize> PivotStrategy for MedianOfM<M> {
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
-        get_m_median::<T>(layer, M)
+        get_median::<T, M>(layer)
     }
 }
 
