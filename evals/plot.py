@@ -7,7 +7,6 @@ import re
 import numpy as np
 import pandas as pd
 import sys
-import colorbrewer
 
 benchname = sys.argv[1]
 
@@ -43,17 +42,7 @@ df["name"] = df["name"].str.replace(r", \(\)", "", regex=True)
 df["name"] = df["name"].str.replace(r", 16, 1", "", regex=True)
 df["name"] = df["name"].str.replace(r"Generic", "", regex=True)
 
-# More rigorous rewriting of names
-# df["name"] = df["name"].str.replace(r"<T>", "", regex=False)
-# df["name"] = df["name"].str.replace(r"LinearScan", "L", regex=False)
-# df["name"] = df["name"].str.replace(r"BinarySearch", "B", regex=False)
-# df["name"] = df["name"].str.replace(r"DaryHeapOrx<T, 8>", "8aryHeap", regex=False)
-# df["name"] = df["name"].str.replace(r"DaryHeapOrx<T, 4>", "4aryHeap", regex=False)
-# df["name"] = df["name"].str.replace(r"<T, ", "", regex=False)
-# df["name"] = df["name"].str.replace(r"<T, ", "", regex=False)
-
-
-# df["name"] = df["name"].str.replace(r">", "", regex=False)
+df["workload"] = df["workload"].str.replace(r"Prim", "Jarnik-Prim", regex=False)
 
 # clean up ScalarQuickHeap for comparisons
 df["name"] = df["name"].str.replace("Search::", "", regex=False)
@@ -68,12 +57,10 @@ df["workload"] = (
     df["workload"].str.split("::").str[-1].str.replace("Workload", "", regex=False)
 )
 
-# Filter out some overly slow heaps
-# df = df[
-#     ~df["name"].str.contains(
-#         "FibonacciHeap|PairingHeap|WeakHeap|DaryHeap<T, (2|4|8|16)>|DaryHeapOrx<T(|, 16)>"
-#     )
-# ]
+df["workload"] = df["workload"].str.replace(r"RandomConstantSize", "rcs", regex=True)
+df["workload"] = df["workload"].str.replace(r"ConstantSize", "MonotoneConstantSize", regex=True)
+df["workload"] = df["workload"].str.replace(r"rcs", "ConstantSize", regex=True)
+
 
 df = df[~df["name"].str.contains("SimdQuickHeap<T, Avx512>")]
 df["name"] = df["name"].str.replace(r"<true>", "", regex=True)
@@ -108,7 +95,7 @@ type_order = [
 ]
 
 # Filtered out for the graph plot
-graph_instance_filter = ["NY"]
+graph_instance_filter = ["NY"] # , "rhg_22"
 
 nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap", "BoostBinomialHeap", "BoostFibHeap", "PairingHeap", "BoostSkewHeap", "DaryHeapOrx<T, 4>", "FibonacciHeap<T>", "BoostBinomialHeap<T>", "BoostFibHeap<T>", "PairingHeap<T>", "BoostPairingHeap<T>", "BoostSkewHeap<T>"]
 
@@ -124,8 +111,16 @@ type_colour["SimdQuickHeap"] = "black"
 
 is_categorical = "graph" in df.columns
 
-# TODO: Drop this
-df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else 1)
+
+# TODO: Mixed normalization factors because the bench data is mixed between different runs
+df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else (10 if "ConstantSize" in w  else 1)) # TODO!!!
+
+# df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else 1)
+
+# mask = ((df["name"] == "SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>") | (df["name"] == "SimdQuickHeap<T, Avx512, MedianOfM<3>, 16, true>")) & (df["workload"] == "MonotoneConstantSize")
+# df.loc[mask, "normalization"] = df["normalization"].apply(lambda x: 10)
+
+
 df["nanos"] /= df["normalization"]
 
 
@@ -134,6 +129,9 @@ def rewrite_legend(s):
     s = re.sub("DaryHeapOrx<T, 8>", "8-aryHeap", s)
     s = re.sub("LinearScan", "L", s)
     s = re.sub("BinarySearch", "B", s)
+    s = re.sub("MedianOfM<3>", "", s)
+    s = re.sub("16, ", "", s)
+    s = re.sub("true", "", s)
     s = re.sub("<T, ", "", s)
     s = re.sub(", ", "", s)
     s = re.sub(">", "", s)
@@ -183,6 +181,13 @@ if is_categorical:
         gn: (1.0 if k < 5 else 0.5) for k, gn in enumerate(graph_names) # Change here if graphs are added or removed
     }
 
+    filtered_graph_names = []
+    for g in graph_names:
+        if not g in graph_instance_filter:
+            filtered_graph_names.append(g)
+
+    graph_names = filtered_graph_names
+
     n_methods = len(methods)
     bar_width = 0.8 / len(graph_names)
     method_type = {m: df[df["name"] == m]["type"].iloc[0] for m in methods}
@@ -228,8 +233,8 @@ if is_categorical:
 
         ax.axhline(1.0, color="gray", ls="--", lw=0.8)
         ymax = df[df["workload"] == workload]["rel"].max()
-        ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0, 3.5])
-        ax.set_ylim(0.8, 4)
+        ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5])
+        ax.set_ylim(0.8, 5)
         ax.yaxis.set_minor_locator(ticker.NullLocator())
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
         ax.set_title(workload)
@@ -303,7 +308,9 @@ elif "comparisons" in benchname:
     df["comparisons"] = df["push_comparisons"] + df["pop_comparisons"]
     ops = n_max * np.log2(n_max)
 
-    workloads = list(df["workload"].unique())
+    # workloads = list(df["workload"].unique())
+    # workloads = ['HeapSort', 'MonotoneConstantSize', 'MonotoneWiggle', 'ConstantSize', 'Wiggle']
+    workloads = ['HeapSort', 'MonotoneConstantSize', 'MonotoneWiggle', 'Wiggle']
 
     df = (
         df.groupby(["elem", "name", "type", "workload"])[
@@ -387,7 +394,7 @@ elif "comparisons" in benchname:
 
     ax.set_xticks(x)
     # ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0, 3.5])
-    ax.set_ylim(0, 3.3)
+    ax.set_ylim(0, 3.5)
     ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=8)
 
     ax.set_ylabel(r"Comparisons ($1 \:/\: (\mathsf{Ops} \cdot \lg n)$)")
@@ -436,7 +443,9 @@ else:
         "pop_comparisons",
     ]
 
-    workloads = df["workload"].unique()
+    # workloads = df["workload"].unique()
+    workloads = ['HeapSort', 'MonotoneConstantSize', 'MonotoneWiggle', 'Wiggle']
+
 
     if df["nanos"].max() == 0:
         metrics = [
@@ -523,6 +532,7 @@ else:
                 axs[i][j].set_xlabel(None)
                 axs[i][j].set_yticks([2**i for i in [0, 1, 2, 3, 4]])
                 axs[i][j].set_ylabel(None)
+                # axs[i][j].set_ylim(0.1, 16)
                 axs[i][j].grid(axis="both", which="both", linestyle="-")
                 
                 # Remove all intermediate legends
