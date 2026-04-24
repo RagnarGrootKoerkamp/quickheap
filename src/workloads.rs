@@ -179,7 +179,7 @@ impl<T: Elem, H: Heap<CountComparisons<T>>> CountingHeapT<T> for CountingHeap<T,
 
 pub trait Workload {
     /// The default is one push-pop pair per `n`.
-    const NORMALIZATION: u64 = 1;
+    const NORMALIZATION: u64;
     /// n is the maximum size of the data structure.
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce();
 }
@@ -189,6 +189,7 @@ pub trait Workload {
 pub struct HeapSort;
 
 impl Workload for HeapSort {
+    const NORMALIZATION: u64 = 1;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
         let mut rng = fastrand::Rng::new();
@@ -215,6 +216,7 @@ impl Workload for HeapSort {
 pub struct ConstantSize;
 
 impl Workload for ConstantSize {
+    const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
         let stride = T::stride();
@@ -245,6 +247,7 @@ impl Workload for ConstantSize {
 pub struct RandomConstantSize;
 
 impl Workload for RandomConstantSize {
+    const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
         let stride = T::stride();
