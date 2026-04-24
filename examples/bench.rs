@@ -190,7 +190,7 @@ pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
             eprint!(" {t:>8.2}");
 
             // Don't test larger n for this workflow once things get too slow.
-            if t > 100.0 {
+            if t > 32.0 {
                 *ok = false;
             }
         }
