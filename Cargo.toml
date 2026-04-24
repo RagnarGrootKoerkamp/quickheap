@@ -21,7 +21,8 @@ avx2 = []
 # Enable SimdQuickHeap with AVX-512 backend
 avx512 = ["avx2"]
 # Enable SequenceHeap and S3Q
-ffi = ["dep:s3q-sys", "dep:sequence-heap-sys", "dep:boost-heap-sys"]
+ffi = ["dep:s3q-sys", "dep:sequence-heap-sys"]
+boost = ["dep:boost-heap-sys"]
 # Enable performance counters
 perf = ["dep:perfcnt"]
 

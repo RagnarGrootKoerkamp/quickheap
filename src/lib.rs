@@ -5,7 +5,7 @@ pub mod workloads;
 
 pub mod impls;
 
-#[cfg(feature = "ffi")]
+#[cfg(feature = "boost")]
 pub mod boost_heap;
 #[cfg(feature = "ffi")]
 pub mod s3q;
@@ -133,15 +133,15 @@ mod test {
         #[cfg(feature = "ffi")]
         TestHeap::<T, Base, s3q::S3qHeapU32>::run(n);
 
-        #[cfg(feature = "ffi")]
+        #[cfg(feature = "boost")]
         TestHeap::<T, Base, boost_heap::BoostDary4HeapU32>::run(n);
-        #[cfg(feature = "ffi")]
+        #[cfg(feature = "boost")]
         TestHeap::<T, Base, boost_heap::BoostFibHeapU32>::run(n);
-        #[cfg(feature = "ffi")]
+        #[cfg(feature = "boost")]
         TestHeap::<T, Base, boost_heap::BoostPairingHeapU32>::run(n);
-        #[cfg(feature = "ffi")]
+        #[cfg(feature = "boost")]
         TestHeap::<T, Base, boost_heap::BoostBinomialHeapU32>::run(n);
-        #[cfg(feature = "ffi")]
+        #[cfg(feature = "boost")]
         TestHeap::<T, Base, boost_heap::BoostSkewHeapU32>::run(n);
 
         TestHeap::<T, Base, impls::DaryHeap<T, 2>>::run(n);
