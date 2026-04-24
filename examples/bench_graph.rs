@@ -163,23 +163,23 @@ fn main() {
     bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, MedianOfM<3>, 16, true>>(&graphs);
 
     // SCALAR QUICKHEAP
-    bench::<scalar_quickheap::ScalarQuickHeap<u64, 1, false, { Search::LinearScan }>>(&graphs);
+    bench::<scalar_quickheap::ScalarQuickHeap<u64, 3, false, { Search::LinearScan }>>(&graphs);
 
     // ENGINEERED
     #[cfg(feature = "ffi")]
     bench::<sequence_heap::SequenceHeapU64>(&graphs);
     #[cfg(feature = "ffi")]
     bench::<s3q::S3qHeapU64>(&graphs);
-    #[cfg(feature = "ffi")]
-    bench::<boost_heap::BoostDary4HeapU64>(&graphs);
-    #[cfg(feature = "ffi")]
-    bench::<boost_heap::BoostFibHeapU64>(&graphs);
-    #[cfg(feature = "ffi")]
-    bench::<boost_heap::BoostPairingHeapU64>(&graphs);
-    #[cfg(feature = "ffi")]
-    bench::<boost_heap::BoostBinomialHeapU64>(&graphs);
-    #[cfg(feature = "ffi")]
-    bench::<boost_heap::BoostSkewHeapU64>(&graphs);
+    // #[cfg(feature = "ffi")]
+    // bench::<boost_heap::BoostDary4HeapU64>(&graphs);
+    // #[cfg(feature = "ffi")]
+    // bench::<boost_heap::BoostFibHeapU64>(&graphs);
+    // #[cfg(feature = "ffi")]
+    // bench::<boost_heap::BoostPairingHeapU64>(&graphs);
+    // #[cfg(feature = "ffi")]
+    // bench::<boost_heap::BoostBinomialHeapU64>(&graphs);
+    // #[cfg(feature = "ffi")]
+    // bench::<boost_heap::BoostSkewHeapU64>(&graphs);
 
     // REIMPLS
     // bench::<binary_heap::CustomBinaryHeap<u64>>(&graphs);
@@ -191,7 +191,7 @@ fn main() {
     bench::<original_quickheap::OriginalQuickHeap<u64>>(&graphs);
 
     // BASELINE
-    //* bench::<impls::BinaryHeap<u64>>(&graphs);
+    bench::<impls::BinaryHeap<u64>>(&graphs);
 
     // DARY
     // bench::<impls::DaryHeap<u64, 2>>(&graphs);
@@ -200,16 +200,16 @@ fn main() {
     // bench::<impls::DaryHeap<u64, 16>>(&graphs);
     // bench::<impls::OrxDaryHeap<u64, 2>>(&graphs);
     //* bench::<impls::OrxDaryHeap<u64, 4>>(&graphs);
-    //* bench::<impls::OrxDaryHeap<u64, 8>>(&graphs);
+    bench::<impls::OrxDaryHeap<u64, 8>>(&graphs);
     // bench::<impls::OrxDaryHeap<u64, 16>>(&graphs);
 
     // AMORTIZED
-    bench::<impls::PairingHeap<u64>>(&graphs);
-    bench::<impls::FibonacciHeap<u64>>(&graphs);
+    // bench::<impls::PairingHeap<u64>>(&graphs);
+    // bench::<impls::FibonacciHeap<u64>>(&graphs);
     bench::<impls::WeakHeap<u64>>(&graphs);
 
     // MONOTONE
-    //* bench::<impls::RadixHeap<u64>>(&graphs);
+    bench::<impls::RadixHeap<u64>>(&graphs);
 
     // SET
     // bench::<impls::BTreeSet<u64>>(&graphs);

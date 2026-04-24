@@ -254,7 +254,7 @@ where
         bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>(minpow, maxpow);
         bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
     } else {
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
+        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>(
             minpow, maxpow,
         );
     }
@@ -279,20 +279,20 @@ where
         x if x == TypeId::of::<i32>() => {
             bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
             bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
-            bench::<i32, boost_heap::BoostDary4HeapI32>(minpow, maxpow);
-            bench::<i32, boost_heap::BoostFibHeapI32>(minpow, maxpow);
-            bench::<i32, boost_heap::BoostPairingHeapI32>(minpow, maxpow);
-            bench::<i32, boost_heap::BoostBinomialHeapI32>(minpow, maxpow);
-            bench::<i32, boost_heap::BoostSkewHeapI32>(minpow, maxpow);
+            // bench::<i32, boost_heap::BoostDary4HeapI32>(minpow, maxpow);
+            // bench::<i32, boost_heap::BoostFibHeapI32>(minpow, maxpow);
+            // bench::<i32, boost_heap::BoostPairingHeapI32>(minpow, maxpow);
+            // bench::<i32, boost_heap::BoostBinomialHeapI32>(minpow, maxpow);
+            // bench::<i32, boost_heap::BoostSkewHeapI32>(minpow, maxpow);
         }
         x if x == TypeId::of::<i64>() => {
             bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
             bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
-            bench::<i64, boost_heap::BoostDary4HeapI64>(minpow, maxpow);
-            bench::<i64, boost_heap::BoostFibHeapI64>(minpow, maxpow);
-            bench::<i64, boost_heap::BoostPairingHeapI64>(minpow, maxpow);
-            bench::<i64, boost_heap::BoostBinomialHeapI64>(minpow, maxpow);
-            bench::<i64, boost_heap::BoostSkewHeapI64>(minpow, maxpow);
+            // bench::<i64, boost_heap::BoostDary4HeapI64>(minpow, maxpow);
+            // bench::<i64, boost_heap::BoostFibHeapI64>(minpow, maxpow);
+            // bench::<i64, boost_heap::BoostPairingHeapI64>(minpow, maxpow);
+            // bench::<i64, boost_heap::BoostBinomialHeapI64>(minpow, maxpow);
+            // bench::<i64, boost_heap::BoostSkewHeapI64>(minpow, maxpow);
         }
         _ => unimplemented!(),
     }
@@ -316,14 +316,14 @@ where
     // bench::<T, impls::DaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, impls::DaryHeap<T, 16>>(minpow, maxpow);
     // bench::<T, impls::OrxDaryHeap<T, 2>>(minpow, maxpow);
-    bench::<T, impls::OrxDaryHeap<T, 4>>(minpow, maxpow);
+    // bench::<T, impls::OrxDaryHeap<T, 4>>(minpow, maxpow);
     bench::<T, impls::OrxDaryHeap<T, 8>>(minpow, maxpow);
     // bench::<T, impls::OrxDaryHeap<T, 16>>(minpow, maxpow);
 
     // AMORTIZED
     // if args.comparisons {
-    bench::<T, impls::PairingHeap<T>>(minpow, maxpow);
-    bench::<T, impls::FibonacciHeap<T>>(minpow, maxpow);
+    // bench::<T, impls::PairingHeap<T>>(minpow, maxpow);
+    // bench::<T, impls::FibonacciHeap<T>>(minpow, maxpow);
     bench::<T, impls::WeakHeap<T>>(minpow, maxpow);
     // }
 
