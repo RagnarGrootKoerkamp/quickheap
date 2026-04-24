@@ -85,16 +85,17 @@ type_order = [
     # Dary
     "BinaryHeap",
     "DaryHeapOrx",
-    "BoostDary4Heap",
-   
-    # Amortized
+    # "BoostDary4Heap",
     "WeakHeap",
-    "BoostBinomialHeap",
-    "FibonacciHeap",
-    "BoostFibHeap",
-    "PairingHeap",
-    "BoostPairingHeap",
-    "BoostSkewHeap",
+
+    # Amortized
+    
+    # "BoostBinomialHeap",
+    # "FibonacciHeap",
+    # "BoostFibHeap",
+    # "PairingHeap",
+    # "BoostPairingHeap",
+    # "BoostSkewHeap",
 
     # Actual Competitors 
     "RadixHeapMap",
@@ -111,8 +112,10 @@ graph_instance_filter = ["NY"]
 
 nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap", "BoostBinomialHeap", "BoostFibHeap", "PairingHeap", "BoostSkewHeap", "DaryHeapOrx<T, 4>", "FibonacciHeap<T>", "BoostBinomialHeap<T>", "BoostFibHeap<T>", "PairingHeap<T>", "BoostPairingHeap<T>", "BoostSkewHeap<T>"]
 
-colours_rgb = list(colorbrewer.Set1[9]) + list(colorbrewer.Set2[7])
-colours = [(x / 255, y / 255, z / 255) for (x, y, z) in colours_rgb]
+unnormalized_colours = [(152, 78, 163), (55, 126, 184), (77, 175, 74), (228, 26, 28), (255, 127, 0), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
+# [(228, 26, 28), (55, 126, 184), (77, 175, 74), (152, 78, 163), (255, 127, 0), (255, 255, 51), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
+
+colours = [(x / 255, y / 255, z / 255) for (x, y, z) in unnormalized_colours]
 
 # Assign colours from the fixed type_order so they are consistent across all plots
 type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(type_order)}
@@ -128,7 +131,7 @@ df["nanos"] /= df["normalization"]
 
 def rewrite_legend(s):
     s = re.sub("<T>", "", s)
-    s = re.sub("DaryHeapOrx<T, 8>", "8aryHeap", s)
+    s = re.sub("DaryHeapOrx<T, 8>", "8-aryHeap", s)
     s = re.sub("LinearScan", "L", s)
     s = re.sub("BinarySearch", "B", s)
     s = re.sub("<T, ", "", s)
@@ -268,8 +271,8 @@ if is_categorical:
 
     # Add a single grey proxy for the legend (if you want one grey legend entry)
     # For example, if you want "Random Hyperbolic Graphs" to be grey in legend only:
-    grey_patch_rn = mpatches.Patch(linewidth=0, color='#444444ff', label="Road Networks: CAL, CTR, GER, USA")
-    grey_patch_rhg = mpatches.Patch(linewidth=0, color="#44444480", label="Random Hyperbolic Graphs: 20, 22, 24")
+    grey_patch_rn = mpatches.Patch(linewidth=0, color='#333333FF', label="Road Networks: CAL, CTR, GER, USA")
+    grey_patch_rhg = mpatches.Patch(linewidth=0, color="#33333399", label="Random Hyperbolic Graphs: 20, 22, 24")
 
     # Also, keep the existing road‑networks label
     road_label = "Road Networks: CAL, CTR, GER, USA"
@@ -356,9 +359,9 @@ elif "comparisons" in benchname:
 
     legend_handles = [
         mpatches.Patch(
-            facecolor="gray", edgecolor="white", label="pop"
+            facecolor="#333333FF", edgecolor="white", label="pop"
         ),
-        mpatches.Patch(facecolor="gray", edgecolor="white", label="push"),
+        mpatches.Patch(facecolor="#33333399", edgecolor="white", label="push"),
     ]
 
     for mi, method in enumerate(methods):
@@ -492,9 +495,10 @@ else:
             for i, workload in enumerate(workloads):
                 wdf = edf[edf["workload"] == workload]
                 for tp, tgroup in wdf.groupby("type", sort=False):
-                    c = type_colour[tp]
                     if not all and tp in nanos_filter:
                         continue
+
+                    c = type_colour[tp]
 
                     for name, ngroup in tgroup.groupby("name", sort=False):                        
                         if not all and name in nanos_filter:
@@ -567,9 +571,9 @@ else:
             edf = df[df["elem"] == elem]
             wdf = edf
             for tp, tgroup in wdf.groupby("type", sort=False):
-                c = type_colour[tp]
                 if not all and tp in nanos_filter:
                     continue
+                c = type_colour[tp]
                 for name, ngroup in tgroup.groupby("name", sort=False):
                     lw = width_for_type(tp)
                     ngroup.plot(
