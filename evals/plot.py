@@ -107,10 +107,9 @@ type_order = [
 ]
 
 # Filtered out for the graph plot
-graph_method_filter = ["FibonacciHeap<T>", "BoostBinomialHeap<T>", "BoostFibHeap<T>", "PairingHeap<T>", "BoostPairingHeap<T>", "BoostSkewHeap<T>"]
 graph_instance_filter = ["NY"]
 
-nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap", "BoostBinomialHeap", "BoostFibHeap", "PairingHeap", "BoostSkewHeap", "DaryHeapOrx<T, 4>"]
+nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap", "BoostBinomialHeap", "BoostFibHeap", "PairingHeap", "BoostSkewHeap", "DaryHeapOrx<T, 4>", "FibonacciHeap<T>", "BoostBinomialHeap<T>", "BoostFibHeap<T>", "PairingHeap<T>", "BoostPairingHeap<T>", "BoostSkewHeap<T>"]
 
 colours_rgb = list(colorbrewer.Set1[9]) + list(colorbrewer.Set2[7])
 colours = [(x / 255, y / 255, z / 255) for (x, y, z) in colours_rgb]
@@ -133,7 +132,7 @@ def rewrite_legend(s):
     s = re.sub("LinearScan", "L", s)
     s = re.sub("BinarySearch", "B", s)
     s = re.sub("<T, ", "", s)
-    s = re.sub(", 1", "", s)
+    s = re.sub(", ", "", s)
     s = re.sub(">", "", s)
     return s
 
@@ -319,34 +318,45 @@ elif "comparisons" in benchname:
     df = df.sort_values(["order", "name"])
     methods = list(df["name"].unique())
 
+    filtered_methods = []
+
+    for method in methods:
+        if not method in nanos_filter:
+            filtered_methods.append(method)
+
+    methods = filtered_methods
+
     n_methods = len(methods)
     n_workloads = len(workloads)
     bar_width = 0.7 / n_methods  # fill most of each group slot
     method_type = {m: df[df["name"] == m]["type"].iloc[0] for m in methods}
     bar_colors = [type_colour.get(method_type[m], "gray") for m in methods]
+    
 
     # Build per-method offsets with extra gaps:
     #   - a small gap before the first ScalarQuickHeap bar
     #   - another small gap between the 3rd and 4th ScalarQuickHeap bar
     sqh_gap = bar_width * 0.5  # gap size
+    # sqh_gap = 0  # gap size
     offsets = []
     extra = 0.0
     for mi in range(n_methods):
-        if mi in [3, 6, 8, 11]:
+        if mi in [6, 9]:
             extra += sqh_gap
         offsets.append(mi * bar_width + extra)
     total = offsets[-1] + bar_width
     offsets = [o - total / 2 + bar_width / 2 for o in offsets]
 
-    pop_alpha = 0.45
+    pop_alpha = 0.60
 
     plt.close("all")
-    fig, ax = plt.subplots(figsize=(max(8, n_workloads * (total + 0.3) * 1.5), 5))
+    # fig, ax = plt.subplots(figsize=(max(8, n_workloads * (total + 0.3) * 1.5), 5))
+    fig, ax = plt.subplots(figsize=(21/2.54, 5))
     x = np.arange(n_workloads)  # one tick per workload group
 
     legend_handles = [
         mpatches.Patch(
-            facecolor="gray", alpha=pop_alpha, edgecolor="white", label="pop"
+            facecolor="gray", edgecolor="white", label="pop"
         ),
         mpatches.Patch(facecolor="gray", edgecolor="white", label="push"),
     ]
@@ -373,19 +383,20 @@ elif "comparisons" in benchname:
         )
 
     ax.set_xticks(x)
+    # ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0, 3.5])
+    ax.set_ylim(0, 3.3)
     ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=8)
 
-    # ax.set_ylabel(r"$\# \mathsf{comparisons} / (\mathsf{pop} \circ \mathsf{push}) / \lg n$")
-    ax.set_ylabel(r"$\frac{\# \mathsf{comparisons}}{\mathsf{Ops} \cdot \lg n}$")
+    ax.set_ylabel(r"Comparisons ($1 \:/\: (\mathsf{Ops} \cdot \lg n)$)")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
 
     # Coloured method legend (top-left)
     method_handles = [
-        mpatches.Patch(facecolor=bar_colors[mi], label=method)
+        mpatches.Patch(facecolor=bar_colors[mi], label=rewrite_legend(method))
         for mi, method in enumerate(methods)
     ]
     legend_methods = ax.legend(
-        handles=method_handles, loc="upper left", fontsize=8, ncol=2
+        handles=method_handles, loc="upper left", fontsize=8, ncol=4
     )
     ax.add_artist(legend_methods)
 
@@ -403,7 +414,7 @@ else:
     # Take median over repeats, then normalize each metric by n*log2(n)
     metrics = [
         # ("nanos", r"$(\mathsf{ns} \:/\: \#(\mathsf{pop}\circ\mathsf{push})) \:/\: \lg n$"),
-        ("nanos", r"Runtime ($\mathsf{ns} \:/\: \mathsf{Ops} \cdot \lg n$)"),
+        ("nanos", r"Runtime ($\mathsf{ns} \:/\: (\mathsf{Ops} \cdot \lg n)$)"),
         # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
         # (
         #     "l1_cache_misses",
@@ -522,7 +533,7 @@ else:
             handles,
             labels_leg,
             loc="center",
-            ncol=3,
+            ncol=4,
             fontsize=8,
             bbox_to_anchor=(0.5, -0.020),
         )
@@ -573,13 +584,6 @@ else:
                         ls=style_for_name(tp, name),
                         lw=lw,
                     )
-
-            
-            # cache_bytes_laptop = [32 * 1024, 256 * 1024, 12 * 1024 * 1024]
-            # cache_bytes = [64 * 1024, 1024 * 1024, 96 * 1024 * 1024]
-            # cache_n = [c // (4 if elem == "i32" else 8) for c in cache_bytes]
-            # for cn in cache_n:
-            #     axs[0, j].axvline(cn, color="blue", ls="-", lw=0.5, alpha=0.5)
 
             axs[0, j].set_yscale("log", base=2)
             axs[0, j].set_xscale("log", base=2)

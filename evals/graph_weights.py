@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 
-import sys
+import numpy as np
 
-if len(sys.argv) < 2:
-    print("Please specify a graph instance in the input dir.")
-    exit()
+graph_names = ["GER"]
+# graph_names = ["CAL", "CTR", "GER", "USA", "rhg_20", "rhg_22", "rhg_24"]
 
-gn = sys.argv[1]
+for graph in graph_names:
+    f = open("./input/" + graph + "_graph.gr")
+    vals = []
+    max = 0
+    min = 100000000000
 
-f = open("./input/" + gn)
+    for x in f:
+        parts = x.split(" ")
+        if parts[0] != "a":
+            continue
+        w = parts[3]
+        vals.append(int(w))
 
-max = 0
-min = 1000000
+    print(graph, "MAX:", np.max(vals), "MEDIAN", np.median(vals))
 
-for x in f:
-    parts = x.split(" ")
-    if parts[0] != "a":
-        continue
-    w = parts[3]
-    if int(w) > max:
-        max = int(w)
-    if int(w) < min:
-        min = int(w)
 
-print(gn, "MAX:", max, "MIN:", min)
+
+    
+
+
