@@ -47,6 +47,8 @@ mod test {
 
     use crate::impls::NoHeap;
     use crate::original_quickheap::OriginalQuickHeap;
+    #[cfg(feature = "avx2")]
+    use crate::pivot_strategies::{MedianOfM, RandomPivot};
     #[cfg(feature = "avx512")]
     use crate::simd::Avx512;
 
@@ -114,17 +116,17 @@ mod test {
         TestHeap::<T, Base, ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>::run(n);
 
         #[cfg(feature = "avx2")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx2, 8, 3>>::run(n);
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, true>>::run(n);
         #[cfg(feature = "avx2")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx2, 16, 1>>::run(n);
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx2, RandomPivot, 16, true>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<false>, 8, 3>>::run(n);
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<false>, 8, 3, true>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<false>, 16, 1>>::run(n);
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<false>, 16, 1, true>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 8, 3>>::run(n);
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 8, 3, true>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 16, 1>>::run(n);
+        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 16, 1, true>>::run(n);
 
         #[cfg(feature = "ffi")]
         TestHeap::<T, Base, sequence_heap::SequenceHeapU32>::run(n);

@@ -6,7 +6,13 @@ use crate::workloads::Elem;
 use super::Heap;
 use std::marker::PhantomData;
 
-pub struct SimdQuickHeap<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> {
+pub struct SimdQuickHeap<
+    T: Elem,
+    S: SimdElem<T>,
+    P: PivotStrategy,
+    const N: usize,
+    const SORT: bool,
+> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -27,8 +33,8 @@ pub struct SimdQuickHeap<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usi
     _backend: PhantomData<S>,
 }
 
-impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> Heap<T>
-    for SimdQuickHeap<T, S, P, N>
+impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize, const SORT: bool> Heap<T>
+    for SimdQuickHeap<T, S, P, N, SORT>
 {
     type CountedHeap = NoHeap;
 
@@ -42,8 +48,16 @@ impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> Heap<T>
     }
     fn push(&mut self, t: T) {
         let target_layer = push_position::<T, S>(&self.pivots, t);
-        self.buckets[target_layer].reserve(S::L + 1);
-        self.buckets[target_layer].push(t);
+        let layer = &mut self.buckets[target_layer];
+        if SORT && target_layer == self.pivots.len() {
+            // Count the number of larger elements in the prefix and insert the new element after them.
+            let pos = layer.partition_point(|&x| x > t);
+            layer.insert(pos, t);
+            // TODO: SIMD
+        } else {
+            layer.reserve(S::L + 1);
+            layer.push(t);
+        }
     }
     fn pop(&mut self) -> Option<T> {
         let layer = self.pivots.len();
@@ -52,13 +66,24 @@ impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> Heap<T>
             return None;
         }
         // Split the current layer as long as it is too large.
-        while self.buckets[self.pivots.len()].len() > N {
-            self.partition();
+        if self.buckets[self.pivots.len()].len() > N {
+            while self.buckets[self.pivots.len()].len() > N {
+                self.partition();
+            }
+            if SORT {
+                // Sort final layer decreasing.
+                let layer = &mut self.buckets[self.pivots.len()];
+                layer.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
+            }
         }
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.pivots.len()];
-        let min_pos = position_min::<T, S>(layer);
-        let min = layer.swap_remove(min_pos);
+        let min = if SORT {
+            layer.pop().unwrap()
+        } else {
+            let min_pos = position_min::<T, S>(layer);
+            layer.swap_remove(min_pos)
+        };
 
         // Update the active layer.
         if layer.is_empty() && self.pivots.len() > 0 {
@@ -68,7 +93,9 @@ impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> Heap<T>
     }
 }
 
-impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize> SimdQuickHeap<T, S, P, N> {
+impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize, const SORT: bool>
+    SimdQuickHeap<T, S, P, N, SORT>
+{
     #[inline(never)]
     pub(crate) fn partition(&mut self) {
         // Reserve space for an additional L layers when needed.

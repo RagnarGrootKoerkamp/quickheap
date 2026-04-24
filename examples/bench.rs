@@ -261,9 +261,10 @@ where
 
     if !args.comparisons {
         #[cfg(feature = "avx2")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 16>>(minpow, maxpow);
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>>(minpow, maxpow);
+
         #[cfg(feature = "avx512")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, MedianOfM<3>, 16>>(
+        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, MedianOfM<3>, 16, true>>(
             minpow, maxpow,
         );
     }

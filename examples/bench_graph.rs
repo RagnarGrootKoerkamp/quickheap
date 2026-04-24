@@ -158,9 +158,9 @@ fn main() {
 
     // QUICKHEAP
     #[cfg(feature = "avx2")]
-    bench::<simd_quickheap::SimdQuickHeap<u64, Avx2, MedianOfM<3>, 16>>(&graphs);
+    bench::<simd_quickheap::SimdQuickHeap<u64, Avx2, MedianOfM<3>, 16, true>>(&graphs);
     #[cfg(feature = "avx512")]
-    bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, MedianOfM<3>, 16>>(&graphs);
+    bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, MedianOfM<3>, 16, true>>(&graphs);
 
     // SCALAR QUICKHEAP
     bench::<scalar_quickheap::ScalarQuickHeap<u64, 1, false, { Search::LinearScan }>>(&graphs);
