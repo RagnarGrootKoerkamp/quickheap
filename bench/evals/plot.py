@@ -75,8 +75,8 @@ type_order = [
     "BinaryHeap",
     "DaryHeapOrx",
     # "BoostDary4Heap",
-    "WeakHeap",
     # Amortized
+    "WeakHeap",
     # "BoostBinomialHeap",
     # "FibonacciHeap",
     # "BoostFibHeap",
@@ -135,8 +135,22 @@ is_categorical = "graph" in df.columns
 
 
 # TODO: Mixed normalization factors because the bench data is mixed between different runs
-df["normalization"] = df["workload"].apply(
-    lambda w: 3 if "Wiggle" in w else (10 if "ConstantSize" in w else 1)
+# Some data didn't have normalization applied, and then we fixed it for a partial rerun that _does_ have it correct.
+df["normalization"] = df.apply(
+    lambda row: (
+        (
+            3
+            if "Wiggle" in row["workload"]
+            else (10 if "ConstantSize" in row["workload"] else 1)
+        )
+        if "SimdQuickHeap" in row["name"]
+        else (
+            3
+            if "Wiggle" in row["workload"]
+            else (1 if "ConstantSize" in row["workload"] else 1)
+        )
+    ),
+    axis=1,
 )  # TODO!!!
 
 # df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else 1)
@@ -369,7 +383,7 @@ elif "comparisons" in benchname:
     filtered_methods = []
 
     for method in methods:
-        if not method in nanos_filter:
+        if method not in nanos_filter:
             filtered_methods.append(method)
 
     methods = filtered_methods
@@ -588,71 +602,6 @@ else:
         fig.supxlabel("$n$", y=0.02)
         fig.subplots_adjust(left=0.12, bottom=0.055, wspace=0.12, hspace=0.08)
 
-        fig.savefig(f"plots/{benchname}-{metric}{suff}.svg", bbox_inches="tight")
-        fig.savefig(f"plots/{benchname}-{metric}{suff}.pdf", bbox_inches="tight")
-        fig.savefig(
-            f"plots/{benchname}-{metric}{suff}.png", bbox_inches="tight", dpi=300
-        )
-
-    # Filter out the workload column, only keep constant size
-    workload = "ConstantSize"
-    df = df[df["workload"] == "ConstantSize"]
-    df.drop("workload", axis="columns", inplace=True)
-
-    for metric, label in metrics:
-        plt.close("all")
-        fig, axs = plt.subplots(
-            1,  # only one workload
-            len(elems),  # ['i32', 'i64']
-            figsize=(10, 4),
-            sharex=True,
-            sharey=True,
-            squeeze=False,
-        )
-        fig.suptitle(label)
-
-        for j, elem in enumerate(elems):
-            edf = df[df["elem"] == elem]
-            wdf = edf
-            for tp, tgroup in wdf.groupby("type", sort=False):
-                if not all and tp in nanos_filter:
-                    continue
-                c = type_colour[tp]
-                for name, ngroup in tgroup.groupby("name", sort=False):
-                    lw = width_for_type(tp)
-                    ngroup.plot(
-                        kind="line",
-                        x="n",
-                        y=metric,
-                        ax=axs[0, j],
-                        title=elem,
-                        # label=name if i == 0 and j == 0 else None,
-                        label=name,
-                        color=c,
-                        ls=style_for_name(tp, name),
-                        lw=lw,
-                    )
-
-            axs[0, j].set_yscale("log", base=2)
-            axs[0, j].set_xscale("log", base=2)
-            axs[0, j].set_xticks([2**i for i in [10, 15, 20, 25]])
-            axs[0, j].legend().remove()
-            axs[0, j].set_xlabel(None)
-            axs[0, j].grid(axis="both", which="both", linestyle="-")
-            axs[0, j].set_ylabel(None)
-
-        fig.supxlabel("$n$", y=-0.2)
-        handles, labels_leg = axs[0, 0].get_legend_handles_labels()
-        fig.legend(
-            handles,
-            labels_leg,
-            loc="lower center",
-            ncol=4,
-            bbox_to_anchor=(0.5, -0.27),
-        )
-
-        fig.savefig(f"plots/small-{benchname}-{metric}{suff}.svg", bbox_inches="tight")
-        fig.savefig(f"plots/small-{benchname}-{metric}{suff}.pdf", bbox_inches="tight")
-        fig.savefig(
-            f"plots/small-{benchname}-{metric}{suff}.png", bbox_inches="tight", dpi=300
-        )
+        fig.savefig(f"plots/{metric}{suff}.svg", bbox_inches="tight")
+        fig.savefig(f"plots/{metric}{suff}.pdf", bbox_inches="tight")
+        fig.savefig(f"plots/{metric}{suff}.png", bbox_inches="tight", dpi=300)
