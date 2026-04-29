@@ -1,13 +1,12 @@
 use std::cmp::Reverse;
 
-use crate::SimdQuickHeap;
+use crate::{ConfigurableSimdQuickHeap, SimdElem};
 
-#[test]
-fn heapsort() {
+fn heapsort<S: SimdElem<u64>>() {
     for n in [10, 100, 1000, 10000, 100000] {
         let mut data = vec![0u64; n];
         rand::fill(&mut data);
-        let mut q = SimdQuickHeap::default();
+        let mut q = <ConfigurableSimdQuickHeap<_, S>>::default();
         for x in data {
             eprintln!("push {x}");
             q.push(x);
@@ -23,9 +22,19 @@ fn heapsort() {
 }
 
 #[test]
-fn wiggle() {
+fn heapsort_avx2() {
+    heapsort::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn heapsort_avx512() {
+    heapsort::<crate::Avx512>();
+}
+
+fn wiggle<S: SimdElem<u64>>() {
     for n in [10, 100, 1000, 10000, 100000] {
-        let mut q1 = SimdQuickHeap::default();
+        let mut q1 = <ConfigurableSimdQuickHeap<_, S>>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
         // (push pop push) xn
@@ -52,4 +61,15 @@ fn wiggle() {
             assert_eq!(q1.pop(), q2.pop().map(|x| x.0));
         }
     }
+}
+
+#[test]
+fn wiggle_avx2() {
+    wiggle::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn wiggle_avx512() {
+    wiggle::<crate::Avx512>();
 }
