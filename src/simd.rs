@@ -399,7 +399,7 @@ macro_rules! impl_simd_elem_32_avx512 {
 
             #[inline(always)]
             fn simd_lt_bitmask(a: $simd, b: $simd) -> u64 {
-                a.simd_le(b).to_bitmask() as u64
+                a.simd_lt(b).to_bitmask() as u64
             }
 
             #[inline(always)]
@@ -478,7 +478,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u16;
                     let small: u16 = vals.simd_lt(threshold).to_bitmask() as u16 & in_range;
-                    let large: u16 = vals.simd_ge(threshold).to_bitmask() as u16 & in_range;
+                    let large: u16 = (!small) & in_range;
                     let vals: __m512i = transmute(vals);
 
                     if CS {
@@ -609,7 +609,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8;
                     let small: u8 = vals.simd_lt(threshold).to_bitmask() as u8 & in_range;
-                    let large: u8 = vals.simd_ge(threshold).to_bitmask() as u8 & in_range;
+                    let large: u8 = (!small) & in_range;
                     let vals: __m512i = transmute(vals);
 
                     if CS {
