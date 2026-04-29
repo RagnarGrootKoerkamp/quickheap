@@ -65,6 +65,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
+name = "bench"
+version = "0.0.1"
+dependencies = [
+ "boost-heap-sys",
+ "clap",
+ "csv",
+ "dary_heap",
+ "fastrand",
+ "fibonacci_heap",
+ "indexset",
+ "itertools",
+ "min_max_traits",
+ "orx-priority-queue",
+ "perfcnt",
+ "pheap",
+ "radix-heap",
+ "rand 0.10.0",
+ "rand_distr",
+ "random",
+ "s3q-sys",
+ "sequence-heap-sys",
+ "serde",
+ "weakheap",
+ "wide",
+]
+
+[[package]]
 name = "bit_field"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -519,33 +546,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "quickheap"
-version = "0.0.1"
-dependencies = [
- "boost-heap-sys",
- "clap",
- "csv",
- "dary_heap",
- "fastrand",
- "fibonacci_heap",
- "indexset",
- "itertools",
- "min_max_traits",
- "orx-priority-queue",
- "perfcnt",
- "pheap",
- "radix-heap",
- "rand 0.10.0",
- "rand_distr",
- "random",
- "s3q-sys",
- "sequence-heap-sys",
- "serde",
- "weakheap",
- "wide",
 ]
 
 [[package]]

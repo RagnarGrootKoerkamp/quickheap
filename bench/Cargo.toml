@@ -1,0 +1,53 @@
+[package]
+name = "bench"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/ragnargrootkoerkamp/quickheap"
+keywords = ["priority-queue", "heap", "simd"]
+categories = ["algorithms", "data-structures"]
+authors = ["Ragnar Groot Koerkamp"]
+description = "A SIMD-accelerated priority queue"
+
+[features]
+default = ["avx2", "ffi", "perf"]
+# default = []
+
+# Enable SimdQuickHeap with AVX2 backend
+avx2 = []
+# Enable SimdQuickHeap with AVX-512 backend
+avx512 = ["avx2"]
+# Enable SequenceHeap and S3Q
+ffi = ["dep:s3q-sys", "dep:sequence-heap-sys"]
+boost = ["dep:boost-heap-sys"]
+# Enable performance counters
+perf = ["dep:perfcnt"]
+
+[profile.release]
+debug = true
+codegen-units = 1
+lto = "fat"
+
+[dependencies]
+csv = "1"
+serde = { version = "1", features = ["derive"] }
+dary_heap = "0.3.7"
+fastrand = "2.3.0"
+fibonacci_heap = "1.1.0"
+indexset = "0.15.0"
+itertools = "0.14.0"
+orx-priority-queue = "1.7.0"
+perfcnt = { version = "0.8.0", optional = true }
+pheap = "0.3.0"
+radix-heap = "0.4.2"
+rand = "0.10.0"
+random = "0.14.0"
+rand_distr = "0.6.0"
+weakheap = "0.1.0"
+
+wide = "1.2.0"
+s3q-sys = { path = "../ext/s3q-sys", optional = true}
+sequence-heap-sys = { path = "../ext/sequence-heap-sys", optional = true }
+boost-heap-sys = { path = "../ext/boost-heap-sys", optional = true }
+clap = { version = "4.6.0", features = ["derive"] }
+min_max_traits = "0.1.0"
