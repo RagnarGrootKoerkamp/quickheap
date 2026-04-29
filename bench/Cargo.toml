@@ -1,6 +1,6 @@
 [package]
 name = "bench"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/ragnargrootkoerkamp/quickheap"
@@ -10,7 +10,7 @@ authors = ["Ragnar Groot Koerkamp"]
 description = "A SIMD-accelerated priority queue"
 
 [features]
-default = ["avx2", "ffi", "perf"]
+default = ["avx2", "ffi"]
 # default = []
 
 # Enable SimdQuickHeap with AVX2 backend

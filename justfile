@@ -5,11 +5,16 @@ run:
     cd bench && cargo run -r --example run
 
 # Run all benchmarks. Takes a bunch of hours.
-# Add eg --max 20 (instead of default --max 25) to run up to 2^20.
 bench-all:
-    cd bench && cargo run -r --example bench -F avx512 > evals/data/nanos.csv
-    cd bench && cargo run -r --example bench -F avx512 -- --comparisons > evals/data/comparisons.csv
-    cd bench && cargo run -r --example bench_graph -F avx512 > evals/data/graphs.csv
+    cd bench && cargo run -r --example bench       -F avx512                  > evals/data/nanos.csv
+    cd bench && cargo run -r --example bench       -F avx512 -- --comparisons > evals/data/comparisons.csv
+    cd bench && cargo run -r --example bench_graph -F avx512                  > evals/data/graphs.csv
+
+# A smaller benchmark for testing.
+bench-small:
+    cd bench && cargo run -r --example bench       -- --max 20               > evals/data/nanos.csv
+    cd bench && cargo run -r --example bench       -- --max 20 --comparisons > evals/data/comparisons.csv
+    cd bench && cargo run -r --example bench_graph -- --max 20               > evals/data/graphs.csv
 
 # Generate all plots.
 plot-all:
