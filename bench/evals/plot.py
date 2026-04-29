@@ -17,7 +17,7 @@ if len(sys.argv) > 2 and sys.argv[2] == "all":
 
 suff = "-all" if all else ""
 
-df = pd.read_csv(f"test-{benchname}.csv")
+df = pd.read_csv(f"data/{benchname}.csv")
 
 # Shorten heap names
 df["name"] = df["heap"]
@@ -58,7 +58,9 @@ df["workload"] = (
 )
 
 df["workload"] = df["workload"].str.replace(r"RandomConstantSize", "rcs", regex=True)
-df["workload"] = df["workload"].str.replace(r"ConstantSize", "MonotoneConstantSize", regex=True)
+df["workload"] = df["workload"].str.replace(
+    r"ConstantSize", "MonotoneConstantSize", regex=True
+)
 df["workload"] = df["workload"].str.replace(r"rcs", "ConstantSize", regex=True)
 
 
@@ -74,32 +76,52 @@ type_order = [
     "DaryHeapOrx",
     # "BoostDary4Heap",
     "WeakHeap",
-
     # Amortized
-    
     # "BoostBinomialHeap",
     # "FibonacciHeap",
     # "BoostFibHeap",
     # "PairingHeap",
     # "BoostPairingHeap",
     # "BoostSkewHeap",
-
-    # Actual Competitors 
+    # Actual Competitors
     "RadixHeapMap",
     "SequenceHeap",
     "S3qHeap",
-    
     "OriginalQuickHeap",
     "ScalarQuickHeap",
     "SimdQuickHeap",
 ]
 
 # Filtered out for the graph plot
-graph_instance_filter = ["NY"] # , "rhg_22"
+graph_instance_filter = ["NY"]  # , "rhg_22"
 
-nanos_filter = ["BoostDary4Heap", "FibonacciHeap", "BoostPairingHeap", "BoostBinomialHeap", "BoostFibHeap", "PairingHeap", "BoostSkewHeap", "DaryHeapOrx<T, 4>", "FibonacciHeap<T>", "BoostBinomialHeap<T>", "BoostFibHeap<T>", "PairingHeap<T>", "BoostPairingHeap<T>", "BoostSkewHeap<T>"]
+nanos_filter = [
+    "BoostDary4Heap",
+    "FibonacciHeap",
+    "BoostPairingHeap",
+    "BoostBinomialHeap",
+    "BoostFibHeap",
+    "PairingHeap",
+    "BoostSkewHeap",
+    "DaryHeapOrx<T, 4>",
+    "FibonacciHeap<T>",
+    "BoostBinomialHeap<T>",
+    "BoostFibHeap<T>",
+    "PairingHeap<T>",
+    "BoostPairingHeap<T>",
+    "BoostSkewHeap<T>",
+]
 
-unnormalized_colours = [(152, 78, 163), (55, 126, 184), (77, 175, 74), (228, 26, 28), (255, 127, 0), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
+unnormalized_colours = [
+    (152, 78, 163),
+    (55, 126, 184),
+    (77, 175, 74),
+    (228, 26, 28),
+    (255, 127, 0),
+    (166, 86, 40),
+    (247, 129, 191),
+    (153, 153, 153),
+]
 # [(228, 26, 28), (55, 126, 184), (77, 175, 74), (152, 78, 163), (255, 127, 0), (255, 255, 51), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
 
 colours = [(x / 255, y / 255, z / 255) for (x, y, z) in unnormalized_colours]
@@ -113,7 +135,9 @@ is_categorical = "graph" in df.columns
 
 
 # TODO: Mixed normalization factors because the bench data is mixed between different runs
-df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else (10 if "ConstantSize" in w  else 1)) # TODO!!!
+df["normalization"] = df["workload"].apply(
+    lambda w: 3 if "Wiggle" in w else (10 if "ConstantSize" in w else 1)
+)  # TODO!!!
 
 # df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else 1)
 
@@ -136,6 +160,7 @@ def rewrite_legend(s):
     s = re.sub(", ", "", s)
     s = re.sub(">", "", s)
     return s
+
 
 if is_categorical:
     # Shorten graph input names: "input/GER_graph.gr" -> "GER"
@@ -169,16 +194,21 @@ if is_categorical:
     workloads = df["workload"].unique()
 
     def filter_graph(name):
-        cleaned = re.sub(r'<[^>]*>', '', name)
+        cleaned = re.sub(r"<[^>]*>", "", name)
         return all or not (cleaned in nanos_filter or name in nanos_filter)
-    
-    methods = list(filter(filter_graph, df["name"].unique())) # already sorted by type/name above
+
+    methods = list(
+        filter(filter_graph, df["name"].unique())
+    )  # already sorted by type/name above
 
     # hatches = ["", "//", "--", "xx", "++", "\\\\", "oo", ".."]
     hatches = [""]
     graph_hatch = {gn: hatches[k % len(hatches)] for k, gn in enumerate(graph_names)}
     graph_alpha = {
-        gn: (1.0 if k < 5 else 0.5) for k, gn in enumerate(graph_names) # Change here if graphs are added or removed
+        gn: (1.0 if k < 5 else 0.5)
+        for k, gn in enumerate(
+            graph_names
+        )  # Change here if graphs are added or removed
     }
 
     filtered_graph_names = []
@@ -200,7 +230,7 @@ if is_categorical:
         1,
         # figsize=(max(8, n_methods * 0.7), 4 * len(workloads)),
         # figsize=(21/2.54, 29.7/2.54), # Size for A4 PDF
-        figsize=(21/2.54, 4 * len(workloads)), # Width for A$ PDF
+        figsize=(21 / 2.54, 4 * len(workloads)),  # Width for A$ PDF
         sharex=True,
     )
     if len(workloads) == 1:
@@ -210,12 +240,13 @@ if is_categorical:
         wdf = df[df["workload"] == workload]
 
         for gi, gn in enumerate(graph_names):
-            if (gn in graph_instance_filter):
+            if gn in graph_instance_filter:
                 continue
 
             gdf = wdf[wdf["graph_name"] == gn].set_index("name")
             heights = [
-                gdf.loc[m, "rel"] if m in gdf.index else float("nan") for m in methods # Relative
+                gdf.loc[m, "rel"] if m in gdf.index else float("nan")
+                for m in methods  # Relative
                 # gdf.loc[m, "millis"] if m in gdf.index else float("nan") for m in methods # Nanos
             ]
             offset = (gi - (len(graph_names) - 1) / 2) * bar_width
@@ -250,7 +281,7 @@ if is_categorical:
 
     # Get legend handles and labels from the last subplot
     handles, labels = axs[-1].get_legend_handles_labels()
-    
+
     # Filter to keep only the desired graph types
     filtered_handles = []
     filtered_labels = []
@@ -261,7 +292,7 @@ if is_categorical:
         else:
             filtered_labels.append(f"Road Networks: CAL, CTR, GER, USA")
             filtered_handles.append(handle)
-    
+
     # Deduplicate labels (keep first occurrence of each unique label)
     seen = set()
     final_handles = []
@@ -272,12 +303,14 @@ if is_categorical:
             final_labels.append(label)
             seen.add(label)
 
-
-
     # Add a single grey proxy for the legend (if you want one grey legend entry)
     # For example, if you want "Random Hyperbolic Graphs" to be grey in legend only:
-    grey_patch_rn = mpatches.Patch(linewidth=0, color='#333333FF', label="Road Networks: CAL, CTR, GER, USA")
-    grey_patch_rhg = mpatches.Patch(linewidth=0, color="#33333399", label="Random Hyperbolic Graphs: 20, 22, 24")
+    grey_patch_rn = mpatches.Patch(
+        linewidth=0, color="#333333FF", label="Road Networks: CAL, CTR, GER, USA"
+    )
+    grey_patch_rhg = mpatches.Patch(
+        linewidth=0, color="#33333399", label="Random Hyperbolic Graphs: 20, 22, 24"
+    )
 
     # Also, keep the existing road‑networks label
     road_label = "Road Networks: CAL, CTR, GER, USA"
@@ -289,8 +322,13 @@ if is_categorical:
     new_final_labels = [road_label, "Random Hyperbolic Graphs: 20, 22, 24"]
 
     # fig.legend(handles=new_final_handles, labels=new_final_labels)
-    
-    fig.legend(new_final_handles, new_final_labels, loc='upper right', bbox_to_anchor=(0.93, 0.96))
+
+    fig.legend(
+        new_final_handles,
+        new_final_labels,
+        loc="upper right",
+        bbox_to_anchor=(0.93, 0.96),
+    )
 
     fig.supylabel(r"Relative Time ($t \:/\: t_{min}$)")
     fig.tight_layout()
@@ -310,7 +348,7 @@ elif "comparisons" in benchname:
 
     # workloads = list(df["workload"].unique())
     # workloads = ['HeapSort', 'MonotoneConstantSize', 'MonotoneWiggle', 'ConstantSize', 'Wiggle']
-    workloads = ['HeapSort', 'MonotoneConstantSize', 'MonotoneWiggle', 'Wiggle']
+    workloads = ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "Wiggle"]
 
     df = (
         df.groupby(["elem", "name", "type", "workload"])[
@@ -341,7 +379,6 @@ elif "comparisons" in benchname:
     bar_width = 0.7 / n_methods  # fill most of each group slot
     method_type = {m: df[df["name"] == m]["type"].iloc[0] for m in methods}
     bar_colors = [type_colour.get(method_type[m], "gray") for m in methods]
-    
 
     # Build per-method offsets with extra gaps:
     #   - a small gap before the first ScalarQuickHeap bar
@@ -361,13 +398,11 @@ elif "comparisons" in benchname:
 
     plt.close("all")
     # fig, ax = plt.subplots(figsize=(max(8, n_workloads * (total + 0.3) * 1.5), 5))
-    fig, ax = plt.subplots(figsize=(21/2.54, 5))
+    fig, ax = plt.subplots(figsize=(21 / 2.54, 5))
     x = np.arange(n_workloads)  # one tick per workload group
 
     legend_handles = [
-        mpatches.Patch(
-            facecolor="#333333FF", edgecolor="white", label="pop"
-        ),
+        mpatches.Patch(facecolor="#333333FF", edgecolor="white", label="pop"),
         mpatches.Patch(facecolor="#33333399", edgecolor="white", label="push"),
     ]
 
@@ -444,8 +479,7 @@ else:
     ]
 
     # workloads = df["workload"].unique()
-    workloads = ['HeapSort', 'MonotoneConstantSize', 'MonotoneWiggle', 'Wiggle']
-
+    workloads = ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "Wiggle"]
 
     if df["nanos"].max() == 0:
         metrics = [
@@ -481,7 +515,7 @@ else:
             return "--"
         if tp == "ScalarQuickHeap":
             return ":"
-        
+
         names = all_names_by_type[tp]
         if len(names) >= 2 and names.index(name) == 0:
             return "--"
@@ -493,7 +527,7 @@ else:
         fig, axs = plt.subplots(
             len(workloads),
             len(elems),
-            figsize=(21/2.54, 29.7/2.54), # Size for A4 PDF
+            figsize=(21 / 2.54, 29.7 / 2.54),  # Size for A4 PDF
             sharex=True,
             sharey=True,
             squeeze=False,
@@ -509,10 +543,10 @@ else:
 
                     c = type_colour[tp]
 
-                    for name, ngroup in tgroup.groupby("name", sort=False):                        
+                    for name, ngroup in tgroup.groupby("name", sort=False):
                         if not all and name in nanos_filter:
                             continue
-                        
+
                         lw = width_for_type(tp)
                         ngroup.plot(
                             kind="line",
@@ -534,12 +568,10 @@ else:
                 axs[i][j].set_ylabel(None)
                 # axs[i][j].set_ylim(0.1, 16)
                 axs[i][j].grid(axis="both", which="both", linestyle="-")
-                
+
                 # Remove all intermediate legends
                 axs[i][j].get_legend().remove()
                 axs[i][j].set_ylabel(workload, fontsize=8)
-
-            
 
         # handles, labels_leg = axs[len(workloads) - 1][0].get_legend_handles_labels()
         handles, labels_leg = axs[0][0].get_legend_handles_labels()
@@ -558,18 +590,20 @@ else:
 
         fig.savefig(f"plots/{benchname}-{metric}{suff}.svg", bbox_inches="tight")
         fig.savefig(f"plots/{benchname}-{metric}{suff}.pdf", bbox_inches="tight")
-        fig.savefig(f"plots/{benchname}-{metric}{suff}.png", bbox_inches="tight", dpi=300)
-    
+        fig.savefig(
+            f"plots/{benchname}-{metric}{suff}.png", bbox_inches="tight", dpi=300
+        )
+
     # Filter out the workload column, only keep constant size
     workload = "ConstantSize"
     df = df[df["workload"] == "ConstantSize"]
-    df.drop('workload', axis='columns', inplace=True)
-    
+    df.drop("workload", axis="columns", inplace=True)
+
     for metric, label in metrics:
         plt.close("all")
         fig, axs = plt.subplots(
-            1, # only one workload
-            len(elems), # ['i32', 'i64']
+            1,  # only one workload
+            len(elems),  # ['i32', 'i64']
             figsize=(10, 4),
             sharex=True,
             sharey=True,
@@ -606,7 +640,7 @@ else:
             axs[0, j].set_xlabel(None)
             axs[0, j].grid(axis="both", which="both", linestyle="-")
             axs[0, j].set_ylabel(None)
-        
+
         fig.supxlabel("$n$", y=-0.2)
         handles, labels_leg = axs[0, 0].get_legend_handles_labels()
         fig.legend(
@@ -619,4 +653,6 @@ else:
 
         fig.savefig(f"plots/small-{benchname}-{metric}{suff}.svg", bbox_inches="tight")
         fig.savefig(f"plots/small-{benchname}-{metric}{suff}.pdf", bbox_inches="tight")
-        fig.savefig(f"plots/small-{benchname}-{metric}{suff}.png", bbox_inches="tight", dpi=300)
+        fig.savefig(
+            f"plots/small-{benchname}-{metric}{suff}.png", bbox_inches="tight", dpi=300
+        )
