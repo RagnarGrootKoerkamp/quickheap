@@ -492,12 +492,12 @@ else:
         "pop_comparisons",
     ]
 
-    # workloads = df["workload"].unique()
-    workloads = ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "Wiggle"]
-
     if df["nanos"].max() == 0:
         metrics = [
-            ("comparisons", r"comparisons / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$")
+            (
+                "comparisons",
+                r"comparisons / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$",
+            )
         ]
 
     df = (
@@ -535,73 +535,86 @@ else:
             return "--"
         return "-"
 
-    for metric, label in metrics:
-        plt.close("all")
-        p_width = 2
-        fig, axs = plt.subplots(
-            len(workloads),
-            len(elems),
-            figsize=(21 / 2.54, 29.7 / 2.54),  # Size for A4 PDF
-            sharex=True,
-            sharey=True,
-            squeeze=False,
-        )
+    # workloads = df["workload"].unique()
+    workload_set = [
+        ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "Wiggle"],
+        ["MonotoneConstantSize"],
+    ]
+    for workloads in workload_set:
+        if len(workloads) == 1:
+            single = True
+            suff += "-single"
+        else:
+            single = False
+        for metric, label in metrics:
+            plt.close("all")
+            p_width = 2
+            fig, axs = plt.subplots(
+                len(workloads),
+                len(elems),
+                figsize=(
+                    (10, 6) if single else (21 / 2.54, 29.7 / 2.54)
+                ),  # Size for A4 PDF
+                sharex=True,
+                sharey=True,
+                squeeze=False,
+            )
 
-        for j, elem in enumerate(elems):
-            edf = df[df["elem"] == elem]
-            for i, workload in enumerate(workloads):
-                wdf = edf[edf["workload"] == workload]
-                for tp, tgroup in wdf.groupby("type", sort=False):
-                    if not all and tp in nanos_filter:
-                        continue
-
-                    c = type_colour[tp]
-
-                    for name, ngroup in tgroup.groupby("name", sort=False):
-                        if not all and name in nanos_filter:
+            for j, elem in enumerate(elems):
+                edf = df[df["elem"] == elem]
+                for i, workload in enumerate(workloads):
+                    wdf = edf[edf["workload"] == workload]
+                    for tp, tgroup in wdf.groupby("type", sort=False):
+                        if not all and tp in nanos_filter:
                             continue
 
-                        lw = width_for_type(tp)
-                        ngroup.plot(
-                            kind="line",
-                            x="n",
-                            y=metric,
-                            ax=axs[i][j],
-                            title=elem if i == 0 else None,
-                            label=rewrite_legend(name) if j == 0 else None,
-                            color=c,
-                            ls=style_for_name(tp, name),
-                            lw=lw,
-                        )
+                        c = type_colour[tp]
 
-                axs[i][j].set_yscale("log", base=2)
-                axs[i][j].set_xscale("log", base=2)
-                axs[i][j].set_xticks([2**i for i in [10, 15, 20, 25]])
-                axs[i][j].set_xlabel(None)
-                axs[i][j].set_yticks([2**i for i in [0, 1, 2, 3, 4]])
-                axs[i][j].set_ylabel(None)
-                # axs[i][j].set_ylim(0.1, 16)
-                axs[i][j].grid(axis="both", which="both", linestyle="-")
+                        for name, ngroup in tgroup.groupby("name", sort=False):
+                            if not all and name in nanos_filter:
+                                continue
 
-                # Remove all intermediate legends
-                axs[i][j].get_legend().remove()
-                axs[i][j].set_ylabel(workload, fontsize=8)
+                            lw = width_for_type(tp)
+                            ngroup.plot(
+                                kind="line",
+                                x="n",
+                                y=metric,
+                                ax=axs[i][j],
+                                title=elem if i == 0 else None,
+                                label=rewrite_legend(name) if j == 0 else None,
+                                color=c,
+                                ls=style_for_name(tp, name),
+                                lw=lw,
+                            )
 
-        # handles, labels_leg = axs[len(workloads) - 1][0].get_legend_handles_labels()
-        handles, labels_leg = axs[0][0].get_legend_handles_labels()
-        fig.legend(
-            handles,
-            labels_leg,
-            loc="center",
-            ncol=4,
-            fontsize=8,
-            bbox_to_anchor=(0.5, -0.020),
-        )
+                    axs[i][j].set_yscale("log", base=2)
+                    axs[i][j].set_xscale("log", base=2)
+                    axs[i][j].set_xticks([2**i for i in [10, 15, 20, 25]])
+                    axs[i][j].set_xlabel(None)
+                    axs[i][j].set_yticks([2**i for i in [0, 1, 2, 3, 4]])
+                    axs[i][j].set_ylabel(None)
+                    # axs[i][j].set_ylim(0.1, 16)
+                    axs[i][j].grid(axis="both", which="both", linestyle="-")
 
-        fig.supylabel(label)
-        fig.supxlabel("$n$", y=0.02)
-        fig.subplots_adjust(left=0.12, bottom=0.055, wspace=0.12, hspace=0.08)
+                    # Remove all intermediate legends
+                    axs[i][j].get_legend().remove()
+                    axs[i][j].set_ylabel(workload, fontsize=8)
 
-        fig.savefig(f"plots/{metric}{suff}.svg", bbox_inches="tight")
-        fig.savefig(f"plots/{metric}{suff}.pdf", bbox_inches="tight")
-        fig.savefig(f"plots/{metric}{suff}.png", bbox_inches="tight", dpi=300)
+            # handles, labels_leg = axs[len(workloads) - 1][0].get_legend_handles_labels()
+            handles, labels_leg = axs[0][0].get_legend_handles_labels()
+            fig.legend(
+                handles,
+                labels_leg,
+                loc="center",
+                ncol=4,
+                fontsize=8,
+                bbox_to_anchor=(0.5, -0.020),
+            )
+
+            fig.supylabel(label)
+            fig.supxlabel("$n$", y=0.02)
+            fig.subplots_adjust(left=0.12, bottom=0.055, wspace=0.12, hspace=0.08)
+
+            fig.savefig(f"plots/{metric}{suff}.svg", bbox_inches="tight")
+            fig.savefig(f"plots/{metric}{suff}.pdf", bbox_inches="tight")
+            fig.savefig(f"plots/{metric}{suff}.png", bbox_inches="tight", dpi=300)

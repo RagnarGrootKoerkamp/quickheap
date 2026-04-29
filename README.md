@@ -1,27 +1,66 @@
-# QuickHeap
+[![crates.io](https://img.shields.io/crates/v/quickheap.svg)](https://crates.io/crates/quickheap)
+[![docs.rs](https://img.shields.io/docsrs/quickheap.svg?label=docs.rs)](https://docs.rs/quickheap)
+[![arXiv preprint](https://img.shields.io/badge/arxiv-10.48550/ARXIV.2604.25681-green)](https://doi.org/10.48550/ARXIV.2604.25681)
 
-An implementation of the quickheap.
-See the corresponding blog post for details:
+# SimdQuickHeap: A fast SIMD-based priority queue
+
+The SimdQuickHeap is, as the name suggests, a **fast priority queue**.
+It has some similarities to QuickSelect, and uses SIMD for fast partitioning and
+insertion of elements.
+
+Unlike the classic binary heap (and $d$-ary heap variants), it is I/O-efficient
+and **does not suffer from bad cache-locality** when the size of the queue exceeds
+the cache.
+
+Currently, it only supports `i32`, `u32`, `i64`, and `u64` keys and requires
+either AVX2 or AVX-512.
+See the preprint for details and benchmarks:
+
+> SimdQuickHeap: The QuickHeap Reconsidered
+> Johannes Breitling, Ragnar Groot Koerkamp, Marvin Williams, Arxiv 2026
+> https://doi.org/10.48550/ARXIV.2604.25681
+
+An older blogpost can be found here:
 https://curiouscoding.nl/posts/quickheap.
 
-The quickheap was first published in:
+## Example
 
-> On Sorting, Heaps, and Minimum Spanning Trees\
-> Gonzalo Navarro and Rodrigo Paredes, Algorithmica, 2010\
-> http://doi.org/10.1007/s00453-010-9400-6
+``` sh
+cargo add quickheap
+```
 
-with some improvements to avoid worst-case linear updates in
+```rust
+let mut q = quickheap::SimdQuickHeap::<u64>::default();
+q.push(4);
+q.push(1);
+q.push(7);
+assert_eq!(q.pop(), Some(1));
+q.push(7);
+q.push(3);
+assert_eq!(q.pop(), Some(3));
+assert_eq!(q.pop(), Some(4));
+assert_eq!(q.pop(), Some(7));
+assert_eq!(q.pop(), Some(7));
+assert_eq!(q.pop(), None);
+```
 
-> Stronger Quickheaps\
-> Gonzalo Navarro and Rodrigo Paredes and Patricia V. Poblete and Peter Sanders\
-> International Journal of Foundations of Computer Science, 2011\
-> http://doi.org/10.1142/S0129054111008507
+## Results
 
-## Crate
+Below you can see the results for 32-bit and 64-bit data when we first push `n`
+elements and then how long it takes on average to do a pair of push and pop
+operations. Note that the y-axis is normalized by `log_2(n)` as well.
 
-The v0.0.1 crates.io library is very preliminary, and mostly a placeholder.
-For now, it depends on unstable Rust for `portable-simd`, and requires AVX2 instructions.
-By default, it only supports queues of `u32` values.
-Enable the `u64` feature to store `u64` values instead.
-Making this into a generic API and supporting more types is future work.
-Please submit an issue if your specific type is not supported.
+The SimdQuickHeap is around 2x faster than the Radix heap, and up to 10x faster
+than the binary heap and d-ary heap.
+
+![plot with results](./plot.svg)
+
+## Running the benchmarks
+
+Benchmarks can be found in the [bench/](bench/) directory, and Rust FFI wrappers around
+external C++ implementations can be found in [ext/](ext/), with submodules
+containing the original C++ sources in nested `third_party` directories.
+(Run `git submodule update --init --recursive` to initialize them.)
+Run `just bench-small plot-all` (see the [`justfile`](justfile)) for a small subset of
+the experiments. Note that these need nightly Rust for some unstable convenience features.
+If you get linker errors, comment out the `.flag("-flto")` in `ext/{s3q-sys,sequence-heap-sys,boost-heap-sys}/build.rs`.
