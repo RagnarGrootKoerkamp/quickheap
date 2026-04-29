@@ -21,14 +21,17 @@ df = pd.read_csv(f"data/{benchname}.csv")
 
 # Shorten heap names
 df["name"] = df["heap"]
-df["name"] = df["name"].str.replace(r"quickheap::\w+::", "", regex=True)
 df["name"] = df["name"].str.replace(
     "alloc::collections::binary_heap::", "", regex=False
+)
+df["name"] = df["name"].str.replace(
+    "ConfigurableSimdQuickHeap", "SimdQuickHeap", regex=False
 )
 df["name"] = df["name"].str.replace(r"core::cmp::Reverse<[iu](32|64)>", "T", regex=True)
 df["name"] = df["name"].str.replace(
     "orx_priority_queue::dary::daryheap::DaryHeap", "DaryHeapOrx", regex=False
 )
+df["name"] = df["name"].str.replace(r"(\w+::)+", "", regex=True)
 df["name"] = df["name"].str.replace("dary_heap::", "", regex=False)
 df["name"] = df["name"].str.replace("pheap::ph::", "", regex=False)
 df["name"] = df["name"].str.replace("fibonacci_heap::", "", regex=False)
@@ -74,15 +77,8 @@ type_order = [
     # Dary
     "BinaryHeap",
     "DaryHeapOrx",
-    # "BoostDary4Heap",
     # Amortized
     "WeakHeap",
-    # "BoostBinomialHeap",
-    # "FibonacciHeap",
-    # "BoostFibHeap",
-    # "PairingHeap",
-    # "BoostPairingHeap",
-    # "BoostSkewHeap",
     # Actual Competitors
     "RadixHeapMap",
     "SequenceHeap",
@@ -90,6 +86,14 @@ type_order = [
     "OriginalQuickHeap",
     "ScalarQuickHeap",
     "SimdQuickHeap",
+    # When plotting all:
+    "BoostDary4Heap",
+    "BoostBinomialHeap",
+    "FibonacciHeap",
+    "BoostFibHeap",
+    "PairingHeap",
+    "BoostPairingHeap",
+    "BoostSkewHeap",
 ]
 
 # Filtered out for the graph plot
@@ -134,32 +138,28 @@ type_colour["SimdQuickHeap"] = "black"
 is_categorical = "graph" in df.columns
 
 
-# TODO: Mixed normalization factors because the bench data is mixed between different runs
-# Some data didn't have normalization applied, and then we fixed it for a partial rerun that _does_ have it correct.
-df["normalization"] = df.apply(
-    lambda row: (
-        (
-            3
-            if "Wiggle" in row["workload"]
-            else (10 if "ConstantSize" in row["workload"] else 1)
-        )
-        if "SimdQuickHeap" in row["name"]
-        else (
-            3
-            if "Wiggle" in row["workload"]
-            else (1 if "ConstantSize" in row["workload"] else 1)
-        )
-    ),
-    axis=1,
-)  # TODO!!!
+if "ops" not in df.columns and "graph" not in df.columns:
+    # TODO: Drop this after the next rerun.
+    # Mixed normalization factors because the bench data is mixed between different runs
+    # Some data didn't have normalization applied, and then we fixed it for a partial rerun that _does_ have it correct.
+    df["normalization"] = df.apply(
+        lambda row: (
+            (
+                3
+                if "Wiggle" in row["workload"]
+                else (10 if "ConstantSize" in row["workload"] else 1)
+            )
+            if "SimdQuickHeap" in row["name"]
+            else (
+                3
+                if "Wiggle" in row["workload"]
+                else (1 if "ConstantSize" in row["workload"] else 1)
+            )
+        ),
+        axis=1,
+    )  # TODO!!!
 
-# df["normalization"] = df["workload"].apply(lambda w: 3 if "Wiggle" in w else 1)
-
-# mask = ((df["name"] == "SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>") | (df["name"] == "SimdQuickHeap<T, Avx512, MedianOfM<3>, 16, true>")) & (df["workload"] == "MonotoneConstantSize")
-# df.loc[mask, "normalization"] = df["normalization"].apply(lambda x: 10)
-
-
-df["nanos"] /= df["normalization"]
+    df["ops"] = df["normalization"] * df["n"]
 
 
 def rewrite_legend(s):
@@ -355,10 +355,9 @@ elif "comparisons" in benchname:
     n_max = df["n"].max()
     df = df[df["n"] == n_max].copy()
 
-    df["push_comparisons"] /= df["normalization"]
-    df["pop_comparisons"] /= df["normalization"]
+    df["push_comparisons"] /= df["ops"]
+    df["pop_comparisons"] /= df["ops"]
     df["comparisons"] = df["push_comparisons"] + df["pop_comparisons"]
-    ops = n_max * np.log2(n_max)
 
     # workloads = list(df["workload"].unique())
     # workloads = ['HeapSort', 'MonotoneConstantSize', 'MonotoneWiggle', 'ConstantSize', 'Wiggle']
@@ -371,8 +370,9 @@ elif "comparisons" in benchname:
         .median()
         .reset_index()
     )
-    df["push_comparisons"] /= ops
-    df["pop_comparisons"] /= ops
+    lgn = np.log2(n_max)
+    df["push_comparisons"] /= lgn
+    df["pop_comparisons"] /= lgn
 
     df = df[df["elem"] == "i64"]
 
@@ -485,8 +485,8 @@ else:
         # ),
     ]
 
-    df["pop_comparisons"] /= df["normalization"]
-    df["push_comparisons"] /= df["normalization"]
+    df["pop_comparisons"] /= df["ops"]
+    df["push_comparisons"] /= df["ops"]
     metric_cols = [m for m, _ in metrics] + [
         "push_comparisons",
         "pop_comparisons",
@@ -501,14 +501,14 @@ else:
         ]
 
     df = (
-        df.groupby(["elem", "name", "type", "n", "workload"])[metric_cols]
+        df.groupby(["elem", "name", "type", "n", "workload"])[metric_cols + ["ops"]]
         .median()
         .reset_index()
     )
 
     df["order"] = pd.Categorical(df["type"], categories=type_order, ordered=True)
     df = df.sort_values(["order", "name"])
-    ops = df["n"] * np.log2(df["n"])
+    ops = df["ops"] * np.log2(df["n"])
     for m in metric_cols:
         df[m] = df[m] / ops
 

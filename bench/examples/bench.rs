@@ -28,6 +28,7 @@ struct Result {
     heap: &'static str,
     n: u64,
     workload: &'static str,
+    ops: u64,
     repeat: usize,
     nanos: f64,
     push_comparisons: f64,
@@ -68,6 +69,7 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
                 heap: type_name::<H>(),
                 n,
                 workload: type_name::<W>(),
+                ops: n * W::NORMALIZATION,
                 repeat,
                 nanos,
                 ..Default::default()
