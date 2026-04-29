@@ -198,7 +198,7 @@ pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
         // bench_one::<T, H, GeometricMonotoneWiggle>(n, &mut ok[1]);
         if !H::MONOTONE {
             bench_one::<T, H, Wiggle>(n, &mut ok[3]);
-            bench_one::<T, H, RandomConstantSize>(n, &mut ok[4]);
+            // bench_one::<T, H, RandomConstantSize>(n, &mut ok[4]);
         }
 
         eprintln!();
