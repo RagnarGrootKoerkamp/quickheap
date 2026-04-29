@@ -18,7 +18,6 @@ pub struct Avx2;
 /// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"` and the `avx512` feature.
 ///
 /// [`ConfigurableSimdQuickHeap`]: crate::ConfigurableSimdQuickHeap
-#[cfg(target_feature = "avx512f")]
 pub struct Avx512<const CS: bool = false>;
 
 /// A SIMD backend strategy for element type `T`.
@@ -379,7 +378,6 @@ macro_rules! impl_simd_elem_64 {
     };
 }
 
-#[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_32_avx512 {
     ($t:ty, $simd:ty) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
@@ -510,7 +508,6 @@ macro_rules! impl_simd_elem_32_avx512 {
     };
 }
 
-#[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_64_avx512 {
     ($t:ty, $simd:ty) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
@@ -646,13 +643,9 @@ impl_simd_elem_32!(u32, wide::u32x8);
 impl_simd_elem_64!(i64, wide::i64x4);
 impl_simd_elem_64!(u64, wide::u64x4);
 
-#[cfg(target_feature = "avx512f")]
 impl_simd_elem_32_avx512!(i32, wide::i32x16);
-#[cfg(target_feature = "avx512f")]
 impl_simd_elem_32_avx512!(u32, wide::u32x16);
-#[cfg(target_feature = "avx512f")]
 impl_simd_elem_64_avx512!(i64, wide::i64x8);
-#[cfg(target_feature = "avx512f")]
 impl_simd_elem_64_avx512!(u64, wide::u64x8);
 
 /// For each of 256 masks of which elements are different than their predecessor,

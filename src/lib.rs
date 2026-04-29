@@ -32,10 +32,7 @@ mod test;
 
 use std::marker::PhantomData;
 
-pub use simd::Avx2;
-
-#[cfg(target_feature = "avx512f")]
-pub use simd::Avx512;
+pub use simd::{Avx2, Avx512};
 
 /// Tag to use with [`ConfigurableSimdQuickHeap`] to use AVX-512 if it is available.
 #[cfg(not(target_feature = "avx512f"))]
