@@ -94,8 +94,8 @@ pub struct ConfigurableSimdQuickHeap<
 /// Works for `i32`, `u32`, `i64`, and `u64`.
 ///
 /// Uses AVX-512 instructions when available at compile time.
-pub type SimdQuickHeap<T, S = Simd> =
-    ConfigurableSimdQuickHeap<T, S, pivot_strategies::MedianOfM<3>, 16, true>;
+pub type SimdQuickHeap<T> =
+    ConfigurableSimdQuickHeap<T, Simd, pivot_strategies::MedianOfM<3>, 16, true>;
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
