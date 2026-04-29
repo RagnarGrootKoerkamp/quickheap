@@ -1,0 +1,38 @@
+# .github/workflows/test.yaml
+
+# Name of the job in GitHub UI.
+name: Test
+
+# When to trigger?
+on:
+  # Run on pushes to master branch
+  push:
+    branches: ["master"]
+  # Run on PRs to the master branch
+  pull_request:
+    branches: ["master"]
+  # Allow manual triggering via GitHub UI
+  workflow_dispatch:
+
+# Cargo commands should show nice colours.
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Arbitrary name for this step.
+  test:
+    # TODO: Run on both x86-64 ubuntu and aarch64 macos.
+    strategy:
+      matrix:
+        # os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # First check out the repository.
+      - uses: actions/checkout@v4
+      # Caching build artefacts may speed up large builds.
+      - uses: Swatinem/rust-cache@v2
+      # Run all tests in debug and release mode.
+      - run: cargo test --package quickheap
+      - run: cargo test --package quickheap -r
