@@ -27,6 +27,8 @@
 #[doc(hidden)]
 pub mod pivot_strategies;
 mod simd;
+#[cfg(test)]
+mod test;
 
 use std::marker::PhantomData;
 
