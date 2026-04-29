@@ -1,6 +1,7 @@
 use std::mem::transmute;
 
 use crate::Elem;
+use wide::{CmpGt, CmpLt};
 
 /// Marker type selecting the AVX2 (256-bit) SIMD backend for [`SimdQuickHeap`].
 ///
@@ -18,7 +19,7 @@ pub struct Avx2;
 /// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"` and the `avx512` feature.
 ///
 /// [`SimdQuickHeap`]: quickheap::SimdQuickHeap
-#[cfg(feature = "avx512")]
+#[cfg(target_feature = "avx512f")]
 pub struct Avx512<const CS: bool = false>;
 
 /// A SIMD backend strategy for element type `T`.
@@ -39,7 +40,7 @@ pub trait SimdElem<T>: 'static {
     /// `slice` must have at least `L` elements accessible (may read past `slice.len()`).
     unsafe fn simd_from_slice(slice: &[T]) -> Self::Simd;
     /// Returns bitmask where bit `i` = `a[i] <= b[i]`.
-    fn simd_le_bitmask(a: Self::Simd, b: Self::Simd) -> u64;
+    fn simd_lt_bitmask(a: Self::Simd, b: Self::Simd) -> u64;
     /// Returns a SIMD register `[0, 1, 2, ..., L-1]`.
     fn lane_indices() -> Self::Simd;
     fn from_usize(n: usize) -> T;
@@ -88,7 +89,7 @@ pub fn push_position<T: Elem, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> usize {
         while i < v.len() {
             let vals = unsafe { S::simd_from_slice(v.get_unchecked(i..i + S::L)) };
             // TODO: Compare SIMD register against 0
-            target_layer += S::simd_le_bitmask(t_simd, vals).trailing_ones() as usize;
+            target_layer += S::simd_lt_bitmask(t_simd, vals).trailing_ones() as usize;
             i += S::L;
         }
         target_layer.min(pivots.len())
@@ -158,18 +159,17 @@ macro_rules! impl_simd_elem_32 {
 
             #[inline(always)]
             unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
-                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [$t; 8])) }
+                unsafe { <$simd>::from(*(slice.as_ptr() as *const [$t; 8])) }
             }
 
             #[inline(always)]
-            fn simd_le_bitmask(a: $simd, b: $simd) -> u64 {
-                use std::simd::cmp::SimdPartialOrd;
-                a.simd_le(b).to_bitmask()
+            fn simd_lt_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_lt(b).to_bitmask() as u64
             }
 
             #[inline(always)]
             fn lane_indices() -> $simd {
-                <$simd>::from_array([0 as $t, 1, 2, 3, 4, 5, 6, 7])
+                <$simd>::from([0 as $t, 1, 2, 3, 4, 5, 6, 7])
             }
 
             #[inline(always)]
@@ -194,7 +194,6 @@ macro_rules! impl_simd_elem_32 {
                 unsafe {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
-                    use std::simd::cmp::SimdPartialOrd;
 
                     // bit i = lane i is small (< threshold)
                     let small = threshold.simd_gt(vals).to_bitmask() as u8;
@@ -232,10 +231,9 @@ macro_rules! impl_simd_elem_32 {
                 unsafe {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
-                    use std::simd::cmp::SimdPartialOrd;
 
                     let mut small = vals.simd_lt(threshold).to_bitmask() as u8;
-                    let mut large = vals.simd_ge(threshold).to_bitmask() as u8;
+                    let mut large = !small;
                     let in_range = len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8;
@@ -278,18 +276,17 @@ macro_rules! impl_simd_elem_64 {
 
             #[inline(always)]
             unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
-                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [$t; 4])) }
+                unsafe { <$simd>::from(*(slice.as_ptr() as *const [$t; 4])) }
             }
 
             #[inline(always)]
-            fn simd_le_bitmask(a: $simd, b: $simd) -> u64 {
-                use std::simd::cmp::SimdPartialOrd;
-                a.simd_le(b).to_bitmask()
+            fn simd_lt_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_lt(b).to_bitmask() as u64
             }
 
             #[inline(always)]
             fn lane_indices() -> $simd {
-                <$simd>::from_array([0 as $t, 1, 2, 3])
+                <$simd>::from([0 as $t, 1, 2, 3])
             }
 
             #[inline(always)]
@@ -314,7 +311,6 @@ macro_rules! impl_simd_elem_64 {
                 unsafe {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
-                    use std::simd::cmp::SimdPartialOrd;
 
                     // 4-bit mask: bit i = lane i is small (< threshold).
                     let small = (threshold.simd_gt(vals).to_bitmask() as u8) & 0xF;
@@ -353,10 +349,9 @@ macro_rules! impl_simd_elem_64 {
                 unsafe {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
-                    use std::simd::cmp::SimdPartialOrd;
 
                     let mut small = (vals.simd_lt(threshold).to_bitmask() as u8) & 0xF;
-                    let mut large = (vals.simd_ge(threshold).to_bitmask() as u8) & 0xF;
+                    let mut large = small ^ 0xF;
                     let in_range = (len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8)
@@ -387,7 +382,7 @@ macro_rules! impl_simd_elem_64 {
     };
 }
 
-#[cfg(feature = "avx512")]
+#[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_32_avx512 {
     ($t:ty, $simd:ty) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
@@ -402,18 +397,17 @@ macro_rules! impl_simd_elem_32_avx512 {
 
             #[inline(always)]
             unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
-                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [$t; 16])) }
+                unsafe { <$simd>::from(*(slice.as_ptr() as *const [$t; 16])) }
             }
 
             #[inline(always)]
-            fn simd_le_bitmask(a: $simd, b: $simd) -> u64 {
-                use std::simd::cmp::SimdPartialOrd;
+            fn simd_lt_bitmask(a: $simd, b: $simd) -> u64 {
                 a.simd_le(b).to_bitmask() as u64
             }
 
             #[inline(always)]
             fn lane_indices() -> $simd {
-                <$simd>::from_array([0 as $t, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+                <$simd>::from([0 as $t, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
             }
 
             #[inline(always)]
@@ -438,7 +432,6 @@ macro_rules! impl_simd_elem_32_avx512 {
                 unsafe {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
-                    use std::simd::cmp::SimdPartialOrd;
 
                     let small: u16 = threshold.simd_gt(vals).to_bitmask() as u16;
                     let large: u16 = !small;
@@ -483,7 +476,6 @@ macro_rules! impl_simd_elem_32_avx512 {
                 unsafe {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
-                    use std::simd::cmp::SimdPartialOrd;
 
                     let in_range: u16 = len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
@@ -521,7 +513,7 @@ macro_rules! impl_simd_elem_32_avx512 {
     };
 }
 
-#[cfg(feature = "avx512")]
+#[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_64_avx512 {
     ($t:ty, $simd:ty) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
@@ -536,18 +528,17 @@ macro_rules! impl_simd_elem_64_avx512 {
 
             #[inline(always)]
             unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
-                unsafe { <$simd>::from_array(*(slice.as_ptr() as *const [$t; 8])) }
+                unsafe { <$simd>::from(*(slice.as_ptr() as *const [$t; 8])) }
             }
 
             #[inline(always)]
-            fn simd_le_bitmask(a: $simd, b: $simd) -> u64 {
-                use std::simd::cmp::SimdPartialOrd;
-                a.simd_le(b).to_bitmask() as u64
+            fn simd_lt_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_lt(b).to_bitmask() as u64
             }
 
             #[inline(always)]
             fn lane_indices() -> $simd {
-                <$simd>::from_array([0 as $t, 1, 2, 3, 4, 5, 6, 7])
+                <$simd>::from([0 as $t, 1, 2, 3, 4, 5, 6, 7])
             }
 
             #[inline(always)]
@@ -572,7 +563,6 @@ macro_rules! impl_simd_elem_64_avx512 {
                 unsafe {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
-                    use std::simd::cmp::SimdPartialOrd;
 
                     let small: u8 = threshold.simd_gt(vals).to_bitmask() as u8;
                     let large: u8 = !small;
@@ -617,7 +607,6 @@ macro_rules! impl_simd_elem_64_avx512 {
                 unsafe {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
-                    use std::simd::cmp::SimdPartialOrd;
 
                     let in_range: u8 = len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
@@ -655,19 +644,19 @@ macro_rules! impl_simd_elem_64_avx512 {
     };
 }
 
-impl_simd_elem_32!(i32, std::simd::i32x8);
-impl_simd_elem_32!(u32, std::simd::u32x8);
-impl_simd_elem_64!(i64, std::simd::i64x4);
-impl_simd_elem_64!(u64, std::simd::u64x4);
+impl_simd_elem_32!(i32, wide::i32x8);
+impl_simd_elem_32!(u32, wide::u32x8);
+impl_simd_elem_64!(i64, wide::i64x4);
+impl_simd_elem_64!(u64, wide::u64x4);
 
-#[cfg(feature = "avx512")]
-impl_simd_elem_32_avx512!(i32, std::simd::i32x16);
-#[cfg(feature = "avx512")]
-impl_simd_elem_32_avx512!(u32, std::simd::u32x16);
-#[cfg(feature = "avx512")]
-impl_simd_elem_64_avx512!(i64, std::simd::i64x8);
-#[cfg(feature = "avx512")]
-impl_simd_elem_64_avx512!(u64, std::simd::u64x8);
+#[cfg(target_feature = "avx512f")]
+impl_simd_elem_32_avx512!(i32, wide::i32x16);
+#[cfg(target_feature = "avx512f")]
+impl_simd_elem_32_avx512!(u32, wide::u32x16);
+#[cfg(target_feature = "avx512f")]
+impl_simd_elem_64_avx512!(i64, wide::i64x8);
+#[cfg(target_feature = "avx512f")]
+impl_simd_elem_64_avx512!(u64, wide::u64x8);
 
 /// For each of 256 masks of which elements are different than their predecessor,
 /// a shuffle that sends those new elements to the beginning.

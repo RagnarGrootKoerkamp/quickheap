@@ -1,18 +1,17 @@
-#![feature(where_clause_attrs)]
-
+use bench::dijkstra::DijkstraQuery;
+use bench::graph::Graph;
+use bench::prim::PrimMST;
+use bench::scalar_quickheap::Search;
 use clap::Parser;
-use original_quickheap::OriginalQuickHeap;
-use quickheap::dijkstra::DijkstraQuery;
-use quickheap::graph::Graph;
-use quickheap::pivot_strategies::MedianOfM;
-use quickheap::prim::PrimMST;
-use quickheap::scalar_quickheap::Search;
 #[cfg(feature = "avx2")]
-use quickheap::simd::Avx2;
+use quickheap::Avx2;
 #[cfg(feature = "avx512")]
-use quickheap::simd::Avx512;
+use quickheap::Avx512;
+use quickheap::pivot_strategies::MedianOfM;
 
-use quickheap::*;
+use quickheap::ConfigurableSimdQuickHeap as SimdQuickHeap;
+
+use bench::*;
 use serde::Serialize;
 use std::any::type_name;
 use std::cell::RefCell;
@@ -158,9 +157,9 @@ fn main() {
 
     // QUICKHEAP
     #[cfg(feature = "avx2")]
-    bench::<simd_quickheap::SimdQuickHeap<u64, Avx2, MedianOfM<3>, 16, true>>(&graphs);
+    bench::<SimdQuickHeap<u64, Avx2, MedianOfM<3>, 16, true>>(&graphs);
     #[cfg(feature = "avx512")]
-    bench::<simd_quickheap::SimdQuickHeap<u64, Avx512<true>, MedianOfM<3>, 16, true>>(&graphs);
+    bench::<SimdQuickHeap<u64, Avx512<true>, MedianOfM<3>, 16, true>>(&graphs);
 
     // SCALAR QUICKHEAP
     bench::<scalar_quickheap::ScalarQuickHeap<u64, 3, false, { Search::LinearScan }>>(&graphs);

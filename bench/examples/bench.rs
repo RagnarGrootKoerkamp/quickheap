@@ -1,14 +1,11 @@
 #![feature(where_clause_attrs)]
 
-use clap::Parser;
-use quickheap::scalar_quickheap::Search;
+use bench::scalar_quickheap::Search;
 #[cfg(feature = "avx512")]
-use quickheap::simd::Avx512;
+use bench::simd::Avx512;
+use clap::Parser;
 #[cfg(feature = "avx2")]
-use quickheap::{
-    pivot_strategies::MedianOfM,
-    simd::{Avx2, SimdElem},
-};
+use quickheap::{Avx2, SimdElem, pivot_strategies::MedianOfM};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -16,8 +13,8 @@ use perfcnt::{
     linux::{CacheId, CacheOpId, CacheOpResultId, PerfCounterBuilderLinux},
 };
 
-use quickheap::workloads::*;
-use quickheap::*;
+use bench::workloads::*;
+use bench::*;
 use serde::Serialize;
 use std::any::type_name;
 use std::cell::RefCell;
@@ -261,10 +258,12 @@ where
 
     if !args.comparisons {
         #[cfg(feature = "avx2")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>>(minpow, maxpow);
+        bench::<T, quickheap::ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>>(
+            minpow, maxpow,
+        );
 
         #[cfg(feature = "avx512")]
-        bench::<T, simd_quickheap::SimdQuickHeap<T, Avx512<true>, MedianOfM<3>, 16, true>>(
+        bench::<T, quickheap::ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>, 16, true>>(
             minpow, maxpow,
         );
     }

@@ -1,4 +1,4 @@
-#![feature(portable_simd, adt_const_params, associated_type_defaults)]
+#![feature(adt_const_params, associated_type_defaults)]
 
 use workloads::{CountComparisons, CountingHeapT, Elem};
 pub mod workloads;
@@ -13,13 +13,10 @@ pub mod s3q;
 pub mod sequence_heap;
 
 pub mod scalar_quickheap;
+pub mod simd_quickheap;
 
-#[cfg(feature = "avx2")]
-pub mod simd;
 #[cfg(feature = "avx2")]
 pub use quickheap::SimdQuickHeap;
-
-pub mod pivot_strategies;
 
 pub mod binary_heap;
 pub mod dary_heap;
@@ -47,16 +44,16 @@ mod test {
 
     use crate::impls::NoHeap;
     use crate::original_quickheap::OriginalQuickHeap;
-    #[cfg(feature = "avx2")]
-    use crate::pivot_strategies::{MedianOfM, RandomPivot};
     #[cfg(feature = "avx512")]
     use crate::simd::Avx512;
+    #[cfg(feature = "avx2")]
+    use quickheap::pivot_strategies::{MedianOfM, RandomPivot};
 
     use crate::scalar_quickheap::{ScalarQuickHeap, Search};
     use crate::workloads::{Elem, Workload};
 
     #[cfg(feature = "avx2")]
-    use crate::{simd::Avx2, SimdQuickHeap};
+    use quickheap::{Avx2, ConfigurableSimdQuickHeap};
 
     use std::marker::PhantomData;
 
@@ -116,17 +113,17 @@ mod test {
         TestHeap::<T, Base, ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>::run(n);
 
         #[cfg(feature = "avx2")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, true>>::run(n);
+        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, 8, true>>::run(n);
         #[cfg(feature = "avx2")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx2, RandomPivot, 16, true>>::run(n);
+        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx2, RandomPivot, 16, true>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<false>, 8, 3, true>>::run(n);
+        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<false>, 8, 3, true>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<false>, 16, 1, true>>::run(n);
+        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<false>, 16, 1, true>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 8, 3, true>>::run(n);
+        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<true>, 8, 3, true>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, SimdQuickHeap<T, Avx512<true>, 16, 1, true>>::run(n);
+        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<true>, 16, 1, true>>::run(n);
 
         #[cfg(feature = "ffi")]
         TestHeap::<T, Base, sequence_heap::SequenceHeapU32>::run(n);

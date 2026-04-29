@@ -1,4 +1,5 @@
-mod pivot_strategies;
+#[doc(hidden)]
+pub mod pivot_strategies;
 mod simd;
 
 use std::marker::PhantomData;
@@ -12,9 +13,11 @@ pub type Simd = Avx2;
 #[cfg(target_feature = "avx512f")]
 pub type Simd = Avx512;
 
-trait Elem: Copy + Ord {}
+pub trait Elem: Copy + Ord {}
+impl<T: Copy + Ord> Elem for T {}
+pub use simd::SimdElem;
 
-struct ConfigurableSimdQuickHeap<
+pub struct ConfigurableSimdQuickHeap<
     T: Elem,
     S: simd::SimdElem<T> = Simd,
     P: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,

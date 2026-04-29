@@ -1,8 +1,9 @@
 #[cfg(feature = "avx2")]
-use quickheap::simd::Avx2;
+use quickheap::Avx2;
 #[cfg(feature = "avx512")]
-use quickheap::simd::Avx512;
+use quickheap::Avx512;
 
+use quickheap::ConfigurableSimdQuickHeap as SimdQuickHeap;
 use quickheap::pivot_strategies::{CbrtPivot, Log2Pivot, MedianOfM};
 
 #[cfg(feature = "perf")]
@@ -11,8 +12,8 @@ use perfcnt::{
     linux::{CacheId, CacheOpId, CacheOpResultId, PerfCounterBuilderLinux},
 };
 
-use quickheap::workloads::*;
-use quickheap::*;
+use bench::workloads::*;
+use bench::*;
 use serde::Serialize;
 use std::any::type_name;
 
@@ -135,67 +136,27 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
 fn main() {
     type T = i64;
     let n = 1 << 24;
-    time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>, ConstantSize>(
-        n,
-    );
-    return;
 
     #[cfg(feature = "avx2")]
     {
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<1>, 16, true>,
-            ConstantSize,
-        >(n);
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<1>, 16, false>,
-            ConstantSize,
-        >(n);
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>,
-            ConstantSize,
-        >(n);
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, false>,
-            ConstantSize,
-        >(n);
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<1>, 8, true>,
-            ConstantSize,
-        >(n);
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<1>, 8, false>,
-            ConstantSize,
-        >(n);
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, true>,
-            ConstantSize,
-        >(n);
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, false>,
-            ConstantSize,
-        >(n);
-        // time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, MedianOfM<5>, 16>, ConstantSize>(n);
-        // time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, 16>, ConstantSize>(n);
-        // time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, 16>, ConstantSize>(n);
-        // time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, 16>, ConstantSize>(n);
-        // time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, 16>, ConstantSize>(n);
-        // time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, 16>, ConstantSize>(n);
-        // time_workload::<T, simd_quickheap::SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 16, true>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 16, false>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, false>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 8, true>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 8, false>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, true>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, false>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<5>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, 16>, ConstantSize>(n);
     }
     #[cfg(feature = "avx512")]
     {
-        time_workload::<
-            T,
-            simd_quickheap::SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>,
-            ConstantSize,
-        >(n);
+        time_workload::<T, SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>, ConstantSize>(n);
     }
 }
