@@ -1,3 +1,29 @@
+//! # SimdQuickHeap: A fast SIMD-based priority queue
+//!
+//! Just use the [`SimdQuickHeap`] type and it's [`default`](SimdQuickHeap::default), [`push`](SimdQuickHeap::push), and [`pop`](SimdQuickHeap::pop) functions.
+//!
+//! This is a _min_-queue, so `pop` returns the _smallest_ element in the queue.
+//!
+//! The [`ConfigurableSimdQuickHeap`] type is mostly for benchmarking only, to test various parameters.
+//!
+//! By default, it uses AVX2, or AVX-512 when available during compile time.
+//! To force one or the other, use `SimdQuickHeap<T, Avx2>` or `SimdQuickHeap<T, Avx512>`.
+//!
+//! ## Example
+//! ```
+//! let mut q = quickheap::SimdQuickHeap::<u64>::default();
+//! q.push(4);
+//! q.push(1);
+//! q.push(7);
+//! assert_eq!(q.pop(), Some(1));
+//! q.push(7);
+//! q.push(3);
+//! assert_eq!(q.pop(), Some(3));
+//! assert_eq!(q.pop(), Some(4));
+//! assert_eq!(q.pop(), Some(7));
+//! assert_eq!(q.pop(), Some(7));
+//! assert_eq!(q.pop(), None);
+//! ```
 #[doc(hidden)]
 pub mod pivot_strategies;
 mod simd;
@@ -5,18 +31,33 @@ mod simd;
 use std::marker::PhantomData;
 
 pub use simd::Avx2;
+
 #[cfg(target_feature = "avx512f")]
 pub use simd::Avx512;
 
+/// Tag to use with [`ConfigurableSimdQuickHeap`] to use AVX-512 if it is available.
 #[cfg(not(target_feature = "avx512f"))]
 pub type Simd = Avx2;
 #[cfg(target_feature = "avx512f")]
 pub type Simd = Avx512;
 
+/// Wrapper trait for `Copy + Ord`.
+#[doc(hidden)]
 pub trait Elem: Copy + Ord {}
 impl<T: Copy + Ord> Elem for T {}
+
+/// The SIMD tag ([`Avx2`] or [`Avx512`]) must implement `SimdElem<T>`.
+///
+/// For now, this means you can only use `u32`, `i32`, `u64`, and `i64`.
 pub use simd::SimdElem;
 
+/// The full SimdQuickHeap implementation, with all configuration parameters.
+///
+/// - `T`: the element type.
+/// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
+/// - `P`: the pivoting strategy; see [`pivot_strategies`]. Default median of 3.
+/// - `N`: partition until the bottom layer is <N. Default `16`.
+/// - `SORT`: whether to keep the bottom layer sorted. Default `true`.
 pub struct ConfigurableSimdQuickHeap<
     T: Elem,
     S: simd::SimdElem<T> = Simd,
@@ -44,9 +85,17 @@ pub struct ConfigurableSimdQuickHeap<
     _backend: PhantomData<S>,
 }
 
-pub type SimdQuickHeap<T> =
-    ConfigurableSimdQuickHeap<T, Simd, pivot_strategies::MedianOfM<3>, 16, true>;
+/// A SIMD-based priority queue. Entrypoint of the crate.
+///
+/// Returns the *smallest* element first.
+///
+/// Works for `i32`, `u32`, `i64`, and `u64`.
+///
+/// Uses AVX-512 instructions when available at compile time.
+pub type SimdQuickHeap<T, S = Simd> =
+    ConfigurableSimdQuickHeap<T, S, pivot_strategies::MedianOfM<3>, 16, true>;
 
+/// Return a default instance with plenty (128) layers of empty buckets.
 impl<
     T: Elem,
     S: simd::SimdElem<T>,
@@ -73,6 +122,7 @@ impl<
     const SORT: bool,
 > ConfigurableSimdQuickHeap<T, S, P, N, SORT>
 {
+    /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
         let layer = &mut self.buckets[target_layer];
@@ -86,6 +136,8 @@ impl<
             layer.push(t);
         }
     }
+
+    /// Pop the smallest element from the queue.
     pub fn pop(&mut self) -> Option<T> {
         let layer = self.pivots.len();
         // Only the top layer can be empty.

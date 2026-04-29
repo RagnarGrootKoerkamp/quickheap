@@ -1,14 +1,13 @@
 use std::mem::transmute;
 
-use crate::Elem;
 use wide::{CmpGt, CmpLt};
 
-/// Marker type selecting the AVX2 (256-bit) SIMD backend for [`SimdQuickHeap`].
+/// Marker type selecting the AVX2 (256-bit) SIMD backend for [`ConfigurableSimdQuickHeap`].
 ///
-/// [`SimdQuickHeap`]: quickheap::SimdQuickHeap
+/// [`ConfigurableSimdQuickHeap`]: crate::ConfigurableSimdQuickHeap
 pub struct Avx2;
 
-/// Marker type selecting the AVX-512 (512-bit) SIMD backend for [`SimdQuickHeap`].
+/// Marker type selecting the AVX-512 (512-bit) SIMD backend for [`ConfigurableSimdQuickHeap`].
 ///
 /// The const generic `CS` controls how compressed results are written:
 /// - `Avx512<false>` (the default) uses `_mm512_mask_compressstoreu_epi*`, a single
@@ -18,7 +17,7 @@ pub struct Avx2;
 ///
 /// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"` and the `avx512` feature.
 ///
-/// [`SimdQuickHeap`]: quickheap::SimdQuickHeap
+/// [`ConfigurableSimdQuickHeap`]: crate::ConfigurableSimdQuickHeap
 #[cfg(target_feature = "avx512f")]
 pub struct Avx512<const CS: bool = false>;
 
@@ -74,7 +73,7 @@ pub trait SimdElem<T>: 'static {
 }
 
 #[inline(always)]
-pub fn push_position<T: Elem, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> usize {
+pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> usize {
     // Baseline:
     // return pivots.iter().map(|x| (t <= **x) as usize).sum::<usize>();
 
@@ -107,7 +106,7 @@ pub fn push_position<T: Elem, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> usize {
 }
 
 #[inline(never)]
-pub fn position_min<T: Elem, S: SimdElem<T>>(v: &mut Vec<T>) -> usize {
+pub fn position_min<T: Copy + Ord, S: SimdElem<T>>(v: &mut Vec<T>) -> usize {
     // Baseline:
     // let mut min = S::MAX;
     // let mut pos = 0;
