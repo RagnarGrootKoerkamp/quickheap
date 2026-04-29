@@ -1,9 +1,10 @@
-use crate::workloads::Elem;
 use std::mem::transmute;
+
+use crate::Elem;
 
 /// Marker type selecting the AVX2 (256-bit) SIMD backend for [`SimdQuickHeap`].
 ///
-/// [`SimdQuickHeap`]: crate::simd_quickheap::SimdQuickHeap
+/// [`SimdQuickHeap`]: quickheap::SimdQuickHeap
 pub struct Avx2;
 
 /// Marker type selecting the AVX-512 (512-bit) SIMD backend for [`SimdQuickHeap`].
@@ -16,7 +17,7 @@ pub struct Avx2;
 ///
 /// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"` and the `avx512` feature.
 ///
-/// [`SimdQuickHeap`]: crate::simd_quickheap::SimdQuickHeap
+/// [`SimdQuickHeap`]: quickheap::SimdQuickHeap
 #[cfg(feature = "avx512")]
 pub struct Avx512<const CS: bool = false>;
 
@@ -25,7 +26,7 @@ pub struct Avx512<const CS: bool = false>;
 /// Implemented by [`Avx2`] (8 lanes for 32-bit, 4 lanes for 64-bit) and,
 /// when the `avx512` feature is enabled, by [`Avx512`]
 /// (16 lanes for 32-bit, 8 lanes for 64-bit).
-pub trait SimdElem<T: Elem>: 'static {
+pub trait SimdElem<T>: 'static {
     /// Number of SIMD lanes.
     const L: usize;
     /// Maximum value for `T`.

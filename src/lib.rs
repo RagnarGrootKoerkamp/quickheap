@@ -1,17 +1,25 @@
-use crate::impls::NoHeap;
-use crate::pivot_strategies::PivotStrategy;
-use crate::simd::{SimdElem, position_min, push_position};
-use crate::workloads::Elem;
+mod pivot_strategies;
+mod simd;
 
-use super::Heap;
 use std::marker::PhantomData;
 
-pub struct SimdQuickHeap<
+pub use simd::Avx2;
+#[cfg(target_feature = "avx512f")]
+pub use simd::Avx512;
+
+#[cfg(not(target_feature = "avx512f"))]
+pub type Simd = Avx2;
+#[cfg(target_feature = "avx512f")]
+pub type Simd = Avx512;
+
+trait Elem: Copy + Ord {}
+
+struct ConfigurableSimdQuickHeap<
     T: Elem,
-    S: SimdElem<T>,
-    P: PivotStrategy,
-    const N: usize,
-    const SORT: bool,
+    S: simd::SimdElem<T> = Simd,
+    P: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
+    const N: usize = 16,
+    const SORT: bool = true,
 > {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
@@ -21,33 +29,49 @@ pub struct SimdQuickHeap<
     /// The effective number of layers is always 1 longer than `pivots`.
     ///
     /// This will have enough underlying capacity for out-of-bounds SIMD reads.
-    pub(crate) pivots: Vec<T>,
+    pivots: Vec<T>,
     /// The values in each layer.
     /// pivots[i-1] >= elements of buckets[i] >= pivots[i]
     /// Values equal to pivots[i] can be in layer i or i-1.
     ///
     /// This can be longer than `layer` to reuse allocations.
-    pub(crate) buckets: Vec<Vec<T>>,
+    buckets: Vec<Vec<T>>,
 
     _p: PhantomData<P>,
     _backend: PhantomData<S>,
 }
 
-impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize, const SORT: bool> Heap<T>
-    for SimdQuickHeap<T, S, P, N, SORT>
-{
-    type CountedHeap = NoHeap;
+pub type SimdQuickHeap<T> =
+    ConfigurableSimdQuickHeap<T, Simd, pivot_strategies::MedianOfM<3>, 16, true>;
 
+impl<
+    T: Elem,
+    S: simd::SimdElem<T>,
+    P: pivot_strategies::PivotStrategy,
+    const N: usize,
+    const SORT: bool,
+> Default for ConfigurableSimdQuickHeap<T, S, P, N, SORT>
+{
     fn default() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
-            buckets: vec![vec![]; 128],
+            buckets: (0..128).map(|_| vec![]).collect(),
             _p: PhantomData,
             _backend: PhantomData,
         }
     }
-    fn push(&mut self, t: T) {
-        let target_layer = push_position::<T, S>(&self.pivots, t);
+}
+
+impl<
+    T: Elem,
+    S: simd::SimdElem<T>,
+    P: pivot_strategies::PivotStrategy,
+    const N: usize,
+    const SORT: bool,
+> ConfigurableSimdQuickHeap<T, S, P, N, SORT>
+{
+    pub fn push(&mut self, t: T) {
+        let target_layer = simd::push_position::<T, S>(&self.pivots, t);
         let layer = &mut self.buckets[target_layer];
         layer.reserve(S::L + 1);
         if SORT && target_layer == self.pivots.len() && layer.len() < N {
@@ -59,7 +83,7 @@ impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize, const SORT: bool
             layer.push(t);
         }
     }
-    fn pop(&mut self) -> Option<T> {
+    pub fn pop(&mut self) -> Option<T> {
         let layer = self.pivots.len();
         // Only the top layer can be empty.
         if layer == 0 && self.buckets[0].is_empty() {
@@ -81,7 +105,7 @@ impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize, const SORT: bool
         let min = if SORT {
             layer.pop().unwrap()
         } else {
-            let min_pos = position_min::<T, S>(layer);
+            let min_pos = simd::position_min::<T, S>(layer);
             layer.swap_remove(min_pos)
         };
 
@@ -91,13 +115,9 @@ impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize, const SORT: bool
         }
         Some(min)
     }
-}
 
-impl<T: Elem, S: SimdElem<T>, P: PivotStrategy, const N: usize, const SORT: bool>
-    SimdQuickHeap<T, S, P, N, SORT>
-{
     #[inline(never)]
-    pub(crate) fn partition(&mut self) {
+    fn partition(&mut self) {
         // Reserve space for an additional L layers when needed.
         let layer = self.pivots.len();
         if layer + 2 * S::L >= self.pivots.capacity() {

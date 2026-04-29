@@ -1,4 +1,4 @@
-use crate::workloads::Elem;
+use crate::Elem;
 
 pub trait PivotStrategy {
     const CBRT_LOOKUP: [usize; 32] = [

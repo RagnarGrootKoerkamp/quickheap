@@ -1,2 +1,23 @@
 [workspace]
-members = ["bench", "ext/s3q-sys", "ext/sequence-heap-sys", "ext/boost-heap-sys"]
+members = [".", "bench", "ext/s3q-sys", "ext/sequence-heap-sys", "ext/boost-heap-sys"]
+
+[profile.release]
+debug = true
+codegen-units = 1
+lto = "fat"
+
+[package]
+name = "quickheap"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/RagnarGrootKoerkamp/quickheap"
+keywords = ["priority-queue", "heap", "simd"]
+categories = ["algorithms", "data-structures"]
+authors = ["Ragnar Groot Koerkamp", "Marvin Williams", "Johannes Breitling"]
+description = "A SIMD-accelerated priority queue"
+
+[dependencies]
+ensure_simd = "0.1.0"
+rand = "0.10.1"
+wide = "1.2.0"

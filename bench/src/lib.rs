@@ -17,7 +17,7 @@ pub mod scalar_quickheap;
 #[cfg(feature = "avx2")]
 pub mod simd;
 #[cfg(feature = "avx2")]
-pub mod simd_quickheap;
+pub use quickheap::SimdQuickHeap;
 
 pub mod pivot_strategies;
 
@@ -56,7 +56,7 @@ mod test {
     use crate::workloads::{Elem, Workload};
 
     #[cfg(feature = "avx2")]
-    use crate::{simd::Avx2, simd_quickheap::SimdQuickHeap};
+    use crate::{simd::Avx2, SimdQuickHeap};
 
     use std::marker::PhantomData;
 
