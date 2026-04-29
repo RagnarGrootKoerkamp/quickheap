@@ -77,16 +77,14 @@ pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> us
     // Baseline:
     // return pivots.iter().map(|x| (t <= **x) as usize).sum::<usize>();
 
-    // FIXME: This panics in debug mode.
-    let v = unsafe { pivots.get_unchecked(..pivots.len().next_multiple_of(S::L)) };
-
-    if v.len() <= 64 {
+    if pivots.len() <= 64 {
         let t_simd = S::splat(t);
 
         let mut target_layer = 0;
         let mut i = 0;
-        while i < v.len() {
-            let vals = unsafe { S::simd_from_slice(v.get_unchecked(i..i + S::L)) };
+        while i < pivots.len() {
+            // NOTE: This reads beyond the length but within the capacity.
+            let vals = unsafe { (pivots.as_ptr().add(i) as *const S::Simd).read_unaligned() };
             // TODO: Compare SIMD register against 0
             target_layer += S::simd_lt_bitmask(t_simd, vals).trailing_ones() as usize;
             i += S::L;
