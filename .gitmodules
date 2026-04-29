@@ -1,15 +1,15 @@
-[submodule "s3q-sys/third_party/s3q"]
-	path = s3q-sys/third_party/s3q
+[submodule "ext/s3q-sys/third_party/s3q"]
+	path = ext/s3q-sys/third_party/s3q
 	url = https://github.com/raphinesse/s3q.git
-[submodule "s3q-sys/third_party/ips4o"]
-	path = s3q-sys/third_party/ips4o
+[submodule "ext/s3q-sys/third_party/ips4o"]
+	path = ext/s3q-sys/third_party/ips4o
 	url = https://github.com/raphinesse/ips4o.git
-[submodule "s3q-sys/third_party/range-v3"]
-	path = s3q-sys/third_party/range-v3
+[submodule "ext/s3q-sys/third_party/range-v3"]
+	path = ext/s3q-sys/third_party/range-v3
 	url = https://github.com/ericniebler/range-v3.git
-[submodule "s3q-sys/third_party/xoshiro"]
-	path = s3q-sys/third_party/xoshiro
+[submodule "ext/s3q-sys/third_party/xoshiro"]
+	path = ext/s3q-sys/third_party/xoshiro
 	url = https://github.com/Reputeless/Xoshiro-cpp.git
-[submodule "sequence-heap-sys/third_party/SequenceHeap"]
-	path = sequence-heap-sys/third_party/SequenceHeap
+[submodule "ext/sequence-heap-sys/third_party/SequenceHeap"]
+	path = ext/sequence-heap-sys/third_party/SequenceHeap
 	url = https://github.com/raphinesse/SequenceHeap.git
