@@ -12,11 +12,12 @@ bench-all:
 
 # A smaller benchmark for testing.
 bench-small:
-    cd bench && cargo run -r --example bench       -- --max 20               > evals/data/nanos.csv
-    cd bench && cargo run -r --example bench       -- --max 20 --comparisons > evals/data/comparisons.csv
-    cd bench && cargo run -r --example bench_graph -- --max 20               > evals/data/graphs.csv
+    cd bench && cargo run -r --example bench       -- --max 18               > evals/data/nanos.csv
+    cd bench && cargo run -r --example bench       -- --max 18 --comparisons > evals/data/comparisons.csv
+    # cd bench && cargo run -r --example bench_graph                           > evals/data/graphs.csv
 
 # Generate all plots.
+# See bench/evals/plots/
 plot-all:
     cd bench/evals && ./plot.py nanos
     cd bench/evals && ./plot.py nanos all
