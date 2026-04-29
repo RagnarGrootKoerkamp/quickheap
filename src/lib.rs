@@ -169,6 +169,12 @@ impl<
         // Update the active layer.
         if layer.is_empty() && self.pivots.len() > 0 {
             self.pivots.pop();
+
+            // Sort the new final layer decreasing if it's already small.
+            if SORT && self.buckets[self.pivots.len()].len() <= N {
+                let layer = &mut self.buckets[self.pivots.len()];
+                layer.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
+            }
         }
         Some(min)
     }
