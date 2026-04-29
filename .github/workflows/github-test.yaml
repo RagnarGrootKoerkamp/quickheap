@@ -30,7 +30,7 @@ jobs:
 
     steps:
       # First check out the repository.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # Caching build artefacts may speed up large builds.
       - uses: Swatinem/rust-cache@v2
       # Run all tests in debug and release mode.
