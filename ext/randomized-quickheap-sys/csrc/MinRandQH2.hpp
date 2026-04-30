@@ -38,7 +38,7 @@ public:
   MinRandQH2(int size, bool randomSeed = true);
   ~MinRandQH2();
   string toString() const;
-  template<T> friend ostream& operator<< (ostream &os, const MinRandQH2<T> &rhs);
+  template<class U> friend ostream& operator<< (ostream &os, const MinRandQH2<U> &rhs);
   
   int size() const;
   bool isEmpty() const;

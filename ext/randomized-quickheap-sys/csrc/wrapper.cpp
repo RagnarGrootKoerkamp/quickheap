@@ -101,3 +101,55 @@ bool rqh2_u64_pq_empty(const Rqh2U64Pq *pq) {
 }
 
 } // extern "C"
+
+// ---- Counting variant for i64 ----
+
+thread_local uint64_t rqh2_push_cmp = 0;
+thread_local uint64_t rqh2_pop_cmp = 0;
+thread_local uint64_t* rqh2_cmp_target = nullptr;
+
+struct RqhCntI64 {
+    int64_t v;
+    bool operator<(RqhCntI64 o) const { if (rqh2_cmp_target) ++(*rqh2_cmp_target); return v < o.v; }
+    bool operator>(RqhCntI64 o) const { if (rqh2_cmp_target) ++(*rqh2_cmp_target); return v > o.v; }
+    bool operator<=(RqhCntI64 o) const { if (rqh2_cmp_target) ++(*rqh2_cmp_target); return v <= o.v; }
+    bool operator>=(RqhCntI64 o) const { if (rqh2_cmp_target) ++(*rqh2_cmp_target); return v >= o.v; }
+    bool operator==(RqhCntI64 o) const { return v == o.v; }
+    bool operator!=(RqhCntI64 o) const { return v != o.v; }
+};
+
+using I64CntPq = MinRandQH2<RqhCntI64>;
+
+struct Rqh2I64CountingOpaque {
+    I64CntPq inner;
+    Rqh2I64CountingOpaque(int capacity) : inner(capacity) {}
+};
+
+extern "C" {
+
+Rqh2I64CountingPq *rqh2_i64_counting_pq_new(int capacity) {
+    return reinterpret_cast<Rqh2I64CountingPq *>(new (std::nothrow) Rqh2I64CountingOpaque(capacity));
+}
+void rqh2_i64_counting_pq_free(Rqh2I64CountingPq *pq) {
+    delete reinterpret_cast<Rqh2I64CountingOpaque *>(pq);
+}
+bool rqh2_i64_counting_pq_push(Rqh2I64CountingPq *pq, int64_t item) {
+    rqh2_cmp_target = &rqh2_push_cmp;
+    bool ok = reinterpret_cast<Rqh2I64CountingOpaque *>(pq)->inner.insert({item});
+    rqh2_cmp_target = nullptr;
+    return ok;
+}
+int64_t rqh2_i64_counting_pq_pop(Rqh2I64CountingPq *pq) {
+    rqh2_cmp_target = &rqh2_pop_cmp;
+    RqhCntI64 result = reinterpret_cast<Rqh2I64CountingOpaque *>(pq)->inner.extractMin();
+    rqh2_cmp_target = nullptr;
+    return result.v;
+}
+bool rqh2_i64_counting_pq_empty(const Rqh2I64CountingPq *pq) {
+    return reinterpret_cast<const Rqh2I64CountingOpaque *>(pq)->inner.isEmpty();
+}
+void rqh2_i64_counting_pq_reset_comparisons() { rqh2_push_cmp = 0; rqh2_pop_cmp = 0; }
+uint64_t rqh2_i64_counting_pq_push_comparisons() { return rqh2_push_cmp; }
+uint64_t rqh2_i64_counting_pq_pop_comparisons()  { return rqh2_pop_cmp; }
+
+} // extern "C" (counting)

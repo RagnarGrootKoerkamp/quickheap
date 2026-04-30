@@ -77,6 +77,20 @@ rqh2_ffi!(
     rqh2_u64_pq_empty
 );
 
+#[repr(C)]
+pub struct Rqh2I64CountingPq(std::ffi::c_void);
+
+unsafe extern "C" {
+    pub fn rqh2_i64_counting_pq_new(capacity: i32) -> *mut Rqh2I64CountingPq;
+    pub fn rqh2_i64_counting_pq_free(pq: *mut Rqh2I64CountingPq);
+    pub fn rqh2_i64_counting_pq_push(pq: *mut Rqh2I64CountingPq, item: i64) -> bool;
+    pub fn rqh2_i64_counting_pq_pop(pq: *mut Rqh2I64CountingPq) -> i64;
+    pub fn rqh2_i64_counting_pq_empty(pq: *const Rqh2I64CountingPq) -> bool;
+    pub fn rqh2_i64_counting_pq_reset_comparisons();
+    pub fn rqh2_i64_counting_pq_push_comparisons() -> u64;
+    pub fn rqh2_i64_counting_pq_pop_comparisons() -> u64;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

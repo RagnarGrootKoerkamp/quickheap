@@ -42,4 +42,15 @@ uint64_t rqh2_u64_pq_top(Rqh2U64Pq *pq);
 int rqh2_u64_pq_size(const Rqh2U64Pq *pq);
 bool rqh2_u64_pq_empty(const Rqh2U64Pq *pq);
 
+typedef struct Rqh2I64CountingPq Rqh2I64CountingPq;
+
+Rqh2I64CountingPq *rqh2_i64_counting_pq_new(int capacity);
+void rqh2_i64_counting_pq_free(Rqh2I64CountingPq *pq);
+bool rqh2_i64_counting_pq_push(Rqh2I64CountingPq *pq, int64_t item);
+int64_t rqh2_i64_counting_pq_pop(Rqh2I64CountingPq *pq);
+bool rqh2_i64_counting_pq_empty(const Rqh2I64CountingPq *pq);
+void rqh2_i64_counting_pq_reset_comparisons(void);
+uint64_t rqh2_i64_counting_pq_push_comparisons(void);
+uint64_t rqh2_i64_counting_pq_pop_comparisons(void);
+
 } // extern "C"
