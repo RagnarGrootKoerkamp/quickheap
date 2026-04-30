@@ -1,0 +1,10 @@
+[package]
+name = "randomized-quickheap-sys"
+version = "0.1.0"
+edition = "2024"
+links = "randomized_quickheap_wrapper"
+
+[build-dependencies]
+cc = "1"
+
+[dependencies]

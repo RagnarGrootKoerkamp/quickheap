@@ -85,6 +85,7 @@ dependencies = [
  "rand 0.10.1",
  "rand_distr",
  "random",
+ "randomized-quickheap-sys",
  "s3q-sys",
  "sequence-heap-sys",
  "serde",
@@ -675,6 +676,13 @@ name = "random"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d62d9cce151a97168445d78542558d3bddf6cf99f283c475f2eaf5cc14c364a"
+
+[[package]]
+name = "randomized-quickheap-sys"
+version = "0.1.0"
+dependencies = [
+ "cc",
+]
 
 [[package]]
 name = "raw-cpuid"

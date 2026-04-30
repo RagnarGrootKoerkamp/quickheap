@@ -280,6 +280,7 @@ where
         x if x == TypeId::of::<i32>() => {
             bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
             bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
+            bench::<i32, randomized_quickheap::RandQH2HeapI32>(minpow, maxpow);
             // bench::<i32, boost_heap::BoostDary4HeapI32>(minpow, maxpow);
             // bench::<i32, boost_heap::BoostFibHeapI32>(minpow, maxpow);
             // bench::<i32, boost_heap::BoostPairingHeapI32>(minpow, maxpow);
@@ -289,6 +290,7 @@ where
         x if x == TypeId::of::<i64>() => {
             bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
             bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
+            bench::<i64, randomized_quickheap::RandQH2HeapI64>(minpow, maxpow);
             // bench::<i64, boost_heap::BoostDary4HeapI64>(minpow, maxpow);
             // bench::<i64, boost_heap::BoostFibHeapI64>(minpow, maxpow);
             // bench::<i64, boost_heap::BoostPairingHeapI64>(minpow, maxpow);

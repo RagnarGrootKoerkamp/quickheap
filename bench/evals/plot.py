@@ -44,6 +44,7 @@ df["name"] = df["name"].str.replace(r"<\(\), T", "<T", regex=True)
 df["name"] = df["name"].str.replace(r", \(\)", "", regex=True)
 df["name"] = df["name"].str.replace(r", 16, 1", "", regex=True)
 df["name"] = df["name"].str.replace(r"Generic", "", regex=True)
+df["name"] = df["name"].str.replace(r"RandQH2Heap", "RandomizedQuickHeap", regex=True)
 
 df["workload"] = df["workload"].str.replace(r"Prim", "Jarnik-Prim", regex=False)
 
@@ -83,6 +84,7 @@ type_order = [
     "RadixHeapMap",
     "SequenceHeap",
     "S3qHeap",
+    "RandomizedQuickHeap",
     "OriginalQuickHeap",
     "ScalarQuickHeap",
     "SimdQuickHeap",
