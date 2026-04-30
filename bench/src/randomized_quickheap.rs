@@ -58,6 +58,18 @@ macro_rules! impl_rqh2_heap {
             }
         }
     };
+    (counting: $heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident, $reset:ident, $push_cmp:ident, $pop_cmp:ident) => {
+        impl_rqh2_heap!($heap, $t, $pq, $new, $free, $push, $pop, $empty, NoHeap);
+
+        impl CountingHeapT<$t> for $heap {
+            fn reset_comparisons() {
+                unsafe { $reset() }
+            }
+            fn get_comparisons() -> (u64, u64) {
+                unsafe { ($push_cmp(), $pop_cmp()) }
+            }
+        }
+    };
 }
 
 impl_rqh2_heap!(
@@ -105,51 +117,11 @@ impl_rqh2_heap!(
     NoHeap
 );
 
-pub struct RandQH2HeapI64Counting(*mut Rqh2I64CountingPq);
-
-impl Drop for RandQH2HeapI64Counting {
-    fn drop(&mut self) {
-        unsafe { rqh2_i64_counting_pq_free(self.0) }
-    }
-}
-
-impl Heap<i64> for RandQH2HeapI64Counting {
-    type CountedHeap = NoHeap;
-
-    fn default() -> Self {
-        let pq = unsafe { rqh2_i64_counting_pq_new(DEFAULT_CAPACITY) };
-        assert!(!pq.is_null(), "rqh2_i64_counting_pq_new: allocation failed");
-        RandQH2HeapI64Counting(pq)
-    }
-
-    #[inline(always)]
-    fn push(&mut self, t: i64) {
-        let ok = unsafe { rqh2_i64_counting_pq_push(self.0, t) };
-        assert!(ok, "randomized quickheap is full");
-    }
-
-    #[inline(always)]
-    fn pop(&mut self) -> Option<i64> {
-        unsafe {
-            if rqh2_i64_counting_pq_empty(self.0) {
-                None
-            } else {
-                Some(rqh2_i64_counting_pq_pop(self.0))
-            }
-        }
-    }
-}
-
-impl CountingHeapT<i64> for RandQH2HeapI64Counting {
-    fn reset_comparisons() {
-        unsafe { rqh2_i64_counting_pq_reset_comparisons() }
-    }
-    fn get_comparisons() -> (u64, u64) {
-        unsafe {
-            (
-                rqh2_i64_counting_pq_push_comparisons(),
-                rqh2_i64_counting_pq_pop_comparisons(),
-            )
-        }
-    }
-}
+impl_rqh2_heap!(
+    counting:
+    RandQH2HeapI64Counting, i64, Rqh2I64CountingPq,
+    rqh2_i64_counting_pq_new, rqh2_i64_counting_pq_free,
+    rqh2_i64_counting_pq_push, rqh2_i64_counting_pq_pop, rqh2_i64_counting_pq_empty,
+    rqh2_i64_counting_pq_reset_comparisons,
+    rqh2_i64_counting_pq_push_comparisons, rqh2_i64_counting_pq_pop_comparisons
+);

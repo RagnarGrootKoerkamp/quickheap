@@ -49,6 +49,18 @@ macro_rules! impl_s3q_heap {
             }
         }
     };
+    (counting: $heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident, $reset:ident, $push_cmp:ident, $pop_cmp:ident) => {
+        impl_s3q_heap!($heap, $t, $pq, $new, $free, $push, $pop, $empty, NoHeap);
+
+        impl CountingHeapT<$t> for $heap {
+            fn reset_comparisons() {
+                unsafe { $reset() }
+            }
+            fn get_comparisons() -> (u64, u64) {
+                unsafe { ($push_cmp(), $pop_cmp()) }
+            }
+        }
+    };
 }
 
 impl_s3q_heap!(
@@ -102,51 +114,11 @@ use s3q_sys::{
     s3q_i64_counting_pq_push_comparisons, s3q_i64_counting_pq_reset_comparisons,
 };
 
-pub struct S3qHeapI64Counting(*mut S3qI64CountingPq);
-
-impl Drop for S3qHeapI64Counting {
-    fn drop(&mut self) {
-        unsafe { s3q_i64_counting_pq_free(self.0) }
-    }
-}
-
-impl Heap<i64> for S3qHeapI64Counting {
-    const MONOTONE: bool = false;
-    type CountedHeap = NoHeap;
-
-    fn default() -> Self {
-        let pq = unsafe { s3q_i64_counting_pq_new() };
-        assert!(!pq.is_null(), "s3q_i64_counting_pq_new: allocation failed");
-        S3qHeapI64Counting(pq)
-    }
-
-    #[inline(always)]
-    fn push(&mut self, t: i64) {
-        unsafe { s3q_i64_counting_pq_push(self.0, t + 1) }
-    }
-
-    #[inline(always)]
-    fn pop(&mut self) -> Option<i64> {
-        unsafe {
-            if s3q_i64_counting_pq_empty(self.0) {
-                None
-            } else {
-                Some(s3q_i64_counting_pq_pop(self.0) - 1)
-            }
-        }
-    }
-}
-
-impl CountingHeapT<i64> for S3qHeapI64Counting {
-    fn reset_comparisons() {
-        unsafe { s3q_i64_counting_pq_reset_comparisons() }
-    }
-    fn get_comparisons() -> (u64, u64) {
-        unsafe {
-            (
-                s3q_i64_counting_pq_push_comparisons(),
-                s3q_i64_counting_pq_pop_comparisons(),
-            )
-        }
-    }
-}
+impl_s3q_heap!(
+    counting:
+    S3qHeapI64Counting, i64, S3qI64CountingPq,
+    s3q_i64_counting_pq_new, s3q_i64_counting_pq_free,
+    s3q_i64_counting_pq_push, s3q_i64_counting_pq_pop, s3q_i64_counting_pq_empty,
+    s3q_i64_counting_pq_reset_comparisons,
+    s3q_i64_counting_pq_push_comparisons, s3q_i64_counting_pq_pop_comparisons
+);
