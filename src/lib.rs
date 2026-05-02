@@ -211,10 +211,10 @@ impl<
         let mut cur_len = 0;
         let mut next_len = 0;
         let half = (pivot_pos + 1).min(n2).next_multiple_of(S::L);
-        let threshold = S::splat(S::wrapping_add_one(pivot));
+        let threshold = S::splat(pivot);
         for i in (0..half).step_by(S::L) {
             unsafe {
-                S::partition_fast(
+                S::partition_fast::<true>(
                     S::simd_from_slice(cur_layer.get_unchecked(i..i + S::L)),
                     threshold,
                     cur_layer,
@@ -224,10 +224,9 @@ impl<
                 );
             }
         }
-        let threshold = S::splat(pivot);
         for i in (half..n2).step_by(S::L) {
             unsafe {
-                S::partition_fast(
+                S::partition_fast::<false>(
                     S::simd_from_slice(cur_layer.get_unchecked(i..i + S::L)),
                     threshold,
                     cur_layer,

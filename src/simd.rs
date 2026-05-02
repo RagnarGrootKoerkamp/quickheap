@@ -45,10 +45,14 @@ pub trait SimdElem<T>: 'static {
     fn wrapping_add_one(t: T) -> T;
 
     /// Partition all `L` lanes of `vals` against `threshold`.
-    /// Lanes `>= threshold` go to `v`, lanes `< threshold` go to `w`.
+    ///
+    /// When `EQUAL_DOWN = false` (default): lanes `>= threshold` go to `v`, lanes `< threshold`
+    /// go to `w`.
+    /// When `EQUAL_DOWN = true`: lanes `> threshold` go to `v`, lanes `<= threshold` go to `w`.
+    ///
     /// # Safety
     /// `v` and `w` must have at least `L` elements of capacity beyond their current write index.
-    unsafe fn partition_fast(
+    unsafe fn partition_fast<const EQUAL_DOWN: bool>(
         vals: Self::Simd,
         threshold: Self::Simd,
         v: &mut [T],
@@ -179,7 +183,7 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const EQUAL_DOWN: bool>(
                 vals: $simd,
                 threshold: $simd,
                 v: &mut [$t],
@@ -191,8 +195,12 @@ macro_rules! impl_simd_elem_32 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    // bit i = lane i is small (< threshold)
-                    let small = threshold.simd_gt(vals).to_bitmask() as u8;
+                    // bit i = lane i is small
+                    let small: u8 = if EQUAL_DOWN {
+                        !(threshold.simd_lt(vals).to_bitmask() as u8)
+                    } else {
+                        threshold.simd_gt(vals).to_bitmask() as u8
+                    };
                     let large = !small;
                     let vals: __m256i = transmute(vals);
 
@@ -296,7 +304,7 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const EQUAL_DOWN: bool>(
                 vals: $simd,
                 threshold: $simd,
                 v: &mut [$t],
@@ -308,8 +316,12 @@ macro_rules! impl_simd_elem_64 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    // 4-bit mask: bit i = lane i is small (< threshold).
-                    let small = (threshold.simd_gt(vals).to_bitmask() as u8) & 0xF;
+                    // 4-bit mask: bit i = lane i is small.
+                    let small: u8 = if EQUAL_DOWN {
+                        !(threshold.simd_lt(vals).to_bitmask() as u8) & 0xF
+                    } else {
+                        (threshold.simd_gt(vals).to_bitmask() as u8) & 0xF
+                    };
                     let large = small ^ 0xF;
                     let vals: __m256i = transmute(vals);
 
@@ -416,7 +428,7 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const EQUAL_DOWN: bool>(
                 vals: $simd,
                 threshold: $simd,
                 v: &mut [$t],
@@ -428,7 +440,11 @@ macro_rules! impl_simd_elem_32_avx512 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small: u16 = threshold.simd_gt(vals).to_bitmask() as u16;
+                    let small: u16 = if EQUAL_DOWN {
+                        !(threshold.simd_lt(vals).to_bitmask() as u16)
+                    } else {
+                        threshold.simd_gt(vals).to_bitmask() as u16
+                    };
                     let large: u16 = !small;
                     let vals: __m512i = transmute(vals);
 
@@ -546,7 +562,7 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const EQUAL_DOWN: bool>(
                 vals: $simd,
                 threshold: $simd,
                 v: &mut [$t],
@@ -558,7 +574,11 @@ macro_rules! impl_simd_elem_64_avx512 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small: u8 = threshold.simd_gt(vals).to_bitmask() as u8;
+                    let small: u8 = if EQUAL_DOWN {
+                        !(threshold.simd_lt(vals).to_bitmask() as u8)
+                    } else {
+                        threshold.simd_gt(vals).to_bitmask() as u8
+                    };
                     let large: u8 = !small;
                     let vals: __m512i = transmute(vals);
 
