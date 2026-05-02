@@ -146,7 +146,13 @@ impl<
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].len() > N {
             while self.buckets[self.pivots.len()].len() > N {
+                let prev_depth = self.pivots.len();
                 self.partition();
+                // If partition made no progress (e.g. all elements are equal),
+                // stop splitting — the layer is fine to extract from directly.
+                if self.pivots.len() == prev_depth {
+                    break;
+                }
             }
             if SORT {
                 // Sort final layer decreasing.
@@ -256,8 +262,6 @@ impl<
             }
         }
 
-        debug_assert!(next_len > 0);
-
         unsafe {
             cur_layer.set_len(cur_len);
             next_layer.set_len(next_len);
@@ -268,6 +272,11 @@ impl<
         // undo and try again.
         if cur_len == 0 {
             std::mem::swap(cur_layer, next_layer);
+            self.pivots.pop().unwrap();
+        }
+        // If all elements stayed in cur_layer (e.g. pivot == T::MAX causing
+        // wrapping_add_one overflow), undo so the caller can detect no progress.
+        if next_len == 0 {
             self.pivots.pop().unwrap();
         }
     }
