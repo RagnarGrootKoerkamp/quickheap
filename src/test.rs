@@ -73,3 +73,31 @@ fn wiggle_avx2() {
 fn wiggle_avx512() {
     wiggle::<crate::Avx512>();
 }
+
+/// When all elements equal T::MAX and the layer
+/// exceeds N (16), partitioning uses `wrapping_add_one(T::MAX)` which wraps
+/// to 0 (for unsigned) or T::MIN (for signed). This causes all elements to
+/// be classified as "large", leaving the new bottom layer empty. The
+/// subsequent `pop` then panics on `unwrap()` of an empty layer.
+fn max_value_partition<S: SimdElem<u64>>() {
+    let mut q = <ConfigurableSimdQuickHeap<_, S>>::default();
+    // Push more than N=16 copies of u64::MAX to force partitioning on pop.
+    for _ in 0..20 {
+        q.push(u64::MAX);
+    }
+    for _ in 0..20 {
+        assert_eq!(q.pop(), Some(u64::MAX));
+    }
+    assert_eq!(q.pop(), None);
+}
+
+#[test]
+fn max_value_partition_avx2() {
+    max_value_partition::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn max_value_partition_avx512() {
+    max_value_partition::<crate::Avx512>();
+}
