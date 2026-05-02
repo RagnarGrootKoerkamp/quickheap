@@ -101,3 +101,155 @@ fn max_value_partition_avx2() {
 fn max_value_partition_avx512() {
     max_value_partition::<crate::Avx512>();
 }
+
+/// 1000 copies of u64::MAX plus one smaller value.
+/// The single smaller value must be popped first.
+fn u64_max_with_one_smaller<S: SimdElem<u64>>() {
+    let mut q = <ConfigurableSimdQuickHeap<_, S>>::default();
+    let small_val: u64 = 42;
+    for _ in 0..1000 {
+        q.push(u64::MAX);
+    }
+    q.push(small_val);
+    assert_eq!(q.pop(), Some(small_val));
+    for _ in 0..1000 {
+        assert_eq!(q.pop(), Some(u64::MAX));
+    }
+    assert_eq!(q.pop(), None);
+}
+
+#[test]
+fn u64_max_with_one_smaller_avx2() {
+    u64_max_with_one_smaller::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn u64_max_with_one_smaller_avx512() {
+    u64_max_with_one_smaller::<crate::Avx512>();
+}
+
+/// 1000 copies of u64::MIN (0) plus one larger value.
+/// All zeros must be popped before the larger value.
+fn u64_min_with_one_larger<S: SimdElem<u64>>() {
+    let mut q = <ConfigurableSimdQuickHeap<_, S>>::default();
+    let large_val: u64 = 999;
+    for _ in 0..1000 {
+        q.push(u64::MIN);
+    }
+    q.push(large_val);
+    for _ in 0..1000 {
+        assert_eq!(q.pop(), Some(u64::MIN));
+    }
+    assert_eq!(q.pop(), Some(large_val));
+    assert_eq!(q.pop(), None);
+}
+
+#[test]
+fn u64_min_with_one_larger_avx2() {
+    u64_min_with_one_larger::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn u64_min_with_one_larger_avx512() {
+    u64_min_with_one_larger::<crate::Avx512>();
+}
+
+/// 1000 copies of i64::MAX plus one smaller value.
+fn i64_max_with_one_smaller<S: SimdElem<i64>>() {
+    let mut q = <ConfigurableSimdQuickHeap<_, S>>::default();
+    let small_val: i64 = 7;
+    for _ in 0..1000 {
+        q.push(i64::MAX);
+    }
+    q.push(small_val);
+    assert_eq!(q.pop(), Some(small_val));
+    for _ in 0..1000 {
+        assert_eq!(q.pop(), Some(i64::MAX));
+    }
+    assert_eq!(q.pop(), None);
+}
+
+#[test]
+fn i64_max_with_one_smaller_avx2() {
+    i64_max_with_one_smaller::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn i64_max_with_one_smaller_avx512() {
+    i64_max_with_one_smaller::<crate::Avx512>();
+}
+
+/// 1000 copies of i64::MIN plus one larger value.
+fn i64_min_with_one_larger<S: SimdElem<i64>>() {
+    let mut q = <ConfigurableSimdQuickHeap<_, S>>::default();
+    let large_val: i64 = -5;
+    for _ in 0..1000 {
+        q.push(i64::MIN);
+    }
+    q.push(large_val);
+    for _ in 0..1000 {
+        assert_eq!(q.pop(), Some(i64::MIN));
+    }
+    assert_eq!(q.pop(), Some(large_val));
+    assert_eq!(q.pop(), None);
+}
+
+#[test]
+fn i64_min_with_one_larger_avx2() {
+    i64_min_with_one_larger::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn i64_min_with_one_larger_avx512() {
+    i64_min_with_one_larger::<crate::Avx512>();
+}
+
+/// Pure i64::MAX — all elements equal, same overflow risk as u64::MAX.
+fn i64_max_all_equal<S: SimdElem<i64>>() {
+    let mut q = <ConfigurableSimdQuickHeap<_, S>>::default();
+    for _ in 0..1000 {
+        q.push(i64::MAX);
+    }
+    for _ in 0..1000 {
+        assert_eq!(q.pop(), Some(i64::MAX));
+    }
+    assert_eq!(q.pop(), None);
+}
+
+#[test]
+fn i64_max_all_equal_avx2() {
+    i64_max_all_equal::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn i64_max_all_equal_avx512() {
+    i64_max_all_equal::<crate::Avx512>();
+}
+
+/// Pure i64::MIN — all equal at the minimum boundary.
+fn i64_min_all_equal<S: SimdElem<i64>>() {
+    let mut q = <ConfigurableSimdQuickHeap<_, S>>::default();
+    for _ in 0..1000 {
+        q.push(i64::MIN);
+    }
+    for _ in 0..1000 {
+        assert_eq!(q.pop(), Some(i64::MIN));
+    }
+    assert_eq!(q.pop(), None);
+}
+
+#[test]
+fn i64_min_all_equal_avx2() {
+    i64_min_all_equal::<crate::Avx2>();
+}
+
+#[cfg(target_feature = "avx512f")]
+#[test]
+fn i64_min_all_equal_avx512() {
+    i64_min_all_equal::<crate::Avx512>();
+}
