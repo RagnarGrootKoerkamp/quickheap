@@ -11,6 +11,10 @@ use std::marker::PhantomData;
 pub trait Elem: Ord + std::fmt::Debug + Clone + Copy + Radix + 'static {
     fn get(&self) -> u64;
     fn from(x: u64) -> Self;
+    /// Make sure x is not T::MIN or T::MAX.
+    fn clamp(x: Self) -> Self {
+        x
+    }
     fn try_from(x: u64) -> Self;
     fn stride() -> u64;
 }
@@ -27,6 +31,18 @@ macro_rules! impl_elem {
             fn from(x: u64) -> Self {
                 x as $t
             }
+
+            #[inline(always)]
+            fn clamp(mut x: Self) -> Self {
+                if x == <$t>::MIN {
+                    x = <$t>::MIN + 1;
+                }
+                if x == <$t>::MAX {
+                    x = <$t>::MAX - 1;
+                }
+                x as $t
+            }
+
             #[inline(always)]
             fn try_from(x: u64) -> Self {
                 TryFrom::try_from(x).unwrap()
@@ -193,7 +209,7 @@ impl Workload for HeapSort {
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
         let mut rng = fastrand::Rng::new();
-        let values = std::iter::repeat_with(|| T::from(rng.u64(..)))
+        let values = std::iter::repeat_with(|| <T as Elem>::clamp(T::from(rng.u64(..))))
             .take(n as usize)
             .collect::<Vec<_>>()
             .into_iter();
