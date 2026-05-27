@@ -9,6 +9,9 @@ pub trait PivotStrategy {
 }
 
 fn get_m_median<T: Elem>(layer: &Vec<T>, mut m: usize) -> (T, usize) {
+    #[cfg(feature = "pivots")]
+    print!("{},", m);
+
     if m % 2 == 0 {
         m += 1;
     }
@@ -26,17 +29,12 @@ fn get_m_median<T: Elem>(layer: &Vec<T>, mut m: usize) -> (T, usize) {
     let pivot_pos = pivots[k].1;
     let pivot = pivots[k].0;
 
-    // Old: pivots are sorted
-    // pivots.sort();
-    // Pivots are inclusive.
-    // let pivot = pivots[m / 2].0;
-    // let pivot_pos = pivots[m / 2].1;
-
     (pivot, pivot_pos)
 }
 
 fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
     assert!(M % 2 == 1, "M must be odd");
+    print!("{},", M);
     let n = layer.len();
     let k: usize = M / 2;
 
@@ -48,12 +46,6 @@ fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
     pivots.select_nth_unstable(k);
     let pivot_pos = pivots[k].1;
     let pivot = pivots[k].0;
-
-    // Old: pivots are sorted
-    // pivots.sort();
-    // Pivots are inclusive.
-    // let pivot = pivots[m / 2].0;
-    // let pivot_pos = pivots[m / 2].1;
 
     (pivot, pivot_pos)
 }
@@ -100,15 +92,3 @@ impl<const A: usize, const B: usize> PivotStrategy for Log2Pivot<A, B> {
         get_m_median(layer, m)
     }
 }
-
-// pub struct SkewedPivot<const A: usize, const B: usize>;
-// impl<T: Elem, const A: usize, const B: usize> PivotStrategy for CbrtPivot<A, B> {
-//     fn pick(layer: Vec<T>) -> (T, usize) {
-//         let n = layer.len() as f64;
-//         let cbrt = n.cbrt().floor() as usize;
-
-//         let m = A * cbrt + B;
-
-//         get_m_median(layer, m)
-//     }
-// }

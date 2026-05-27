@@ -4,6 +4,9 @@ default:
 run:
     cd bench && cargo run -r --example run
 
+pivots:
+    cd bench && cargo run -r --example pivots > evals/data/pivots.csv
+
 # Run all benchmarks. Takes a bunch of hours.
 bench-all:
     cd bench && cargo run -r --example bench       -F avx512                  > evals/data/nanos.csv

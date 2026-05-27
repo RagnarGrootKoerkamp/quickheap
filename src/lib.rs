@@ -30,9 +30,15 @@ mod simd;
 #[cfg(test)]
 mod test;
 
-use std::marker::PhantomData;
+#[cfg(feature = "pivots")]
+use std::any::type_name;
+#[cfg(feature = "pivots")]
+use std::cmp;
+#[cfg(feature = "pivots")]
+use std::time::Instant;
 
 pub use simd::{Avx2, Avx512};
+use std::marker::PhantomData;
 
 /// Tag to use with [`ConfigurableSimdQuickHeap`] to use AVX-512 if it is available.
 #[cfg(not(target_feature = "avx512f"))]
@@ -178,6 +184,9 @@ impl<
 
     #[inline(never)]
     fn partition(&mut self) {
+        #[cfg(feature = "pivots")]
+        print!("\"{}\",", type_name::<P>());
+
         // Reserve space for an additional L layers when needed.
         let layer = self.pivots.len();
         if layer + 2 * S::L >= self.pivots.capacity() {
@@ -193,7 +202,16 @@ impl<
         let n = cur_layer.len();
 
         // Sample a pivot using the pivot strategy
+        #[cfg(feature = "pivots")]
+        let start = Instant::now();
         let (pivot, pivot_pos) = P::pick(&cur_layer);
+
+        #[cfg(feature = "pivots")]
+        {
+            let elapsed = start.elapsed();
+            print!("{},", elapsed.as_nanos());
+        }
+
         self.pivots.push(pivot);
 
         // Reserve space in the next layer,
@@ -268,6 +286,21 @@ impl<
         if cur_len == 0 {
             std::mem::swap(cur_layer, next_layer);
             self.pivots.pop().unwrap();
+        }
+
+        #[cfg(feature = "pivots")]
+        {
+            let cur_len = cur_layer.len();
+            let next_len = next_layer.len();
+            let total_len = cur_len + next_len;
+
+            println!(
+                "{},{},{},{}",
+                total_len,
+                cur_len,
+                next_len,
+                cmp::min(cur_len, next_len) as f64 / total_len as f64
+            );
         }
     }
 }
