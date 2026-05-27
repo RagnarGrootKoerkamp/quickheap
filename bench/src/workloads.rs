@@ -382,3 +382,30 @@ impl Workload for Wiggle {
         }
     }
 }
+
+pub struct WorstCaseDescending<const K: usize = 16>;
+
+impl<const K: usize> Workload for WorstCaseDescending<K> {
+    const NORMALIZATION: u64 = K as u64 / 2 + 1;
+
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+        let mut h = H::default();
+        let range = n * (K / 2 + 1) as u64..0;
+        let mut values = range
+            .map(|v| T::from(v as u64))
+            .collect::<Vec<T>>()
+            .into_iter();
+
+        move || {
+            for _ in 0..n {
+                for _ in 0..(K / 2 + 1) {
+                    h.push(values.next().unwrap());
+                }
+                h.pop().unwrap().get();
+            }
+            for _ in 0..n * K as u64 / 2 {
+                h.pop().unwrap().get();
+            }
+        }
+    }
+}
