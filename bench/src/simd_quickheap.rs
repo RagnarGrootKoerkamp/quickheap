@@ -4,9 +4,10 @@ impl<
     T: quickheap::Elem + workloads::Elem,
     S: quickheap::SimdElem<T>,
     P: quickheap::pivot_strategies::PivotStrategy,
+    R: quickheap::rebalancing_strategies::RebalancingStrategy<T>,
     const N: usize,
     const SORT: bool,
-> Heap<T> for quickheap::ConfigurableSimdQuickHeap<T, S, P, N, SORT>
+> Heap<T> for quickheap::ConfigurableSimdQuickHeap<T, S, P, R, N, SORT>
 {
     type CountedType = workloads::CountComparisons<T>;
     type CountedHeap = NoHeap;

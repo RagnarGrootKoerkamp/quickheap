@@ -7,6 +7,9 @@ run:
 pivots:
     cd bench && cargo run -r --example pivots > evals/data/pivots.csv
 
+rebalancing:
+    cd bench && cargo run --example rebalancing # > evals/data/pivots.csv
+
 # Run all benchmarks. Takes a bunch of hours.
 bench-all:
     cd bench && cargo run -r --example bench       -F avx512                  > evals/data/nanos.csv

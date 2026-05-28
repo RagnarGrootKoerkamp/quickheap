@@ -26,6 +26,10 @@
 //! ```
 #[doc(hidden)]
 pub mod pivot_strategies;
+
+#[doc(hidden)]
+pub mod rebalancing_strategies;
+
 mod simd;
 #[cfg(test)]
 mod test;
@@ -56,6 +60,8 @@ impl<T: Copy + Ord> Elem for T {}
 /// For now, this means you can only use `u32`, `i32`, `u64`, and `i64`.
 pub use simd::SimdElem;
 
+use crate::rebalancing_strategies::NoRebalancing;
+
 /// The full SimdQuickHeap implementation, with all configuration parameters.
 ///
 /// - `T`: the element type.
@@ -67,6 +73,7 @@ pub struct ConfigurableSimdQuickHeap<
     T: Elem,
     S: simd::SimdElem<T> = Simd,
     P: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
+    R: rebalancing_strategies::RebalancingStrategy<T> = rebalancing_strategies::NoRebalancing,
     const N: usize = 16,
     const SORT: bool = true,
 > {
@@ -87,6 +94,7 @@ pub struct ConfigurableSimdQuickHeap<
     buckets: Vec<Vec<T>>,
 
     _p: PhantomData<P>,
+    _r: PhantomData<R>,
     _backend: PhantomData<S>,
 }
 
@@ -98,22 +106,25 @@ pub struct ConfigurableSimdQuickHeap<
 ///
 /// Uses AVX-512 instructions when available at compile time.
 pub type SimdQuickHeap<T> =
-    ConfigurableSimdQuickHeap<T, Simd, pivot_strategies::MedianOfM<3>, 16, true>;
+    ConfigurableSimdQuickHeap<T, Simd, pivot_strategies::MedianOfM<3>, NoRebalancing, 16, true>;
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
     T: Elem,
     S: simd::SimdElem<T>,
     P: pivot_strategies::PivotStrategy,
+    R: rebalancing_strategies::RebalancingStrategy<T>,
     const N: usize,
     const SORT: bool,
-> Default for ConfigurableSimdQuickHeap<T, S, P, N, SORT>
+> Default for ConfigurableSimdQuickHeap<T, S, P, R, N, SORT>
+// TODO Change here to strategy as well
 {
     fn default() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
-            buckets: (0..128).map(|_| vec![]).collect(),
+            buckets: vec![vec![]], // (0..128).map(|_| vec![]).collect(),
             _p: PhantomData,
+            _r: PhantomData,
             _backend: PhantomData,
         }
     }
@@ -122,10 +133,11 @@ impl<
 impl<
     T: Elem,
     S: simd::SimdElem<T>,
+    R: rebalancing_strategies::RebalancingStrategy<T>,
     P: pivot_strategies::PivotStrategy,
     const N: usize,
     const SORT: bool,
-> ConfigurableSimdQuickHeap<T, S, P, N, SORT>
+> ConfigurableSimdQuickHeap<T, S, P, R, N, SORT>
 {
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
@@ -301,6 +313,13 @@ impl<
                 next_len,
                 cmp::min(cur_len, next_len) as f64 / total_len as f64
             );
+        }
+
+        #[cfg(feature = "rebalancing")]
+        {
+            println!("Rebalance!!");
+            println!("num layers: {}", self.buckets.len());
+            R::rebalance(&mut self.pivots, &mut self.buckets);
         }
     }
 }

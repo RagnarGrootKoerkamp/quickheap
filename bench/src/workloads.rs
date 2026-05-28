@@ -390,11 +390,14 @@ impl<const K: usize> Workload for WorstCaseDescending<K> {
 
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
-        let range = n * (K / 2 + 1) as u64..0;
+        let range = (0..(n * (K as u64 / 2 + 1))).rev();
+
         let mut values = range
             .map(|v| T::from(v as u64))
             .collect::<Vec<T>>()
             .into_iter();
+
+        println!("Size of values: {}", values.len());
 
         move || {
             for _ in 0..n {
