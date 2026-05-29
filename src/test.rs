@@ -1,6 +1,10 @@
 use std::cmp::Reverse;
 
-use crate::{ConfigurableSimdQuickHeap, SimdElem};
+use crate::{
+    ConfigurableSimdQuickHeap, SimdElem,
+    pivot_strategies::MedianOfM,
+    rebalancing_strategies::{NaiveLogRebalancing, NoRebalancing, PivotForgetting},
+};
 
 /// Element-type capabilities needed by the generators.
 trait GenElem: Copy + Ord + std::fmt::Debug {
@@ -115,7 +119,7 @@ where
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        let mut q = <ConfigurableSimdQuickHeap<T, S>>::default();
+        let mut q = <ConfigurableSimdQuickHeap<T, S, MedianOfM<3>, PivotForgetting>>::default();
         for _ in 0..n {
             q.push(g.get());
         }
@@ -139,7 +143,7 @@ where
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        let mut q1 = <ConfigurableSimdQuickHeap<T, S>>::default();
+        let mut q1 = <ConfigurableSimdQuickHeap<T, S, MedianOfM<3>, PivotForgetting>>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
         // (push pop push) xn

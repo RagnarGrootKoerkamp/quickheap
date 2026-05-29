@@ -93,6 +93,8 @@ pub struct ConfigurableSimdQuickHeap<
     /// This can be longer than `layer` to reuse allocations.
     buckets: Vec<Vec<T>>,
 
+    size: usize,
+
     _p: PhantomData<P>,
     _r: PhantomData<R>,
     _backend: PhantomData<S>,
@@ -123,6 +125,7 @@ impl<
         Self {
             pivots: Vec::with_capacity(128),
             buckets: vec![vec![]], // (0..128).map(|_| vec![]).collect(),
+            size: 0,
             _p: PhantomData,
             _r: PhantomData,
             _backend: PhantomData,
@@ -152,6 +155,8 @@ impl<
         } else {
             layer.push(t);
         }
+
+        self.size += 1;
     }
 
     /// Pop the smallest element from the queue.
@@ -191,6 +196,9 @@ impl<
                 layer.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
             }
         }
+
+        self.size -= 1;
+
         Some(min)
     }
 
@@ -319,7 +327,7 @@ impl<
         {
             println!("Rebalance!!");
             println!("num layers: {}", self.buckets.len());
-            R::rebalance(&mut self.pivots, &mut self.buckets);
+            R::rebalance(self.size, &mut self.pivots, &mut self.buckets);
         }
     }
 }
