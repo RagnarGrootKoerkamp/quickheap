@@ -5,10 +5,10 @@ run:
     cd bench && cargo run -r --example run
 
 pivots:
-    cd bench && cargo run -r --example pivots > evals/data/pivots.csv
+    cd bench && cargo run -r --example pivots -F pivots > evals/data/pivots.csv
 
 rebalancing:
-    cd bench && cargo run --example rebalancing # > evals/data/pivots.csv
+    cd bench && cargo run -r --example rebalancing -F rebalancing > evals/data/rebal.csv
 
 # Run all benchmarks. Takes a bunch of hours.
 bench-all:

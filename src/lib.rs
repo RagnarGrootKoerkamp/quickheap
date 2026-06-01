@@ -36,6 +36,10 @@ mod test;
 
 #[cfg(feature = "pivots")]
 use std::any::type_name;
+
+#[cfg(feature = "rebalancing")]
+use std::{any::type_name, time};
+
 #[cfg(feature = "pivots")]
 use std::cmp;
 #[cfg(feature = "pivots")]
@@ -189,6 +193,8 @@ impl<
         // Update the active layer.
         if layer.is_empty() && self.pivots.len() > 0 {
             self.pivots.pop();
+            // assert!(self.buckets[self.pivots.len() + 1].is_empty());
+            // self.buckets.pop();
 
             // Sort the new final layer decreasing if it's already small.
             if SORT && self.buckets[self.pivots.len()].len() <= N {
@@ -206,6 +212,9 @@ impl<
     fn partition(&mut self) {
         #[cfg(feature = "pivots")]
         print!("\"{}\",", type_name::<P>());
+
+        #[cfg(feature = "rebalancing")]
+        let now = time::Instant::now();
 
         // Reserve space for an additional L layers when needed.
         let layer = self.pivots.len();
@@ -325,9 +334,17 @@ impl<
 
         #[cfg(feature = "rebalancing")]
         {
-            println!("Rebalance!!");
-            println!("num layers: {}", self.buckets.len());
             R::rebalance(self.size, &mut self.pivots, &mut self.buckets);
+
+            let elapsed = now.elapsed();
+
+            print!(
+                "{},{},{},{}\n",
+                type_name::<R>(),
+                self.size,
+                self.pivots.len(),
+                elapsed.as_nanos()
+            );
         }
     }
 }

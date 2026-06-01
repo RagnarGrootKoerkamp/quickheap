@@ -22,7 +22,6 @@ impl<T: Copy, const THRESH: usize> RebalancingStrategy<T> for NaiveLogRebalancin
                 flat_buckets.append(bucket);
             }
             buckets.clear();
-            println!("Buckets length after clear: {}", buckets.len());
             buckets.push(flat_buckets);
 
             debug_assert!(buckets.len() == 1);
@@ -32,31 +31,25 @@ impl<T: Copy, const THRESH: usize> RebalancingStrategy<T> for NaiveLogRebalancin
 }
 
 pub struct PivotForgetting;
-impl<T: Clone> RebalancingStrategy<T> for PivotForgetting {
+impl<T: Copy> RebalancingStrategy<T> for PivotForgetting {
     fn rebalance(_: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
         // Invariant: buckets[pivots.len()] contains the smallest elements
-        debug_assert!(pivots.len() > 0);
-
         let mut total: usize = 0;
-        let mut layer: usize = pivots.len() - 1;
-
+        let mut layer: usize = pivots.len();
         loop {
             if buckets[layer].len() < total && layer > 0 {
-                // Merge bucket with next one
-                // Forget pivot of the layer
-
-                let mut old_bucket = buckets[layer].clone();
-                buckets[layer - 1].append(&mut old_bucket);
-                buckets.remove(layer);
-                pivots.remove(layer);
+                // Merge bucket with next one, forget the pivot of the layer
+                // let mut old_bucket = buckets[layer].clone();
+                // buckets[layer - 1].append(&mut old_bucket);
+                let old_bucket = buckets.remove(layer);
+                buckets[layer - 1].extend(old_bucket);
+                pivots.remove(layer - 1);
+            } else if layer == 0 {
+                break;
             } else {
-                if layer == 0 {
-                    break;
-                }
-
-                layer -= 1;
                 total += buckets[layer].len();
             }
+            layer -= 1;
         }
     }
 }

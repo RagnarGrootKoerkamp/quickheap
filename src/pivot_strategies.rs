@@ -34,6 +34,7 @@ fn get_m_median<T: Elem>(layer: &Vec<T>, mut m: usize) -> (T, usize) {
 
 fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
     assert!(M % 2 == 1, "M must be odd");
+    #[cfg(feature = "pivots")]
     print!("{},", M);
     let n = layer.len();
     let k: usize = M / 2;

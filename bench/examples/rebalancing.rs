@@ -5,7 +5,7 @@ use quickheap::Avx512;
 
 use quickheap::ConfigurableSimdQuickHeap as SimdQuickHeap;
 use quickheap::pivot_strategies::MedianOfM;
-use quickheap::rebalancing_strategies::{NaiveRebalancing, NoRebalancing};
+use quickheap::rebalancing_strategies::{NaiveLogRebalancing, NoRebalancing, PivotForgetting};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -71,18 +71,27 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
 
 fn main() {
     type T = i32;
-    let n = 1 << 22;
+    let n = 1 << 18;
+
+    print!("rebalancing_strategy,size,num_buckets,partition_time\n");
 
     #[cfg(feature = "avx2")]
     {
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>, Wiggle>(n);
+        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<2>, 16>, Wiggle>(
+        //     n,
+        // );
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting, 16>,
+            WorstCaseDescending,
+        >(n);
 
         // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>, ConstantSize>(
         //    n,
         // );
-        // time_workload::<
+        //time_workload::<
         //    T,
-        //    SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>,
+        //    SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting, 16>,
         //    WorstCaseDescending<16>,
         //>(n);
 
