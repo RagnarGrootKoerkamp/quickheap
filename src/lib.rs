@@ -24,6 +24,9 @@
 //! assert_eq!(q.pop(), Some(7));
 //! assert_eq!(q.pop(), None);
 //! ```
+
+#![feature(stmt_expr_attributes)]
+
 #[doc(hidden)]
 pub mod pivot_strategies;
 
@@ -77,7 +80,7 @@ pub struct ConfigurableSimdQuickHeap<
     T: Elem,
     S: simd::SimdElem<T> = Simd,
     P: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
-    R: rebalancing_strategies::RebalancingStrategy<T> = rebalancing_strategies::NoRebalancing,
+    R: rebalancing_strategies::RebalancingStrategy<T> = rebalancing_strategies::NoRebalancing<128>,
     const N: usize = 16,
     const SORT: bool = true,
 > {
@@ -98,6 +101,7 @@ pub struct ConfigurableSimdQuickHeap<
     buckets: Vec<Vec<T>>,
 
     size: usize,
+    rebal_iteration: usize,
 
     _p: PhantomData<P>,
     _r: PhantomData<R>,
@@ -111,8 +115,14 @@ pub struct ConfigurableSimdQuickHeap<
 /// Works for `i32`, `u32`, `i64`, and `u64`.
 ///
 /// Uses AVX-512 instructions when available at compile time.
-pub type SimdQuickHeap<T> =
-    ConfigurableSimdQuickHeap<T, Simd, pivot_strategies::MedianOfM<3>, NoRebalancing, 16, true>;
+pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
+    T,
+    Simd,
+    pivot_strategies::MedianOfM<3>,
+    NoRebalancing<128>,
+    16,
+    true,
+>;
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
@@ -128,8 +138,9 @@ impl<
     fn default() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
-            buckets: vec![vec![]], // (0..128).map(|_| vec![]).collect(),
+            buckets: (0..128).map(|_| vec![]).collect(), // vec![vec![]], //
             size: 0,
+            rebal_iteration: 0,
             _p: PhantomData,
             _r: PhantomData,
             _backend: PhantomData,
@@ -176,6 +187,9 @@ impl<
     pub fn pop(&mut self) -> Option<T> {
         #[cfg(any(feature = "pivots", feature = "rebalancing"))]
         let now = time::Instant::now();
+
+        #[cfg(feature = "rebalancing")]
+        self.rebal_iteration += 1;
 
         let layer = self.pivots.len();
         // Only the top layer can be empty.
@@ -352,6 +366,10 @@ impl<
 
         #[cfg(feature = "rebalancing")]
         {
+            if self.rebal_iteration < R::MAX_REBAL_ITERATIONS {
+                return;
+            }
+            self.rebal_iteration = 0;
             R::rebalance(self.size, &mut self.pivots, &mut self.buckets);
 
             let elapsed = now.elapsed();

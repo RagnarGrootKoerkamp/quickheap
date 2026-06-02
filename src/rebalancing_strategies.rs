@@ -1,15 +1,19 @@
 pub trait RebalancingStrategy<T> {
+    const MAX_REBAL_ITERATIONS: usize;
     fn rebalance(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
 }
 
-pub struct NoRebalancing;
-
-impl<T> RebalancingStrategy<T> for NoRebalancing {
+pub struct NoRebalancing<const IT: usize>;
+impl<T, const IT: usize> RebalancingStrategy<T> for NoRebalancing<IT> {
+    const MAX_REBAL_ITERATIONS: usize = IT;
     fn rebalance(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
 }
 
-pub struct NaiveLogRebalancing<const THRESH: usize>; // TODO: Make it a function instead of a constant
-impl<T: Copy, const THRESH: usize> RebalancingStrategy<T> for NaiveLogRebalancing<THRESH> {
+pub struct NaiveLogRebalancing<const THRESH: usize, const IT: usize>;
+impl<T: Copy, const THRESH: usize, const IT: usize> RebalancingStrategy<T>
+    for NaiveLogRebalancing<THRESH, IT>
+{
+    const MAX_REBAL_ITERATIONS: usize = IT;
     fn rebalance(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
         let max = THRESH * size.ilog2() as usize;
 
@@ -30,20 +34,23 @@ impl<T: Copy, const THRESH: usize> RebalancingStrategy<T> for NaiveLogRebalancin
     }
 }
 
-pub struct PivotForgetting;
-impl<T: Copy> RebalancingStrategy<T> for PivotForgetting {
+pub struct PivotForgetting<const F: usize, const IT: usize>;
+impl<T: Copy, const F: usize, const IT: usize> RebalancingStrategy<T> for PivotForgetting<F, IT> {
+    const MAX_REBAL_ITERATIONS: usize = IT;
     fn rebalance(_: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
         // Invariant: buckets[pivots.len()] contains the smallest elements
         let mut total: usize = 0;
         let mut layer: usize = pivots.len();
         loop {
-            if buckets[layer].len() < total && layer > 0 {
-                // TODO: This is wrong
+            if layer > 0 && buckets[layer].len() + buckets[layer - 1].len() < F * total {
                 // Merge bucket with next one, forget the pivot of the layer
-                // let mut old_bucket = buckets[layer].clone();
-                // buckets[layer - 1].append(&mut old_bucket);
-                let old_bucket = buckets.remove(layer);
-                buckets[layer - 1].extend(old_bucket);
+                if buckets[layer].len() > buckets[layer - 1].len() {
+                    let old_bucket = buckets.remove(layer - 1);
+                    buckets[layer - 1].extend(old_bucket);
+                } else {
+                    let old_bucket = buckets.remove(layer);
+                    buckets[layer - 1].extend(old_bucket);
+                }
                 pivots.remove(layer - 1);
             } else if layer == 0 {
                 break;

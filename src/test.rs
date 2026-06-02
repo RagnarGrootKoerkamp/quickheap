@@ -119,7 +119,8 @@ where
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        let mut q = <ConfigurableSimdQuickHeap<T, S, MedianOfM<3>, PivotForgetting>>::default();
+        let mut q =
+            <ConfigurableSimdQuickHeap<T, S, MedianOfM<3>, PivotForgetting<2, 128>>>::default();
         for _ in 0..n {
             q.push(g.get());
         }
@@ -143,7 +144,8 @@ where
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        let mut q1 = <ConfigurableSimdQuickHeap<T, S, MedianOfM<3>, PivotForgetting>>::default();
+        let mut q1 =
+            <ConfigurableSimdQuickHeap<T, S, MedianOfM<3>, PivotForgetting<2, 128>>>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
         // (push pop push) xn
