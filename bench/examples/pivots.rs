@@ -138,6 +138,8 @@ fn main() {
     type T = i64;
     let n = 1 << 20;
 
+    println!("name,median_of_m,pivoting_time,total,a,b,alpha");
+
     #[cfg(feature = "avx2")]
     {
         time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, NoRebalancing, 16>, ConstantSize>(

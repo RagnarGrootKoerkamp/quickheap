@@ -148,6 +148,9 @@ impl<
 {
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
+        #[cfg(any(feature = "pivots", feature = "rebalancing"))]
+        let now = time::Instant::now();
+
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
         let layer = &mut self.buckets[target_layer];
         layer.reserve(S::L + 1);
@@ -161,10 +164,19 @@ impl<
         }
 
         self.size += 1;
+
+        #[cfg(any(feature = "pivots", feature = "rebalancing"))]
+        {
+            let total_push = now.elapsed().as_nanos();
+            eprintln!("push,{}", total_push);
+        }
     }
 
     /// Pop the smallest element from the queue.
     pub fn pop(&mut self) -> Option<T> {
+        #[cfg(any(feature = "pivots", feature = "rebalancing"))]
+        let now = time::Instant::now();
+
         let layer = self.pivots.len();
         // Only the top layer can be empty.
         if layer == 0 && self.buckets[0].is_empty() {
@@ -204,6 +216,12 @@ impl<
         }
 
         self.size -= 1;
+
+        #[cfg(any(feature = "pivots", feature = "rebalancing"))]
+        {
+            let total_pop = now.elapsed().as_nanos();
+            eprintln!("pop,{}", total_pop);
+        }
 
         Some(min)
     }
@@ -323,8 +341,8 @@ impl<
             let next_len = next_layer.len();
             let total_len = cur_len + next_len;
 
-            println!(
-                "{},{},{},{}",
+            print!(
+                "{},{},{},{}\n",
                 total_len,
                 cur_len,
                 next_len,

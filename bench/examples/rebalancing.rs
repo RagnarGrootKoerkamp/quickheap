@@ -74,32 +74,31 @@ fn main() {
     let n = 1 << 18;
 
     print!("rebalancing_strategy,size,num_buckets,partition_time\n");
+    eprint!("op,op_time\n");
 
     #[cfg(feature = "avx2")]
     {
-        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<2>, 16>, Wiggle>(
+        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>, Wiggle>(n);
+        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<3>, 16>, Wiggle>(
         //     n,
         // );
+        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting, 16>, Wiggle>(n);
+
+        // time_workload::<
+        //     T,
+        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>,
+        //     WorstCaseDescending,
+        // >(n);
+        // time_workload::<
+        //     T,
+        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<3>, 16>,
+        //     WorstCaseDescending,
+        // >(n);
         time_workload::<
             T,
             SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting, 16>,
             WorstCaseDescending,
         >(n);
-
-        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>, ConstantSize>(
-        //    n,
-        // );
-        //time_workload::<
-        //    T,
-        //    SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting, 16>,
-        //    WorstCaseDescending<16>,
-        //>(n);
-
-        //time_workload::<
-        //    T,
-        //    SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveRebalancing<2>, 16>,
-        //    WorstCaseDescending<16>,
-        //>(n);
     }
     #[cfg(feature = "avx512")]
     {

@@ -38,6 +38,7 @@ impl<T: Copy> RebalancingStrategy<T> for PivotForgetting {
         let mut layer: usize = pivots.len();
         loop {
             if buckets[layer].len() < total && layer > 0 {
+                // TODO: This is wrong
                 // Merge bucket with next one, forget the pivot of the layer
                 // let mut old_bucket = buckets[layer].clone();
                 // buckets[layer - 1].append(&mut old_bucket);
