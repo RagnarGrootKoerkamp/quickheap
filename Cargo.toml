@@ -21,3 +21,8 @@ description = "A SIMD-accelerated priority queue"
 ensure_simd = "0.1.0"
 rand = "0.10.1"
 wide = "1.2.0"
+
+[features]
+default = []
+pivots = []
+rebalancing = []
