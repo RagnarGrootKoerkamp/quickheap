@@ -1,10 +1,6 @@
 use crate::Elem;
 
 pub trait PivotStrategy {
-    const CBRT_LOOKUP: [usize; 32] = [
-        1, 1, 1, 2, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 25, 32, 40, 50, 64, 80, 101, 128, 161, 203,
-        256, 322, 406, 512, 645, 812, 1024, 1290,
-    ];
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize);
 }
 
@@ -69,6 +65,14 @@ impl PivotStrategy for RandomPivot {
 }
 
 pub struct CbrtPivot<const A: usize, const B: usize>;
+
+impl<const A: usize, const B: usize> CbrtPivot<A, B> {
+    const CBRT_LOOKUP: [usize; 32] = [
+        1, 1, 1, 2, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 25, 32, 40, 50, 64, 80, 101, 128, 161, 203,
+        256, 322, 406, 512, 645, 812, 1024, 1290,
+    ];
+}
+
 impl<const A: usize, const B: usize> PivotStrategy for CbrtPivot<A, B> {
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
         let n = layer.len();
@@ -91,5 +95,23 @@ impl<const A: usize, const B: usize> PivotStrategy for Log2Pivot<A, B> {
         let m = A * idx + B;
 
         get_m_median(layer, m)
+    }
+}
+
+pub struct TablePivot;
+impl TablePivot {
+    const LOOKUP: [usize; 32] = [
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 5, 7, 9, 11, 13, 15, 17, 19, 23,
+        27, 31, 33, 35,
+    ];
+}
+
+impl PivotStrategy for TablePivot {
+    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
+        let i = size_of::<T>() * 8 - layer.len().leading_zeros() as usize;
+        if i > 31 {
+            return get_m_median(layer, 35);
+        }
+        get_m_median(layer, TablePivot::LOOKUP[i])
     }
 }

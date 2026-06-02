@@ -4,7 +4,7 @@ use quickheap::Avx2;
 use quickheap::Avx512;
 
 use quickheap::ConfigurableSimdQuickHeap as SimdQuickHeap;
-use quickheap::pivot_strategies::{CbrtPivot, Log2Pivot, MedianOfM};
+use quickheap::pivot_strategies::{CbrtPivot, Log2Pivot, MedianOfM, TablePivot};
 use quickheap::rebalancing_strategies::NoRebalancing;
 
 #[cfg(feature = "perf")]
@@ -65,67 +65,6 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
             };
         }
 
-        #[cfg(feature = "perf")]
-        {
-            let mut branch_misses = PerfCounterBuilderLinux::from_hardware_event(perfcnt::linux::HardwareEventType::BranchMisses)
-                .finish()
-                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
-            let mut l1_cache_misses = PerfCounterBuilderLinux::from_cache_event(
-                CacheId::L1D,
-                CacheOpId::Read,
-                CacheOpResultId::Miss,
-            )
-                .finish()
-                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
-            let mut hw_cache_misses = PerfCounterBuilderLinux::from_hardware_event(
-                perfcnt::linux::HardwareEventType::CacheMisses,
-            )
-                .finish()
-                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
-            let l3_cache_misses = PerfCounterBuilderLinux::from_cache_event(
-                CacheId::LL,
-                CacheOpId::Read,
-                CacheOpResultId::Miss,
-            )
-            .finish();
-            if l3_cache_misses.is_err() {
-                // eprintln!(
-                //     "Could not initialize l3 cache miss counter; it somehow doesn't work on EPYC."
-                // );
-            }
-
-            branch_misses.start().unwrap();
-            l1_cache_misses.start().unwrap();
-            hw_cache_misses.start().unwrap();
-            let _ = l3_cache_misses.as_ref().map(|c| c.start().unwrap());
-
-            let start = std::time::Instant::now();
-            f();
-            let nanos = start.elapsed().as_nanos() as f64;
-
-            branch_misses.stop().unwrap();
-            l1_cache_misses.stop().unwrap();
-            hw_cache_misses.stop().unwrap();
-            let _ = l3_cache_misses.as_ref().map(|c| c.stop().unwrap());
-
-            result = Result {
-                elem: type_name::<T>(),
-                heap: type_name::<H>(),
-                n,
-                workload: type_name::<W>(),
-                repeat,
-                nanos,
-                push_comparisons: 0.0,
-                pop_comparisons: 0.0,
-                branch_misses: branch_misses.read().unwrap() as f64,
-                l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
-                hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
-                l3_cache_misses: l3_cache_misses
-                    .map(|mut c| c.read().unwrap() as f64)
-                    .unwrap_or_default(),
-            };
-        }
-
         // println!("{},{},{}", result.heap, result.n, result.nanos);
         all_nanos.push(result.nanos);
     }
@@ -142,31 +81,52 @@ fn main() {
 
     #[cfg(feature = "avx2")]
     {
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, NoRebalancing, 16>, ConstantSize>(
-            n,
-        );
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>, ConstantSize>(
-            n,
-        );
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<5>, NoRebalancing, 16>, ConstantSize>(
-            n,
-        );
-        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, NoRebalancing, 16>, ConstantSize>(
-            n,
-        );
-        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, NoRebalancing, 16>, ConstantSize>(
-            n,
-        );
-        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, NoRebalancing, 16>, ConstantSize>(
-            n,
-        );
-        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, NoRebalancing, 16>, ConstantSize>(
-            n,
-        );
-        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, NoRebalancing, 16>, ConstantSize>(
-            n,
-        );
-        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, NoRebalancing, 16>, ConstantSize>(
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, MedianOfM<1>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, MedianOfM<5>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, NoRebalancing<128>, 16>,
+            ConstantSize,
+        >(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, TablePivot, NoRebalancing<128>, 16>, ConstantSize>(
             n,
         );
     }
