@@ -7,18 +7,12 @@ use quickheap::ConfigurableSimdQuickHeap as SimdQuickHeap;
 use quickheap::pivot_strategies::MedianOfM;
 use quickheap::rebalancing_strategies::{NaiveLogRebalancing, NoRebalancing, PivotForgetting};
 
-#[cfg(feature = "perf")]
-use perfcnt::{
-    AbstractPerfCounter,
-    linux::{CacheId, CacheOpId, CacheOpResultId, PerfCounterBuilderLinux},
-};
-
 use bench::workloads::*;
 use bench::*;
 use serde::Serialize;
 use std::any::type_name;
 
-const REPEATS: usize = 1;
+const REPEATS: usize = 3;
 
 #[derive(Serialize, Default, Debug)]
 struct Result {
@@ -62,6 +56,8 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
             ..Default::default()
         };
 
+        let avg_op_time: f64 = result.nanos as f64 / (result.n * W::NORMALIZATION) as f64;
+        eprintln!("{:<130} {:>25.2}", result.heap, avg_op_time);
         all_nanos.push(result.nanos);
     }
 
@@ -71,34 +67,38 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
 
 fn main() {
     type T = i32;
-    let n = 1 << 18;
+    let n = 1 << 30; // TODO: Make it big!
 
     print!("rebalancing_strategy,size,num_buckets,partition_time\n");
-    eprint!("op,op_time\n");
+    eprintln!("{:<130} {:>25}", "Method", "Average Operation Time");
 
     #[cfg(feature = "avx2")]
     {
-        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>, Wiggle>(n);
-        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<3>, 16>, Wiggle>(
-        //     n,
-        // );
-        // time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting, 16>, Wiggle>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing<128>, 16>, Wiggle>(n);
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<3, 512>, 16>,
+            Wiggle,
+        >(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting<2, 512>, 16>, Wiggle>(
+            n,
+        );
 
         // time_workload::<
         //     T,
-        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>,
+        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing<128>, 16>,
         //     WorstCaseDescending,
         // >(n);
         // time_workload::<
         //     T,
-        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<3>, 16>,
+        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<3, 128>, 16>,
         //     WorstCaseDescending,
         // >(n);
-        time_workload::<
-            T,
-            SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting, 16>,
-            WorstCaseDescending,
-        >(n);
+        // time_workload::<
+        //     T,
+        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting<2, 128>, 16>,
+        //     WorstCaseDescending,
+        // >(n);
     }
     #[cfg(feature = "avx512")]
     {

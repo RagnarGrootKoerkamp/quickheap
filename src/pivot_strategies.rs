@@ -101,8 +101,8 @@ impl<const A: usize, const B: usize> PivotStrategy for Log2Pivot<A, B> {
 pub struct TablePivot;
 impl TablePivot {
     const LOOKUP: [usize; 32] = [
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 5, 7, 9, 11, 13, 15, 17, 19, 23,
-        27, 31, 33, 35,
+        1, 1, 1, 3, 3, 3, 5, 5, 5, 7, 7, 9, 9, 11, 13, 15, 15, 17, 17, 21, 21, 23, 23, 23, 27, 31,
+        37, 37, 41, 41, 45, 45,
     ];
 }
 
@@ -110,7 +110,7 @@ impl PivotStrategy for TablePivot {
     fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
         let i = size_of::<T>() * 8 - layer.len().leading_zeros() as usize;
         if i > 31 {
-            return get_m_median(layer, 35);
+            return get_m_median(layer, 47);
         }
         get_m_median(layer, TablePivot::LOOKUP[i])
     }

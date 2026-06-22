@@ -25,8 +25,6 @@
 //! assert_eq!(q.pop(), None);
 //! ```
 
-#![feature(stmt_expr_attributes)]
-
 #[doc(hidden)]
 pub mod pivot_strategies;
 
@@ -37,16 +35,14 @@ mod simd;
 #[cfg(test)]
 mod test;
 
-#[cfg(feature = "pivots")]
-use std::any::type_name;
-
-#[cfg(feature = "rebalancing")]
-use std::{any::type_name, time};
+#[cfg(all(
+    any(feature = "rebalancing", feature = "pivots"),
+    not(feature = "time_only")
+))]
+use std::{any::type_name, time::Instant};
 
 #[cfg(feature = "pivots")]
 use std::cmp;
-#[cfg(feature = "pivots")]
-use std::time::Instant;
 
 pub use simd::{Avx2, Avx512};
 use std::marker::PhantomData;
@@ -68,6 +64,28 @@ impl<T: Copy + Ord> Elem for T {}
 pub use simd::SimdElem;
 
 use crate::rebalancing_strategies::NoRebalancing;
+
+// TODO:
+// mod buckets;
+
+#[allow(dead_code)]
+struct TotalPerformance {
+    total_push_time: u128, // in nano seconds
+    total_pop_time: u128,  // in nano seconds
+    pushes: usize,
+    pops: usize,
+}
+
+impl TotalPerformance {
+    fn default() -> Self {
+        TotalPerformance {
+            total_push_time: 0,
+            total_pop_time: 0,
+            pushes: 0,
+            pops: 0,
+        }
+    }
+}
 
 /// The full SimdQuickHeap implementation, with all configuration parameters.
 ///
@@ -101,7 +119,10 @@ pub struct ConfigurableSimdQuickHeap<
     buckets: Vec<Vec<T>>,
 
     size: usize,
+    #[allow(dead_code)]
     rebal_iteration: usize,
+    #[allow(dead_code)]
+    perf: TotalPerformance,
 
     _p: PhantomData<P>,
     _r: PhantomData<R>,
@@ -133,14 +154,14 @@ impl<
     const N: usize,
     const SORT: bool,
 > Default for ConfigurableSimdQuickHeap<T, S, P, R, N, SORT>
-// TODO Change here to strategy as well
 {
     fn default() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
-            buckets: (0..128).map(|_| vec![]).collect(), // vec![vec![]], //
+            buckets: (0..128).map(|_| vec![]).collect(),
             size: 0,
             rebal_iteration: 0,
+            perf: TotalPerformance::default(),
             _p: PhantomData,
             _r: PhantomData,
             _backend: PhantomData,
@@ -159,8 +180,11 @@ impl<
 {
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
-        #[cfg(any(feature = "pivots", feature = "rebalancing"))]
-        let now = time::Instant::now();
+        // #[cfg(any(feature = "pivots", feature = "rebalancing"))]
+        // let now = Instant::now();
+
+        #[cfg(feature = "rebalancing")] // TODO: Is this the right position here?
+        R::on_push(self.size, &mut self.pivots, &mut self.buckets);
 
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
         let layer = &mut self.buckets[target_layer];
@@ -176,20 +200,23 @@ impl<
 
         self.size += 1;
 
-        #[cfg(any(feature = "pivots", feature = "rebalancing"))]
-        {
-            let total_push = now.elapsed().as_nanos();
-            eprintln!("push,{}", total_push);
-        }
+        // #[cfg(any(feature = "pivots", feature = "rebalancing"))]
+        // {
+        //     let total_push = now.elapsed().as_nanos();
+        //     self.perf.total_push_time += total_push;
+        //     self.perf.pushes += 1;
+        // }
     }
 
     /// Pop the smallest element from the queue.
     pub fn pop(&mut self) -> Option<T> {
-        #[cfg(any(feature = "pivots", feature = "rebalancing"))]
-        let now = time::Instant::now();
+        // #[cfg(any(feature = "pivots", feature = "rebalancing"))]
+        // let now = Instant::now();
 
         #[cfg(feature = "rebalancing")]
-        self.rebal_iteration += 1;
+        {
+            self.rebal_iteration += 1;
+        }
 
         let layer = self.pivots.len();
         // Only the top layer can be empty.
@@ -231,22 +258,32 @@ impl<
 
         self.size -= 1;
 
-        #[cfg(any(feature = "pivots", feature = "rebalancing"))]
-        {
-            let total_pop = now.elapsed().as_nanos();
-            eprintln!("pop,{}", total_pop);
-        }
+        // #[cfg(any(feature = "pivots", feature = "rebalancing"))]
+        // {
+        //     let total_pop = now.elapsed().as_nanos();
+        //     self.perf.total_pop_time += total_pop;
+        //     self.perf.pops += 1;
+        // }
 
         Some(min)
     }
 
+    // pub fn print_perf(&self) {
+    //     let avg_push: f64 = self.perf.total_push_time as f64 / self.perf.pushes as f64;
+    //     let avg_pop: f64 = self.perf.total_pop_time as f64 / self.perf.pops as f64;
+    //     eprint!(
+    //         "Avg. Push Time: {}ns \nAvg. Pop Time: {}ns\n",
+    //         avg_push, avg_pop
+    //     );
+    // }
+
     #[inline(never)]
     fn partition(&mut self) {
-        #[cfg(feature = "pivots")]
+        #[cfg(all(feature = "pivots", not(feature = "time_only")))]
         print!("\"{}\",", type_name::<P>());
 
-        #[cfg(feature = "rebalancing")]
-        let now = time::Instant::now();
+        #[cfg(all(feature = "rebalancing", not(feature = "time_only")))]
+        let now = Instant::now();
 
         // Reserve space for an additional L layers when needed.
         let layer = self.pivots.len();
@@ -263,11 +300,11 @@ impl<
         let n = cur_layer.len();
 
         // Sample a pivot using the pivot strategy
-        #[cfg(feature = "pivots")]
+        #[cfg(all(feature = "pivots", not(feature = "time_only")))]
         let start = Instant::now();
         let (pivot, pivot_pos) = P::pick(&cur_layer);
 
-        #[cfg(feature = "pivots")]
+        #[cfg(all(feature = "pivots", not(feature = "time_only")))]
         {
             let elapsed = start.elapsed();
             print!("{},", elapsed.as_nanos());
@@ -349,17 +386,15 @@ impl<
             self.pivots.pop().unwrap();
         }
 
-        #[cfg(feature = "pivots")]
+        #[cfg(all(feature = "pivots", not(feature = "time_only")))]
         {
             let cur_len = cur_layer.len();
             let next_len = next_layer.len();
             let total_len = cur_len + next_len;
 
             print!(
-                "{},{},{},{}\n",
+                "{},{}\n",
                 total_len,
-                cur_len,
-                next_len,
                 cmp::min(cur_len, next_len) as f64 / total_len as f64
             );
         }
@@ -370,12 +405,15 @@ impl<
                 return;
             }
             self.rebal_iteration = 0;
-            R::rebalance(self.size, &mut self.pivots, &mut self.buckets);
+            R::on_pop(self.size, &mut self.pivots, &mut self.buckets);
+        }
 
+        #[cfg(all(feature = "rebalancing", not(feature = "time_only")))]
+        {
             let elapsed = now.elapsed();
 
             print!(
-                "{},{},{},{}\n",
+                "\"{}\",{},{},{}\n",
                 type_name::<R>(),
                 self.size,
                 self.pivots.len(),

@@ -7,12 +7,6 @@ use quickheap::ConfigurableSimdQuickHeap as SimdQuickHeap;
 use quickheap::pivot_strategies::{CbrtPivot, Log2Pivot, MedianOfM, TablePivot};
 use quickheap::rebalancing_strategies::NoRebalancing;
 
-#[cfg(feature = "perf")]
-use perfcnt::{
-    AbstractPerfCounter,
-    linux::{CacheId, CacheOpId, CacheOpResultId, PerfCounterBuilderLinux},
-};
-
 use bench::workloads::*;
 use bench::*;
 use serde::Serialize;
@@ -48,24 +42,23 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
         let f = W::setup::<T, H>(n);
 
         let result;
-        #[cfg(not(feature = "perf"))]
-        {
-            let start = std::time::Instant::now();
-            f();
-            let nanos = start.elapsed().as_nanos() as f64;
+        let start = std::time::Instant::now();
+        f();
+        let nanos = start.elapsed().as_nanos() as f64;
 
-            result = Result {
-                elem: type_name::<T>(),
-                heap: type_name::<H>(),
-                n,
-                workload: type_name::<W>(),
-                repeat,
-                nanos,
-                ..Default::default()
-            };
-        }
+        result = Result {
+            elem: type_name::<T>(),
+            heap: type_name::<H>(),
+            n,
+            workload: type_name::<W>(),
+            repeat,
+            nanos,
+            ..Default::default()
+        };
 
-        // println!("{},{},{}", result.heap, result.n, result.nanos);
+        let avg_op_time: f64 = result.nanos as f64 / (result.n * W::NORMALIZATION) as f64;
+
+        eprintln!("{:<130} {:>25.2}", result.heap, avg_op_time);
         all_nanos.push(result.nanos);
     }
 
@@ -75,9 +68,10 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
 
 fn main() {
     type T = i64;
-    let n = 1 << 20;
+    let n = 1 << 21;
 
-    println!("name,median_of_m,pivoting_time,total,a,b,alpha");
+    println!("name,median_of_m,pivoting_time,total,alpha");
+    eprintln!("{:<130} {:>25}", "Method", "Average Operation Time");
 
     #[cfg(feature = "avx2")]
     {

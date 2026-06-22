@@ -1,12 +1,14 @@
 pub trait RebalancingStrategy<T> {
     const MAX_REBAL_ITERATIONS: usize;
-    fn rebalance(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
+    fn on_pop(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
+    fn on_push(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
 }
 
 pub struct NoRebalancing<const IT: usize>;
 impl<T, const IT: usize> RebalancingStrategy<T> for NoRebalancing<IT> {
     const MAX_REBAL_ITERATIONS: usize = IT;
-    fn rebalance(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+    fn on_pop(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+    fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
 }
 
 pub struct NaiveLogRebalancing<const THRESH: usize, const IT: usize>;
@@ -14,7 +16,7 @@ impl<T: Copy, const THRESH: usize, const IT: usize> RebalancingStrategy<T>
     for NaiveLogRebalancing<THRESH, IT>
 {
     const MAX_REBAL_ITERATIONS: usize = IT;
-    fn rebalance(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
+    fn on_pop(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
         let max = THRESH * size.ilog2() as usize;
 
         if pivots.len() > max {
@@ -32,12 +34,14 @@ impl<T: Copy, const THRESH: usize, const IT: usize> RebalancingStrategy<T>
             debug_assert!(pivots.is_empty());
         }
     }
+
+    fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
 }
 
 pub struct PivotForgetting<const F: usize, const IT: usize>;
 impl<T: Copy, const F: usize, const IT: usize> RebalancingStrategy<T> for PivotForgetting<F, IT> {
     const MAX_REBAL_ITERATIONS: usize = IT;
-    fn rebalance(_: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
+    fn on_pop(_: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
         // Invariant: buckets[pivots.len()] contains the smallest elements
         let mut total: usize = 0;
         let mut layer: usize = pivots.len();
@@ -60,4 +64,6 @@ impl<T: Copy, const F: usize, const IT: usize> RebalancingStrategy<T> for PivotF
             layer -= 1;
         }
     }
+
+    fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
 }

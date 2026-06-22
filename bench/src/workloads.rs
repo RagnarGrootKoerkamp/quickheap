@@ -1,4 +1,5 @@
 use radix_heap::Radix;
+use rand::RngExt;
 use rand_distr::{Distribution, Geometric};
 
 use crate::impls::NoHeap;
@@ -229,9 +230,9 @@ impl Workload for HeapSort {
 /// bench: (pop push)^n
 /// values: last + (0..C)
 /// C = 1000 for u32, C=2^32 for u64.
-pub struct ConstantSize;
+pub struct MonotoneConstantSize;
 
-impl Workload for ConstantSize {
+impl Workload for MonotoneConstantSize {
     const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
@@ -260,9 +261,9 @@ impl Workload for ConstantSize {
 /// init: push^n
 /// bench: (pop push)^n
 /// values: random
-pub struct RandomConstantSize;
+pub struct ConstantSize;
 
-impl Workload for RandomConstantSize {
+impl Workload for ConstantSize {
     const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
@@ -392,12 +393,21 @@ impl<const K: usize> Workload for WorstCaseDescending<K> {
         let mut h = H::default();
         let range = (0..(n * (K as u64 / 2 + 1))).rev();
 
+        let mut rand = rand::rng();
+
+        const PROB: f64 = 0.5;
+
         let mut values = range
-            .map(|v| T::from(v as u64))
+            .map(|v| {
+                if rand.random_bool(PROB) {
+                    let n: u64 = rand.random();
+                    T::from(n)
+                } else {
+                    T::from(v as u64)
+                }
+            })
             .collect::<Vec<T>>()
             .into_iter();
-
-        println!("Size of values: {}", values.len());
 
         move || {
             for _ in 0..n {

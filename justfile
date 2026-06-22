@@ -4,11 +4,14 @@ default:
 run:
     cd bench && cargo run -r --example run
 
+bench-simd:
+    cd bench && cargo run -r --example bench_simd > evals/data/simd.csv
+
 pivots:
-    cd bench && cargo run -r --example pivots -F pivots 1> evals/data/pivots.csv 2> evals/data/pivot_time.csv
+    cd bench && cargo run -r --example pivots -F pivots > evals/data/pivots.csv
 
 rebalancing:
-    cd bench && cargo run -r --example rebalancing -F rebalancing 1> evals/data/rebal.csv 2> evals/data/rebal_time.csv
+    cd bench && cargo run -r --example rebalancing -F rebalancing > evals/data/rebal.csv
 
 # Run all benchmarks. Takes a bunch of hours.
 bench-all:
