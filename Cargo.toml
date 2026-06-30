@@ -26,3 +26,4 @@ wide = "1.2.0"
 default = []
 pivots = []
 rebalancing = []
+time_only = []
