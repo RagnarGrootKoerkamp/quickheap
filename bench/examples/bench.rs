@@ -140,7 +140,10 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
             };
         }
 
-        CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
+        CSV_WRITER.with(|w| {
+            w.borrow_mut().serialize(&result).unwrap();
+            w.borrow_mut().flush().unwrap();
+        });
 
         all_nanos.push(result.nanos);
     }
@@ -165,7 +168,10 @@ fn comparisons_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
         pop_comparisons: pop_comparisons as f64,
         ..Default::default()
     };
-    CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
+    CSV_WRITER.with(|w| {
+        w.borrow_mut().serialize(&result).unwrap();
+        w.borrow_mut().flush().unwrap();
+    });
     (push_comparisons + pop_comparisons) as f64
 }
 
