@@ -172,6 +172,11 @@ impl<
     const SORT: bool,
 > ConfigurableSimdQuickHeap<T, S, P, R, N, SORT>
 {
+    /// Return the total capacity over all buckets.
+    pub fn capacity(&self) -> usize {
+        self.buckets.iter().map(|b| b.capacity()).sum()
+    }
+
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
         // #[cfg(any(feature = "pivots", feature = "rebalancing"))]

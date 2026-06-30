@@ -30,6 +30,9 @@ impl<T: Elem> Heap<T> for BinaryHeap<T> {
     fn pop(&mut self) -> Option<T> {
         Some(self.pop()?.0)
     }
+    fn capacity(&self) -> usize {
+        self.capacity()
+    }
 }
 
 impl<T: Elem> Heap<T> for BTreeSet<T> {

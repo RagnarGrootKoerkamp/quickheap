@@ -39,6 +39,9 @@ where
     fn default() -> Self;
     fn push(&mut self, t: T);
     fn pop(&mut self) -> Option<T>;
+    fn capacity(&self) -> usize {
+        0
+    }
 }
 
 #[cfg(test)]

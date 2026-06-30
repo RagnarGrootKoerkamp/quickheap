@@ -4,10 +4,10 @@ use bench::scalar_quickheap::Search;
 use clap::Parser;
 #[cfg(feature = "avx512")]
 use quickheap::Avx512;
+use quickheap::ConfigurableSimdQuickHeap;
 use quickheap::pivot_strategies::{MedianOfM, RandomPivot};
 #[cfg(feature = "avx2")]
 use quickheap::{Avx2, SimdElem};
-use quickheap::{ConfigurableSimdQuickHeap, rebalancing_strategies::NoRebalancing};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -212,10 +212,10 @@ pub fn bench<T: Elem, H: Heap<T>>() {
         }
 
         if ARGS.table {
-            bench_one::<T, H, MotoneConstantSize>(n, &mut ok[1]);
+            bench_one::<T, H, MonotoneConstantSize>(n, &mut ok[1]);
         } else {
             bench_one::<T, H, HeapSort>(n, &mut ok[0]);
-            bench_one::<T, H, MotoneConstantSize>(n, &mut ok[1]);
+            bench_one::<T, H, MonotoneConstantSize>(n, &mut ok[1]);
             bench_one::<T, H, MonotoneWiggle>(n, &mut ok[2]);
             if !H::MONOTONE {
                 bench_one::<T, H, RandomWiggle>(n, &mut ok[3]);
@@ -251,6 +251,10 @@ struct Args {
     /// SimdQuickHeap Median of 1/3/5 comparison.
     #[clap(long)]
     ablation: bool,
+
+    /// Measure the memory (vector capacity) used by BinaryHeap and SimdQuickHeap.
+    #[clap(long)]
+    memory: bool,
 }
 
 fn bench_plots<T: Elem + 'static>()
@@ -266,10 +270,10 @@ where
     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
 
     #[cfg(feature = "avx2")]
-    bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16, true>>();
+    bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>>>();
 
     #[cfg(feature = "avx512")]
-    bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>, NoRebalancing, 16, true>>();
+    bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>>>();
 
     // ENGINEERED
     #[cfg(feature = "ffi")]
@@ -307,15 +311,15 @@ where
 fn bench_table() {
     type T = i64;
 
-    // QUICKHEAP
-    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
-
     // SIMD QUICKHEAP
     #[cfg(feature = "avx2")]
-    bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16, true>>();
+    bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>>>();
 
     #[cfg(feature = "avx512")]
-    bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>, NoRebalancing, 16, true>>();
+    bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>>>();
+
+    // QUICKHEAP
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
 
     // ENGINEERED
     #[cfg(feature = "ffi")]
@@ -410,20 +414,42 @@ where
     #[cfg(feature = "avx2")]
     {
         // FIXME: DEDUP results for median of 1/3/5 ablation
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, RandomPivot, NoRebalancing, 16, true>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16, true>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<5>, NoRebalancing, 16, true>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, RandomPivot>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<5>>>();
     }
 
     #[cfg(feature = "avx512")]
     {
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, RandomPivot, NoRebalancing, 16, true>>(
-        );
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>, NoRebalancing, 16, true>>(
-        );
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<5>, NoRebalancing, 16, true>>(
-        );
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, RandomPivot>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<5>>>();
     }
+}
+
+fn bench_memory() {
+    type T = i64;
+
+    fn bench<H: Heap<T>, W: Workload>() {
+        eprintln!("Workload: {}", type_name::<W>());
+        for exp in [10, 15, 20, 25] {
+            let n = 1 << exp;
+
+            let f = W::setup::<T, H>(n);
+            let h = f();
+            let cap = h.capacity();
+            eprintln!(
+                "{:>20}  n: {n:>10}  Cap: {cap:>10}  Ratio: {:>6.3}",
+                type_name::<H>(),
+                cap as f64 / n as f64
+            );
+        }
+        eprintln!();
+    }
+    bench::<SimdQuickHeap<T>, HeapSort>();
+    bench::<SimdQuickHeap<T>, MonotoneConstantSize>();
+    bench::<SimdQuickHeap<T>, MonotoneWiggle>();
+    bench::<SimdQuickHeap<T>, RandomWiggle>();
 }
 
 fn main() {
@@ -441,6 +467,11 @@ fn main() {
         }
         if args.comparisons {
             bench_comparisons();
+            break 'done;
+        }
+
+        if args.memory {
+            bench_memory();
             break 'done;
         }
 

@@ -23,4 +23,8 @@ impl<
     fn pop(&mut self) -> Option<T> {
         self.pop()
     }
+
+    fn capacity(&self) -> usize {
+        self.capacity()
+    }
 }

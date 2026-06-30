@@ -198,7 +198,7 @@ pub trait Workload {
     /// The default is one push-pop pair per `n`.
     const NORMALIZATION: u64;
     /// n is the maximum size of the data structure.
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce();
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H;
 }
 
 /// bench: push^n pop^n
@@ -207,7 +207,7 @@ pub struct HeapSort;
 
 impl Workload for HeapSort {
     const NORMALIZATION: u64 = 1;
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let mut rng = fastrand::Rng::new();
         let values = std::iter::repeat_with(|| <T as Elem>::clamp(T::from(rng.u64(..))))
@@ -221,7 +221,7 @@ impl Workload for HeapSort {
             for _ in 0..n {
                 h.pop().unwrap().get();
             }
-            black_box(h);
+            black_box(h)
         }
     }
 }
@@ -230,11 +230,11 @@ impl Workload for HeapSort {
 /// bench: (pop push)^n
 /// values: last + (0..C)
 /// C = 1000 for u32, C=2^32 for u64.
-pub struct MotoneConstantSize;
+pub struct MonotoneConstantSize;
 
-impl Workload for MotoneConstantSize {
+impl Workload for MonotoneConstantSize {
     const NORMALIZATION: u64 = 10;
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let stride = T::stride();
         let mut rng = fastrand::Rng::new();
@@ -253,7 +253,7 @@ impl Workload for MotoneConstantSize {
                 let l = h.pop().unwrap().get();
                 h.push(T::try_from(l + value));
             }
-            black_box(h);
+            black_box(h)
         }
     }
 }
@@ -265,7 +265,7 @@ pub struct RandomConstantSize;
 
 impl Workload for RandomConstantSize {
     const NORMALIZATION: u64 = 10;
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let stride = T::stride();
         let mut rng = fastrand::Rng::new();
@@ -283,7 +283,7 @@ impl Workload for RandomConstantSize {
                 let _l = h.pop().unwrap().get();
                 h.push(T::try_from(value));
             }
-            black_box(h);
+            black_box(h)
         }
     }
 }
@@ -294,7 +294,7 @@ pub struct MonotoneWiggle;
 
 impl Workload for MonotoneWiggle {
     const NORMALIZATION: u64 = 3;
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let stride = T::stride();
         let mut rng = fastrand::Rng::new();
@@ -314,7 +314,7 @@ impl Workload for MonotoneWiggle {
                 h.push(T::try_from(l + values.next().unwrap()));
                 h.pop().unwrap().get();
             }
-            black_box(h);
+            black_box(h)
         }
     }
 }
@@ -325,7 +325,7 @@ pub struct GeometricMonotoneWiggle;
 
 impl Workload for GeometricMonotoneWiggle {
     const NORMALIZATION: u64 = 3;
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let stride = T::stride();
         let geometric = Geometric::new(1.0 / stride as f64).unwrap();
@@ -349,7 +349,7 @@ impl Workload for GeometricMonotoneWiggle {
                 h.push(T::try_from(l + values.next().unwrap()));
                 h.pop().unwrap().get();
             }
-            black_box(h);
+            black_box(h)
         }
     }
 }
@@ -360,7 +360,7 @@ pub struct RandomWiggle;
 
 impl Workload for RandomWiggle {
     const NORMALIZATION: u64 = 3;
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let stride = T::stride();
         let mut rng = fastrand::Rng::new();
@@ -379,7 +379,7 @@ impl Workload for RandomWiggle {
                 h.push(values.next().unwrap());
                 h.pop().unwrap().get();
             }
-            black_box(h);
+            black_box(h)
         }
     }
 }
@@ -389,7 +389,7 @@ pub struct WorstCaseDescending<const K: usize = 16>;
 impl<const K: usize> Workload for WorstCaseDescending<K> {
     const NORMALIZATION: u64 = K as u64 / 2 + 1;
 
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let range = (0..(n * (K as u64 / 2 + 1))).rev();
 
@@ -419,6 +419,7 @@ impl<const K: usize> Workload for WorstCaseDescending<K> {
             for _ in 0..n * K as u64 / 2 {
                 h.pop().unwrap().get();
             }
+            h
         }
     }
 }

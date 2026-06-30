@@ -99,7 +99,7 @@ pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
         }
 
         bench_one::<T, H, HeapSort>(n, &mut ok[0]);
-        bench_one::<T, H, MotoneConstantSize>(n, &mut ok[1]);
+        bench_one::<T, H, MonotoneConstantSize>(n, &mut ok[1]);
         bench_one::<T, H, MonotoneWiggle>(n, &mut ok[2]);
         bench_one::<T, H, RandomConstantSize>(n, &mut ok[3]);
         bench_one::<T, H, RandomWiggle>(n, &mut ok[4]);
