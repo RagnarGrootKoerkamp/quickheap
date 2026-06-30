@@ -463,6 +463,29 @@ elif "comparisons" in benchname:
     fig.savefig(f"plots/{benchname}{suff}.pdf", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}{suff}.png", bbox_inches="tight", dpi=300)
 
+elif "table" in benchname:
+    # pivot table
+    # - rows: "name"
+    # - columns: 'n'
+    # - values: ['nanos', 'l3_cache_misses'] / 'ops'
+    # print(df.columns)
+    # print(df)
+    assert len(df.elem.unique()) == 1
+    assert len(df.workload.unique()) == 1
+
+    vals = ["nanos", "l1_cache_misses", "hw_cache_misses", "l3_cache_misses"]
+    # NOTE: Only normalized per element,
+    for val in vals:
+        df[val] /= df["ops"]
+
+    pivot = df.pivot_table(
+        index=["name"],
+        columns="n",
+        values=vals,
+        aggfunc="mean",
+        sort=False,
+    )
+    print(pivot)
 else:
     # Bench Plot
 
