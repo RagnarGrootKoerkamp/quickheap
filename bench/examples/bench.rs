@@ -1,9 +1,9 @@
 #![feature(where_clause_attrs)]
 
 use bench::scalar_quickheap::Search;
-#[cfg(feature = "avx512")]
-use bench::simd::Avx512;
 use clap::Parser;
+#[cfg(feature = "avx512")]
+use quickheap::Avx512;
 use quickheap::pivot_strategies::{MedianOfM, RandomPivot};
 #[cfg(feature = "avx2")]
 use quickheap::{Avx2, SimdElem};
