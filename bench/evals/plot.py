@@ -184,7 +184,6 @@ if is_categorical:
         r".*/(.*?)(?:_graph)?\.gr$", r"\1", regex=True
     )
 
-    df["millis"] = df["nanos"] / 1e6
     df = df[~df["graph"].str.contains("small")]
     df = df[~df["name"].str.contains("Custom")]
 
@@ -193,7 +192,9 @@ if is_categorical:
 
     # Take median over repeats
     df = (
-        df.groupby(["name", "type", "graph_name", "workload"])["millis"]
+        df.groupby(["name", "type", "graph_name", "workload", "vertices", "edges"])[
+            "nanos"
+        ]
         .median()
         .reset_index()
     )
@@ -202,9 +203,8 @@ if is_categorical:
     df["order"] = pd.Categorical(df["type"], categories=type_order, ordered=True)
     df = df.sort_values(["order", "name"])
 
-    # Normalize: for each (graph_name, workload), divide by the minimum nanos
-    min_millis = df.groupby(["graph_name", "workload"])["millis"].transform("min")
-    df["rel"] = df["millis"] / min_millis
+    # Normalize: for each (graph_name, workload), divide by the number of edges in the graph to get ns/edge.
+    df["rel"] = df["nanos"] / df["edges"]
 
     all_types = df["type"].unique()
     workloads = df["workload"].unique()
@@ -261,9 +261,7 @@ if is_categorical:
 
             gdf = wdf[wdf["graph_name"] == gn].set_index("name")
             heights = [
-                gdf.loc[m, "rel"] if m in gdf.index else float("nan")
-                for m in methods  # Relative
-                # gdf.loc[m, "millis"] if m in gdf.index else float("nan") for m in methods # Nanos
+                gdf.loc[m, "rel"] if m in gdf.index else float("nan") for m in methods
             ]
             offset = (gi - (len(graph_names) - 1) / 2) * bar_width
 
@@ -278,12 +276,8 @@ if is_categorical:
                 edgecolor="white",
             )
 
-        ax.axhline(1.0, color="gray", ls="--", lw=0.8)
         ymax = df[df["workload"] == workload]["rel"].max()
-        ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5])
-        ax.set_ylim(0.8, 5)
-        ax.yaxis.set_minor_locator(ticker.NullLocator())
-        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}×"))
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}"))
         ax.set_title(workload)
         ax.grid(axis="y", which="major", linestyle="-", alpha=0.4)
 
@@ -346,7 +340,7 @@ if is_categorical:
         bbox_to_anchor=(0.93, 0.96),
     )
 
-    fig.supylabel(r"Relative Time ($t \:/\: t_{min}$)")
+    fig.supylabel(r"ns/edge")
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}{suff}.pdf", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}{suff}.png", bbox_inches="tight")
@@ -448,7 +442,7 @@ elif "comparisons" in benchname:
     ax.set_ylim(0, 3.5)
     ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=8)
 
-    ax.set_ylabel(r"Comparisons ($1 \:/\: (\mathsf{Ops} \cdot \lg n)$)")
+    ax.set_ylabel(r"Comparisons ($1 \:/\: (\mathsf{Elems} \cdot \lg n)$)")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
 
     # Coloured method legend (top-left)
@@ -475,7 +469,7 @@ else:
     # Take median over repeats, then normalize each metric by n*log2(n)
     metrics = [
         # ("nanos", r"$(\mathsf{ns} \:/\: \#(\mathsf{pop}\circ\mathsf{push})) \:/\: \lg n$"),
-        ("nanos", r"Runtime ($\mathsf{ns} \:/\: (\mathsf{Ops} \cdot \lg n)$)"),
+        ("nanos", r"Runtime ($\mathsf{ns} \:/\: (\mathsf{Elems} \cdot \lg n)$)"),
         # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
         # (
         #     "l1_cache_misses",
@@ -539,7 +533,7 @@ else:
 
     # workloads = df["workload"].unique()
     workload_set = [
-        ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "Wiggle"],
+        ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "RandomWiggle"],
         ["MonotoneConstantSize"],
     ]
     for workloads in workload_set:
