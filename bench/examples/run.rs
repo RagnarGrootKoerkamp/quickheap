@@ -139,24 +139,24 @@ fn main() {
 
     #[cfg(feature = "avx2")]
     {
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 16, true>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 16, false>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, false>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 8, true>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 8, false>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, true>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, false>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<5>, 16>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, 16>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, 16>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, 16>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, 16>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, 16>, ConstantSize>(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 16, true>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 16, false>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 16, false>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 8, true>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<1>, 8, false>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, true>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, 8, false>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<5>, 16>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, 16>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, 16>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, 16>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, 16>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, 16>, RandomConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, 16>, RandomConstantSize>(n);
     }
     #[cfg(feature = "avx512")]
     {
-        time_workload::<T, SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>, RandomConstantSize>(n);
     }
 }

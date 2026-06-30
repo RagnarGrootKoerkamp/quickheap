@@ -230,9 +230,9 @@ impl Workload for HeapSort {
 /// bench: (pop push)^n
 /// values: last + (0..C)
 /// C = 1000 for u32, C=2^32 for u64.
-pub struct MonotoneConstantSize;
+pub struct MotoneConstantSize;
 
-impl Workload for MonotoneConstantSize {
+impl Workload for MotoneConstantSize {
     const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
@@ -261,9 +261,9 @@ impl Workload for MonotoneConstantSize {
 /// init: push^n
 /// bench: (pop push)^n
 /// values: random
-pub struct ConstantSize;
+pub struct RandomConstantSize;
 
-impl Workload for ConstantSize {
+impl Workload for RandomConstantSize {
     const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();
@@ -356,9 +356,9 @@ impl Workload for GeometricMonotoneWiggle {
 
 /// bench: (push pop push)^n (pop push pop)^n
 /// values: random
-pub struct Wiggle;
+pub struct RandomWiggle;
 
-impl Workload for Wiggle {
+impl Workload for RandomWiggle {
     const NORMALIZATION: u64 = 3;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() {
         let mut h = H::default();

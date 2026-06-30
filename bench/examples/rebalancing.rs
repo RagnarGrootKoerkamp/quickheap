@@ -74,19 +74,23 @@ fn main() {
 
     #[cfg(feature = "avx2")]
     {
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing<128>, 16>, Wiggle>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>, RandomWiggle>(
+            n,
+        );
         time_workload::<
             T,
             SimdQuickHeap<T, Avx2, MedianOfM<3>, NaiveLogRebalancing<3, 512>, 16>,
-            Wiggle,
+            RandomWiggle,
         >(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting<2, 512>, 16>, Wiggle>(
-            n,
-        );
+        time_workload::<
+            T,
+            SimdQuickHeap<T, Avx2, MedianOfM<3>, PivotForgetting<2, 512>, 16>,
+            RandomWiggle,
+        >(n);
 
         // time_workload::<
         //     T,
-        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing<128>, 16>,
+        //     SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>,
         //     WorstCaseDescending,
         // >(n);
         // time_workload::<
@@ -105,7 +109,7 @@ fn main() {
         time_workload::<
             T,
             SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, NoRebalancing, 16>,
-            ConstantSize,
+            RandomConstantSize,
         >(n);
     }
 }

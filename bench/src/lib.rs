@@ -55,7 +55,7 @@ mod test {
     use crate::workloads::{Elem, Workload};
 
     #[cfg(feature = "avx2")]
-    use quickheap::{Avx2, ConfigurableSimdQuickHeap};
+    use quickheap::{Avx2, ConfigurableSimdQuickHeap, rebalancing_strategies};
 
     use std::marker::PhantomData;
 
@@ -84,10 +84,10 @@ mod test {
         fn run(n: u64) {
             eprintln!("Test: {:?}", std::any::type_name::<Self>());
             workloads::HeapSort::setup::<T, Self>(n)();
-            workloads::ConstantSize::setup::<T, Self>(n)();
+            workloads::RandomConstantSize::setup::<T, Self>(n)();
             workloads::MonotoneWiggle::setup::<T, Self>(n)();
             if !Self::MONOTONE {
-                workloads::Wiggle::setup::<T, Self>(n)();
+                workloads::RandomWiggle::setup::<T, Self>(n)();
             }
         }
     }
@@ -115,9 +115,31 @@ mod test {
         TestHeap::<T, Base, ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>::run(n);
 
         #[cfg(feature = "avx2")]
-        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, 8, true>>::run(n);
+        TestHeap::<
+            T,
+            Base,
+            ConfigurableSimdQuickHeap<
+                T,
+                Avx2,
+                MedianOfM<3>,
+                rebalancing_strategies::NoRebalancing,
+                8,
+                true,
+            >,
+        >::run(n);
         #[cfg(feature = "avx2")]
-        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx2, RandomPivot, 16, true>>::run(n);
+        TestHeap::<
+            T,
+            Base,
+            ConfigurableSimdQuickHeap<
+                T,
+                Avx2,
+                RandomPivot,
+                rebalancing_strategies::NoRebalancing,
+                16,
+                true,
+            >,
+        >::run(n);
         #[cfg(feature = "avx512")]
         TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<false>, 8, 3, true>>::run(n);
         #[cfg(feature = "avx512")]

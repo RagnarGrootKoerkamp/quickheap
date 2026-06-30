@@ -3,11 +3,11 @@ use bench::graph::Graph;
 use bench::prim::PrimMST;
 use bench::scalar_quickheap::Search;
 use clap::Parser;
-#[cfg(feature = "avx2")]
-use quickheap::Avx2;
 #[cfg(feature = "avx512")]
 use quickheap::Avx512;
 use quickheap::pivot_strategies::MedianOfM;
+#[cfg(feature = "avx2")]
+use quickheap::{Avx2, rebalancing_strategies};
 
 use quickheap::ConfigurableSimdQuickHeap as SimdQuickHeap;
 
@@ -154,9 +154,20 @@ fn main() {
 
     // QUICKHEAP
     #[cfg(feature = "avx2")]
-    bench::<SimdQuickHeap<u64, Avx2, MedianOfM<3>, 16, true>>(&graphs);
+    bench::<SimdQuickHeap<u64, Avx2, MedianOfM<3>, rebalancing_strategies::NoRebalancing, 16, true>>(
+        &graphs,
+    );
     #[cfg(feature = "avx512")]
-    bench::<SimdQuickHeap<u64, Avx512<true>, MedianOfM<3>, 16, true>>(&graphs);
+    bench::<
+        SimdQuickHeap<
+            u64,
+            Avx512<true>,
+            MedianOfM<3>,
+            rebalancing_strategies::NoRebalancing,
+            16,
+            true,
+        >,
+    >(&graphs);
 
     // SCALAR QUICKHEAP
     bench::<scalar_quickheap::ScalarQuickHeap<u64, 3, false, { Search::LinearScan }>>(&graphs);

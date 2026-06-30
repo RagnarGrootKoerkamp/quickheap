@@ -77,55 +77,55 @@ fn main() {
     {
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, MedianOfM<1>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, MedianOfM<1>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, MedianOfM<5>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, MedianOfM<5>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, CbrtPivot<1, 0>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, CbrtPivot<2, 0>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, CbrtPivot<4, 0>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, Log2Pivot<1, 0>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, Log2Pivot<2, 0>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
         time_workload::<
             T,
-            SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, NoRebalancing<128>, 16>,
-            ConstantSize,
+            SimdQuickHeap<T, Avx2, Log2Pivot<4, 0>, NoRebalancing, 16>,
+            RandomConstantSize,
         >(n);
-        time_workload::<T, SimdQuickHeap<T, Avx2, TablePivot, NoRebalancing<128>, 16>, ConstantSize>(
+        time_workload::<T, SimdQuickHeap<T, Avx2, TablePivot, NoRebalancing, 16>, RandomConstantSize>(
             n,
         );
     }
     #[cfg(feature = "avx512")]
     {
-        time_workload::<T, SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>, ConstantSize>(n);
+        time_workload::<T, SimdQuickHeap<T, Avx512<true>, MedianOfM<1>, 16>, RandomConstantSize>(n);
     }
 }

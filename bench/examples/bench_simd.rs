@@ -99,10 +99,10 @@ pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
         }
 
         bench_one::<T, H, HeapSort>(n, &mut ok[0]);
-        bench_one::<T, H, MonotoneConstantSize>(n, &mut ok[1]);
+        bench_one::<T, H, MotoneConstantSize>(n, &mut ok[1]);
         bench_one::<T, H, MonotoneWiggle>(n, &mut ok[2]);
-        bench_one::<T, H, ConstantSize>(n, &mut ok[3]);
-        bench_one::<T, H, Wiggle>(n, &mut ok[4]);
+        bench_one::<T, H, RandomConstantSize>(n, &mut ok[3]);
+        bench_one::<T, H, RandomWiggle>(n, &mut ok[4]);
 
         eprintln!();
     }
@@ -140,14 +140,7 @@ where
         // Baseline
         bench::<
             T,
-            quickheap::ConfigurableSimdQuickHeap<
-                T,
-                Avx2,
-                MedianOfM<3>,
-                NoRebalancing<128>,
-                16,
-                true,
-            >,
+            quickheap::ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16, true>,
         >(minpow, maxpow);
 
         // Engineering 1
@@ -185,7 +178,7 @@ where
                 T,
                 Avx512<true>,
                 MedianOfM<3>,
-                NoRebalancing<128>,
+                NoRebalancing,
                 16,
                 true,
             >,

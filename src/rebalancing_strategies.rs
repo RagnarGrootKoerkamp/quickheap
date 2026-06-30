@@ -4,9 +4,9 @@ pub trait RebalancingStrategy<T> {
     fn on_push(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
 }
 
-pub struct NoRebalancing<const IT: usize>;
-impl<T, const IT: usize> RebalancingStrategy<T> for NoRebalancing<IT> {
-    const MAX_REBAL_ITERATIONS: usize = IT;
+pub struct NoRebalancing;
+impl<T> RebalancingStrategy<T> for NoRebalancing {
+    const MAX_REBAL_ITERATIONS: usize = usize::MAX;
     fn on_pop(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
     fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
 }

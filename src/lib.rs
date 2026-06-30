@@ -98,7 +98,7 @@ pub struct ConfigurableSimdQuickHeap<
     T: Elem,
     S: simd::SimdElem<T> = Simd,
     P: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
-    R: rebalancing_strategies::RebalancingStrategy<T> = rebalancing_strategies::NoRebalancing<128>,
+    R: rebalancing_strategies::RebalancingStrategy<T> = rebalancing_strategies::NoRebalancing,
     const N: usize = 16,
     const SORT: bool = true,
 > {
@@ -136,14 +136,8 @@ pub struct ConfigurableSimdQuickHeap<
 /// Works for `i32`, `u32`, `i64`, and `u64`.
 ///
 /// Uses AVX-512 instructions when available at compile time.
-pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
-    T,
-    Simd,
-    pivot_strategies::MedianOfM<3>,
-    NoRebalancing<128>,
-    16,
-    true,
->;
+pub type SimdQuickHeap<T> =
+    ConfigurableSimdQuickHeap<T, Simd, pivot_strategies::MedianOfM<3>, NoRebalancing, 16, true>;
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
