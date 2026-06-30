@@ -4,8 +4,10 @@ use bench::scalar_quickheap::Search;
 #[cfg(feature = "avx512")]
 use bench::simd::Avx512;
 use clap::Parser;
+use quickheap::pivot_strategies::{MedianOfM, RandomPivot};
 #[cfg(feature = "avx2")]
-use quickheap::{Avx2, SimdElem, pivot_strategies::MedianOfM};
+use quickheap::{Avx2, SimdElem};
+use quickheap::{ConfigurableSimdQuickHeap, rebalancing_strategies::NoRebalancing};
 
 #[cfg(feature = "perf")]
 use perfcnt::{
@@ -124,6 +126,7 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
                 heap: type_name::<H>(),
                 n,
                 workload: type_name::<W>(),
+                ops: n * W::NORMALIZATION,
                 repeat,
                 nanos,
                 push_comparisons: 0.0,
@@ -166,8 +169,14 @@ fn comparisons_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
     (push_comparisons + pop_comparisons) as f64
 }
 
-pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
-    let ns: Vec<_> = (minpow..=maxpow).map(|i| (2u64).pow(i)).collect();
+pub fn bench<T: Elem, H: Heap<T>>() {
+    let minpow = if ARGS.comparisons { ARGS.max } else { ARGS.min };
+    let maxpow = ARGS.max;
+    let stride = if ARGS.table { 5 } else { 1 };
+    let ns: Vec<_> = (minpow..=maxpow)
+        .step_by(stride)
+        .map(|i| (2u64).pow(i))
+        .collect();
 
     let mut ok = [true; 5];
 
@@ -189,18 +198,23 @@ pub fn bench<T: Elem, H: Heap<T>>(minpow: u32, maxpow: u32) {
             eprint!(" {t:>8.2}");
 
             // Don't test larger n for this workflow once things get too slow.
-            if t > 32.0 {
+            // FIXME: Increase for table benchmark
+            let cutoff = if ARGS.table { 128.0 } else { 32.0 };
+            if t > cutoff {
                 *ok = false;
             }
         }
 
-        bench_one::<T, H, HeapSort>(n, &mut ok[0]);
-        bench_one::<T, H, ConstantSize>(n, &mut ok[1]);
-        bench_one::<T, H, MonotoneWiggle>(n, &mut ok[2]);
-        // bench_one::<T, H, GeometricMonotoneWiggle>(n, &mut ok[1]);
-        if !H::MONOTONE {
-            bench_one::<T, H, Wiggle>(n, &mut ok[3]);
-            // bench_one::<T, H, RandomConstantSize>(n, &mut ok[4]);
+        if ARGS.table {
+            bench_one::<T, H, MotoneConstantSize>(n, &mut ok[1]);
+        } else {
+            bench_one::<T, H, HeapSort>(n, &mut ok[0]);
+            bench_one::<T, H, MotoneConstantSize>(n, &mut ok[1]);
+            bench_one::<T, H, MonotoneWiggle>(n, &mut ok[2]);
+            if !H::MONOTONE {
+                bench_one::<T, H, RandomWiggle>(n, &mut ok[3]);
+                // bench_one::<T, H, RandomConstantSize>(n, &mut ok[4]);
+            }
         }
 
         eprintln!();
@@ -213,17 +227,27 @@ struct Args {
     min: u32,
     #[clap(long, default_value = "25")]
     max: u32,
-    #[clap(long)]
-    quickheap: bool,
+
     #[clap(long)]
     r#i32: bool,
     #[clap(long)]
     r#i64: bool,
+
+    /// Comparisons plot.
     #[clap(long)]
     comparisons: bool,
+
+    /// Experiments for the table. Includes all competitors for MonotoneConstantSize benchmark at subset of sizes.
+    /// Measures both time and cache misses.
+    #[clap(long)]
+    table: bool,
+
+    /// SimdQuickHeap Median of 1/3/5 comparison.
+    #[clap(long)]
+    ablation: bool,
 }
 
-fn test<T: Elem + 'static>(args: &Args)
+fn bench_plots<T: Elem + 'static>()
 where
     #[cfg(feature = "avx2")]
     Avx2: SimdElem<T>,
@@ -232,123 +256,195 @@ where
     #[cfg(feature = "avx512")]
     Avx512<true>: SimdElem<T>,
 {
-    let mut minpow = args.min;
-    if args.comparisons {
-        minpow = args.max;
-    }
-    let maxpow = args.max;
-
     // QUICKHEAP
-    if args.comparisons {
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>(
-            minpow, maxpow,
-        );
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>(
-            minpow, maxpow,
-        );
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true, { Search::LinearScan }>>(
-            minpow, maxpow,
-        );
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false>>(minpow, maxpow);
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>(minpow, maxpow);
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>(minpow, maxpow);
-    } else {
-        bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>(
-            minpow, maxpow,
-        );
-    }
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
 
-    if !args.comparisons {
-        #[cfg(feature = "avx2")]
-        bench::<T, quickheap::ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, 16, true>>(
-            minpow, maxpow,
-        );
+    #[cfg(feature = "avx2")]
+    bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16, true>>();
 
-        #[cfg(feature = "avx512")]
-        bench::<T, quickheap::ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>, 16, true>>(
-            minpow, maxpow,
-        );
-    }
-
-    if args.quickheap {
-        return;
-    }
+    #[cfg(feature = "avx512")]
+    bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>, NoRebalancing, 16, true>>();
 
     // ENGINEERED
     #[cfg(feature = "ffi")]
     match TypeId::of::<T>() {
         x if x == TypeId::of::<i32>() => {
-            bench::<i32, sequence_heap::SequenceHeapI32>(minpow, maxpow);
-            bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20));
-            bench::<i32, randomized_quickheap::RandQH2HeapI32>(minpow, maxpow);
-            // bench::<i32, boost_heap::BoostDary4HeapI32>(minpow, maxpow);
-            // bench::<i32, boost_heap::BoostFibHeapI32>(minpow, maxpow);
-            // bench::<i32, boost_heap::BoostPairingHeapI32>(minpow, maxpow);
-            // bench::<i32, boost_heap::BoostBinomialHeapI32>(minpow, maxpow);
-            // bench::<i32, boost_heap::BoostSkewHeapI32>(minpow, maxpow);
+            bench::<i32, sequence_heap::SequenceHeapI32>();
+            // FIXME???
+            // bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20), false);
+            bench::<i32, s3q::S3qHeapI32>();
+            bench::<i32, randomized_quickheap::RandQH2HeapI32>();
         }
         x if x == TypeId::of::<i64>() => {
-            bench::<i64, sequence_heap::SequenceHeapI64>(minpow, maxpow);
-            bench::<i64, s3q::S3qHeapI64>(minpow, maxpow);
-            bench::<i64, randomized_quickheap::RandQH2HeapI64>(minpow, maxpow);
-            // bench::<i64, boost_heap::BoostDary4HeapI64>(minpow, maxpow);
-            // bench::<i64, boost_heap::BoostFibHeapI64>(minpow, maxpow);
-            // bench::<i64, boost_heap::BoostPairingHeapI64>(minpow, maxpow);
-            // bench::<i64, boost_heap::BoostBinomialHeapI64>(minpow, maxpow);
-            // bench::<i64, boost_heap::BoostSkewHeapI64>(minpow, maxpow);
+            bench::<i64, sequence_heap::SequenceHeapI64>();
+            bench::<i64, s3q::S3qHeapI64>();
+            bench::<i64, randomized_quickheap::RandQH2HeapI64>();
         }
         _ => unimplemented!(),
     }
 
-    // REIMPLS
-    // bench::<T, binary_heap::CustomBinaryHeap<T>>(minpow, maxpow);
-    // bench::<T, dary_heap::CustomDaryHeap<T, 2>>(minpow, maxpow);
-    // bench::<T, dary_heap::CustomDaryHeap<T, 3>>(minpow, maxpow);
-    // bench::<T, dary_heap::CustomDaryHeap<T, 4>>(minpow, maxpow);
-    // bench::<T, dary_heap::CustomDaryHeap<T, 8>>(minpow, maxpow);
-    // bench::<T, dary_heap::CustomDaryHeap<T, 16>>(minpow, maxpow);
-
-    bench::<T, original_quickheap::OriginalQuickHeap<T>>(minpow, maxpow);
+    bench::<T, original_quickheap::OriginalQuickHeap<T>>();
 
     // BASELINE
-    bench::<T, impls::BinaryHeap<T>>(minpow, maxpow);
+    bench::<T, impls::BinaryHeap<T>>();
 
     // DARY
-    // bench::<T, impls::DaryHeap<T, 2>>(minpow, maxpow);
-    // bench::<T, impls::DaryHeap<T, 4>>(minpow, maxpow);
-    // bench::<T, impls::DaryHeap<T, 8>>(minpow, maxpow);
-    // bench::<T, impls::DaryHeap<T, 16>>(minpow, maxpow);
-    // bench::<T, impls::OrxDaryHeap<T, 2>>(minpow, maxpow);
-    // bench::<T, impls::OrxDaryHeap<T, 4>>(minpow, maxpow);
-    bench::<T, impls::OrxDaryHeap<T, 8>>(minpow, maxpow);
-    // bench::<T, impls::OrxDaryHeap<T, 16>>(minpow, maxpow);
+    bench::<T, impls::OrxDaryHeap<T, 8>>();
 
     // AMORTIZED
-    // if args.comparisons {
-    // bench::<T, impls::PairingHeap<T>>(minpow, maxpow);
-    // bench::<T, impls::FibonacciHeap<T>>(minpow, maxpow);
-    bench::<T, impls::WeakHeap<T>>(minpow, maxpow);
-    // }
+    bench::<T, impls::WeakHeap<T>>();
 
     // MONOTONE
-    if !args.comparisons {
-        bench::<T, impls::RadixHeap<T>>(minpow, maxpow);
+    bench::<T, impls::RadixHeap<T>>();
+}
+
+fn bench_table() {
+    type T = i64;
+
+    // QUICKHEAP
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
+
+    // SIMD QUICKHEAP
+    #[cfg(feature = "avx2")]
+    bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16, true>>();
+
+    #[cfg(feature = "avx512")]
+    bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>, NoRebalancing, 16, true>>();
+
+    // ENGINEERED
+    #[cfg(feature = "ffi")]
+    {
+        bench::<i64, sequence_heap::SequenceHeapI64>();
+        bench::<i64, s3q::S3qHeapI64>();
+        bench::<i64, randomized_quickheap::RandQH2HeapI64>();
     }
 
-    // eprintln!("Set");
-    // bench::<T, impls::BTreeSet<T>>(minpow, maxpow);
-    // bench::<T, impls::RevBTreeSet<T>>(minpow, maxpow);
-    // bench::<T, impls::IndexSetBTreeSet<T>>(minpow, maxpow);
-    // bench::<T, impls::IndexSetRevBTreeSet<T>>(minpow, maxpow);
+    // BOOST
+    #[cfg(feature = "boost")]
+    {
+        bench::<i64, boost_heap::BoostDary4HeapI64>();
+        bench::<i64, boost_heap::BoostFibHeapI64>();
+        bench::<i64, boost_heap::BoostPairingHeapI64>();
+        bench::<i64, boost_heap::BoostBinomialHeapI64>();
+        bench::<i64, boost_heap::BoostSkewHeapI64>();
+    }
+
+    bench::<T, original_quickheap::OriginalQuickHeap<T>>();
+
+    // BASELINE
+    bench::<T, impls::BinaryHeap<T>>();
+
+    // DARY
+    bench::<T, impls::DaryHeap<T, 4>>();
+    bench::<T, impls::DaryHeap<T, 8>>();
+    // bench::<T, impls::DaryHeap<T, 16>>();
+    bench::<T, impls::OrxDaryHeap<T, 4>>();
+    bench::<T, impls::OrxDaryHeap<T, 8>>();
+    // bench::<T, impls::OrxDaryHeap<T, 16>>();
+
+    // AMORTIZED
+    bench::<T, impls::PairingHeap<T>>();
+    bench::<T, impls::FibonacciHeap<T>>();
+    bench::<T, impls::WeakHeap<T>>();
+
+    // MONOTONE
+    bench::<T, impls::RadixHeap<T>>();
+}
+
+fn bench_comparisons() {
+    type T = i64;
+
+    // QUICKHEAP
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false, { Search::LinearScan }>>();
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true, { Search::LinearScan }>>();
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, false>>();
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false>>();
+    bench::<T, scalar_quickheap::ScalarQuickHeap<T, 1, true>>();
+
+    // ENGINEERED
+    #[cfg(feature = "ffi")]
+    match TypeId::of::<T>() {
+        x if x == TypeId::of::<i32>() => {
+            bench::<i32, sequence_heap::SequenceHeapI32>();
+            // FIXME???
+            // bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20), false);
+            bench::<i32, s3q::S3qHeapI32>();
+            bench::<i32, randomized_quickheap::RandQH2HeapI32>();
+        }
+        x if x == TypeId::of::<i64>() => {
+            bench::<i64, sequence_heap::SequenceHeapI64>();
+            bench::<i64, s3q::S3qHeapI64>();
+            bench::<i64, randomized_quickheap::RandQH2HeapI64>();
+        }
+        _ => unimplemented!(),
+    }
+
+    bench::<T, original_quickheap::OriginalQuickHeap<T>>();
+
+    // BASELINE
+    bench::<T, impls::BinaryHeap<T>>();
+
+    // DARY
+    bench::<T, impls::OrxDaryHeap<T, 8>>();
+
+    // AMORTIZED
+    bench::<T, impls::WeakHeap<T>>();
+}
+
+fn bench_ablation<T: Elem + 'static>()
+where
+    #[cfg(feature = "avx2")]
+    Avx2: SimdElem<T>,
+    #[cfg(feature = "avx512")]
+    Avx512<false>: SimdElem<T>,
+    #[cfg(feature = "avx512")]
+    Avx512<true>: SimdElem<T>,
+{
+    #[cfg(feature = "avx2")]
+    {
+        // FIXME: DEDUP results for median of 1/3/5 ablation
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, RandomPivot, NoRebalancing, 16, true>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>, NoRebalancing, 16, true>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<5>, NoRebalancing, 16, true>>();
+    }
+
+    #[cfg(feature = "avx512")]
+    {
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, RandomPivot, NoRebalancing, 16, true>>(
+        );
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>, NoRebalancing, 16, true>>(
+        );
+        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<5>, NoRebalancing, 16, true>>(
+        );
+    }
 }
 
 fn main() {
     let args = &*ARGS;
-    if !args.r#i64 && !args.comparisons {
-        test::<i32>(&args);
-    }
-    if !args.r#i32 {
-        test::<i64>(&args);
+
+    'done: {
+        if args.table {
+            bench_table();
+            break 'done;
+        }
+        if args.ablation {
+            bench_ablation::<i32>();
+            bench_ablation::<i64>();
+            break 'done;
+        }
+        if args.comparisons {
+            bench_comparisons();
+            break 'done;
+        }
+
+        // The default mode, optionally filtered for only i32 or i64.
+        if !args.r#i64 {
+            bench_plots::<i32>();
+        }
+        if !args.r#i32 {
+            bench_plots::<i64>();
+        }
     }
     CSV_WRITER.with(|w| w.borrow_mut().flush().unwrap());
 }
