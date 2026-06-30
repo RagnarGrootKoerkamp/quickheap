@@ -17,13 +17,18 @@ impl<'g, HeapT: Heap<u64>> DijkstraQuery<'g, HeapT> {
         }
     }
 
-    pub fn run_all(&mut self, s: usize) {
+    /// Return (#push, #pop)
+    pub fn run_all(&mut self, s: usize) -> (usize, usize) {
+        let mut push_count = 0;
+        let mut pop_count = 0;
         self.heap = HeapT::default();
         self.distances[s] = 0;
 
+        push_count += 1;
         self.heap.push(pack_id_key_tuple_to_u64(s, 0));
 
         while let Some(next_elem) = self.heap.pop() {
+            pop_count += 1;
             let (v, dist_to_v) = unpack_id_key_tuple_from_u64(next_elem);
 
             if dist_to_v == self.distances[v] {
@@ -31,11 +36,13 @@ impl<'g, HeapT: Heap<u64>> DijkstraQuery<'g, HeapT> {
                     let to_dist = dist_to_v + weight;
                     if to_dist < self.distances[to] {
                         self.distances[to] = to_dist;
+                        push_count += 1;
                         self.heap.push(pack_id_key_tuple_to_u64(to, to_dist));
                     }
                 }
             }
         }
+        (push_count, pop_count)
     }
 }
 

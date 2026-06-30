@@ -19,11 +19,16 @@ impl<'g, HeapT: Heap<u64>> PrimMST<'g, HeapT> {
         }
     }
 
-    pub fn compute_mst_from_vertex(&mut self, v: usize) {
-        self.relax(v);
+    /// Return (#push, #pop)
+    pub fn compute_mst_from_vertex(&mut self, v: usize) -> (usize, usize) {
+        let mut push_count = 0;
+        let mut pop_count = 0;
+
+        self.relax(v, &mut push_count);
         self.visited[v] = true;
 
         while let Some(tup) = self.heap.pop() {
+            pop_count += 1;
             let (id, _weight) = unpack_id_key_tuple_from_u64(tup);
 
             let edge @ Edge { to: v, .. } = self.graph.edge(id);
@@ -32,9 +37,10 @@ impl<'g, HeapT: Heap<u64>> PrimMST<'g, HeapT> {
                 self.mst_edges.push(edge);
                 self.visited[v] = true;
 
-                self.relax(v);
+                self.relax(v, &mut push_count);
             }
         }
+        (push_count, pop_count)
     }
 
     #[cfg(test)]
@@ -47,9 +53,10 @@ impl<'g, HeapT: Heap<u64>> PrimMST<'g, HeapT> {
         parents
     }
 
-    fn relax(&mut self, v: usize) {
+    fn relax(&mut self, v: usize, push_count: &mut usize) {
         for (id, Edge { to, weight, .. }) in self.graph.outgoing_edges(v) {
             if !self.visited[to] {
+                *push_count += 1;
                 self.heap.push(pack_id_key_tuple_to_u64(id, weight));
             }
         }

@@ -15,13 +15,12 @@ use bench::*;
 use serde::Serialize;
 use std::any::type_name;
 use std::cell::RefCell;
-use std::hint::black_box;
 use std::path::PathBuf;
 
 const REPEATS: usize = 3;
 
 trait GraphWorkload {
-    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce();
+    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce() -> (usize, usize);
 }
 
 // One-to-all dijkstra query from a random starting vertex
@@ -31,22 +30,16 @@ struct DijkstraWorkload;
 struct PrimWorkload;
 
 impl GraphWorkload for DijkstraWorkload {
-    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce() {
+    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce() -> (usize, usize) {
         let mut dijkstra = DijkstraQuery::<H>::new(graph);
-        move || {
-            dijkstra.run_all(0);
-            black_box(dijkstra);
-        }
+        move || dijkstra.run_all(0)
     }
 }
 
 impl GraphWorkload for PrimWorkload {
-    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce() {
+    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce() -> (usize, usize) {
         let mut prim = PrimMST::<H>::new(graph);
-        move || {
-            prim.compute_mst_from_vertex(0);
-            black_box(prim);
-        }
+        move || prim.compute_mst_from_vertex(0)
     }
 }
 
@@ -57,6 +50,8 @@ struct Result {
     workload: &'static str,
     vertices: usize,
     edges: usize,
+    push_count: usize,
+    pop_count: usize,
     repeat: usize,
     nanos: f64,
 }
@@ -79,7 +74,7 @@ fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u
         let f = W::setup::<H>(graph);
 
         let start = std::time::Instant::now();
-        f();
+        let (push_count, pop_count) = f();
         let nanos = start.elapsed().as_nanos() as f64;
 
         let result = Result {
@@ -88,6 +83,8 @@ fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u
             workload: type_name::<W>(),
             vertices: graph.num_vertices(),
             edges: graph.num_edges(),
+            push_count,
+            pop_count,
             repeat,
             nanos,
         };
