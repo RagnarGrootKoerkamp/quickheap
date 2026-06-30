@@ -1,446 +1,400 @@
-heap,graph,workload,vertices,edges,repeat,nanos
-
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,601488213.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,598772316.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,603682530.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,1773722131.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,1761122598.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,1735243222.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,1629876352.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,1618346621.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,1624039633.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,2275987840.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,2277658934.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,2277856023.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,2359645096.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,2349091655.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,2358436333.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,2712756889.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,2739495848.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,2723217689.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,2925002720.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,2903764431.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,2897869002.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,7690228446.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,7680792139.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,7695549673.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,115840149.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,117420815.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,115949735.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,355448035.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,355627467.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,357405233.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,187406663.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,186886794.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,187230185.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,220088873.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,218594718.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,218465182.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,2578850469.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,2579081493.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,2572729649.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,3161761134.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,3164110375.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx2, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,3171845583.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,562401049.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,554825393.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,560474478.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,1613009879.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,1620781883.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,1612653499.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,1550912612.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,1548736843.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,1547399354.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,2181101235.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,2186076999.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,2187980325.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,2282167435.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,2278692057.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,2277252615.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,2584098386.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,2615420845.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,2620114201.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,2799795553.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,2774578210.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,2769097851.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,7307796205.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,7259096579.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,7259855831.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,109917190.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,109061112.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,109785180.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,327281645.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,331470546.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,319828786.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,179209977.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,179956009.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,179047100.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,195928685.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,196546332.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,197579799.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,2476094336.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,2473656150.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,2474056377.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,2975737475.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,2974316291.0
-"quickheap::simd_quickheap::SimdQuickHeap<u64, quickheap::simd::Avx512<true>, quickheap::pivot_strategies::MedianOfM<3>, 16, true>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,2990403311.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,7314408259.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,7319101147.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,7327292800.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,6353880639.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,6336938908.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,6345748847.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,530866957.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,532083591.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,531576893.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,462276283.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,462877024.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,460122527.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,1991765517.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,1993790187.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,1982598706.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,5893830672.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,5857854677.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,5892217625.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,8882253767.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,8887334521.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,8841061862.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,25354295583.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,25294917825.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,25308313305.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,439506157.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,441274299.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,441268089.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,1342325851.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,1336682512.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,1340050710.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,6211533457.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,6217899874.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,6218260320.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,4939827161.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,4929733851.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,4931537387.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,4558775827.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,4562428390.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,4559701755.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,4300833235.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,4298107692.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,4296509607.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,0,72734173.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,1,72136076.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,2,73109442.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,0,63626007.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,1,64078203.0
-"quickheap::scalar_quickheap::ScalarQuickHeap<u64, 3, false, quickheap::scalar_quickheap::Search::LinearScan>",input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,2,63831619.0
-quickheap::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,3187755316.0
-quickheap::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,3181757759.0
-quickheap::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,3182908455.0
-quickheap::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,3119563263.0
-quickheap::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,3119527699.0
-quickheap::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,3120510039.0
-quickheap::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,217854851.0
-quickheap::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,217507915.0
-quickheap::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,218181796.0
-quickheap::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,197758759.0
-quickheap::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,197967736.0
-quickheap::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,196996984.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,803395856.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,805668893.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,803385499.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,2295260065.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,2297053596.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,2296688412.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,3797635309.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,3801458347.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,3797919529.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,9985517937.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,9982001063.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,9976683187.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,179025485.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,179226410.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,178779051.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,508499068.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,507905548.0
-quickheap::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,507602909.0
-quickheap::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,2718900400.0
-quickheap::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,2714894450.0
-quickheap::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,2718823965.0
-quickheap::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,2582958385.0
-quickheap::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,2580319703.0
-quickheap::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,2580188985.0
-quickheap::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,1999285371.0
-quickheap::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,2002307956.0
-quickheap::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,2000329645.0
-quickheap::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,2340007555.0
-quickheap::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,2340795630.0
-quickheap::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,2338698409.0
-quickheap::sequence_heap::SequenceHeapU64,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,0,21250679.0
-quickheap::sequence_heap::SequenceHeapU64,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,1,22233951.0
-quickheap::sequence_heap::SequenceHeapU64,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,2,23445950.0
-quickheap::sequence_heap::SequenceHeapU64,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,0,22066778.0
-quickheap::sequence_heap::SequenceHeapU64,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,1,23756600.0
-quickheap::sequence_heap::SequenceHeapU64,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,2,23943284.0
-quickheap::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,3078900062.0
-quickheap::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,3077641502.0
-quickheap::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,3082851945.0
-quickheap::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,3280347034.0
-quickheap::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,3278261512.0
-quickheap::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,3275280029.0
-quickheap::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,222595898.0
-quickheap::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,224271710.0
-quickheap::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,225083051.0
-quickheap::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,209251550.0
-quickheap::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,209046819.0
-quickheap::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,209738027.0
-quickheap::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,921980736.0
-quickheap::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,934365689.0
-quickheap::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,920166814.0
-quickheap::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,2789286231.0
-quickheap::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,2815674712.0
-quickheap::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,2814296192.0
-quickheap::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,4326151766.0
-quickheap::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,4327054226.0
-quickheap::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,4318438838.0
-quickheap::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,12691374301.0
-quickheap::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,12654333614.0
-quickheap::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,12674728209.0
-quickheap::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,161942788.0
-quickheap::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,161805690.0
-quickheap::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,161937699.0
-quickheap::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,595647199.0
-quickheap::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,591366998.0
-quickheap::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,592941215.0
-quickheap::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,2669012062.0
-quickheap::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,2670265754.0
-quickheap::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,2670628243.0
-quickheap::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,2761563008.0
-quickheap::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,2764154840.0
-quickheap::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,2763566817.0
-quickheap::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,1994689220.0
-quickheap::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,1995032171.0
-quickheap::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,1995334259.0
-quickheap::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,2433697567.0
-quickheap::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,2431371280.0
-quickheap::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,2435059043.0
-quickheap::s3q::S3qHeapU64,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,0,20759747.0
-quickheap::s3q::S3qHeapU64,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,1,21640714.0
-quickheap::s3q::S3qHeapU64,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,2,19616684.0
-quickheap::s3q::S3qHeapU64,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,0,24049177.0
-quickheap::s3q::S3qHeapU64,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,1,24328991.0
-quickheap::s3q::S3qHeapU64,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,2,22532486.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,4075999795.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,4081326634.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,4082395214.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,5260113762.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,5194868601.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,5312610016.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,290196917.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,290020149.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,290388238.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,392507677.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,442214811.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,469665286.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,1166652753.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,1166332538.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,1189770518.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,3578482553.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,3593113825.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,3615383563.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,5517609219.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,5411661807.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,5454763536.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,15961498840.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,15978157539.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,15854285310.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,243955743.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,241564846.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,242520265.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,768414474.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,767793623.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,764387165.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,3545698078.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,3545296849.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,3546691736.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,3978815996.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,4045232233.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,4005543629.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,2579748917.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,2577972742.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,2580751948.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,3469872750.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,3426765371.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,3430396720.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,0,33625287.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,1,31831797.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,2,30782586.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,0,36213123.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,1,39637217.0
-quickheap::original_quickheap::OriginalQuickHeap<u64>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,2,37203435.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,2889308406.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,2886789636.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,2885995411.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,3843300672.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,3838644969.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,3840799007.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,196333766.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,196268798.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,196325764.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,225013301.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,224591671.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,224211414.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,1569477016.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,1578065184.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,1581969055.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,5789028487.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,5730266758.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,5787135245.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,10543480275.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,10546811439.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,10539925714.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,34276285097.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,33960208267.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,34264016795.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,247473264.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,247066697.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,247055740.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,855283975.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,854831537.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,854793770.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,2542540708.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,2546881333.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,2544389062.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,3169781495.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,3166614550.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,3166521830.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,1855615075.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,1854722941.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,1854765606.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,2806035698.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,2805322085.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,2805865209.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,0,17670588.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,1,14725069.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,2,17074182.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,0,25636112.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,1,24383721.0
-alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,2,26086455.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,3086693585.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,3087057067.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,3089746036.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,3828343619.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,3835057925.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,3834680492.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,204217762.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,204319808.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,204214457.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,216364239.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,215686752.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,216165057.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,1347656778.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,1345017083.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,1339117683.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,5165977551.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,5176126277.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,5169909036.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,8158880059.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,8165961772.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,8182684231.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,27374478706.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,27422604300.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,27389852246.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,225067021.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,223532813.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,222828454.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,873816161.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,870719933.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,872614557.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,2675287446.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,2678560142.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,2674679984.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,3160634165.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,3158314003.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,3160194287.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,2010777678.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,2011188281.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,2011429247.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,2887911909.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,2885511502.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,2888161979.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,0,20174764.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,1,20464014.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,2,16766968.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,0,25073515.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,1,24860893.0
-"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,2,23080508.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,4320505610.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,4321564498.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,4321465618.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,0,4344517502.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,1,4342811451.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,2,4342949340.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,287252211.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,287298700.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,286873255.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,0,261451340.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,1,260925702.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2,260634519.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,1837723932.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,1829646112.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,1835271746.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,0,6424003656.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,1,6362564224.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,2,6394781811.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,10486808574.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,10500157290.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,10462971616.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,0,35093319221.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,1,36956576887.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,2,35132600111.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,326249459.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,326400558.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,326937112.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,0,1118344795.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,1,1119936120.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,2,1116496890.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,3654226680.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,3654041869.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,3656178303.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,0,3314455977.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,1,3316166133.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,2,3316944604.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,2767566760.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,2766703921.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,2766683128.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,0,3108099189.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,1,3108241405.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,2,3105791807.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,0,33509225.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,1,30308236.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,2,33294850.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,0,36740601.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,1,35975398.0
-weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/NY_graph.gr,bench_graph::PrimWorkload,264346,733846,2,36037853.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,0,3899381251.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,1,3904593853.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,2,3907625265.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,0,281337985.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,1,281761849.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2,281840237.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,0,854960291.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,1,855682718.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,2,855736840.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,0,4276285551.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,1,4272277326.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,2,4275536132.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,0,158854643.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1,158739137.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,2,158332811.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,0,3297172982.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,1,3300584881.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,2,3279370089.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,0,2532913770.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,1,2538265574.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,2,2534594081.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,0,27557861.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,1,27513744.0
-"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/NY_graph.gr,bench_graph::DijkstraWorkload,264346,733846,2,30607841.0
+heap,graph,workload,vertices,edges,push_count,pop_count,repeat,nanos
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,625896565.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,624485548.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,612312655.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,1818597880.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,1825197665.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,1841984556.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,1714317867.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,1711713612.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,1710218809.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,2263053223.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,2273522047.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,2277344074.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,2444986671.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,2444558113.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,2463364231.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,2684963886.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,2691768942.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,2692011569.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,2962456372.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,2993029360.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,2953325545.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,8166420751.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,8185613996.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,8161636856.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,121493802.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,120533217.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,122799980.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,369386364.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,370170271.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,371113479.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,196875405.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,196428898.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,197423835.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,213185404.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,217445455.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,213902599.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,2712935345.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,2708894155.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,2709738774.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,3136918005.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,3132525052.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx2>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,3123241254.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,600867143.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,606025924.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,598023065.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,1761698086.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,1761417881.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,1753022127.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,1646853613.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,1650535268.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,1644459357.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,2225742262.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,2213262894.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,2216233663.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,2396622232.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,2392036117.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,2393576900.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,2644342703.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,2648723276.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,2642914429.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,2859875751.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,2930571969.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,2872977171.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,8020490004.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,8020979585.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,7865469461.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,115081302.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,115089604.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,115784145.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,368700595.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,361054727.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,359023972.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,190053825.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,190229151.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,190278074.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,204198334.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,203053450.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,202817703.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,2630157621.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,2627839742.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,2634434017.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,3027068026.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,3048892065.0
+"quickheap::ConfigurableSimdQuickHeap<u64, quickheap::simd::Avx512<true>>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,3031766611.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,2027806773.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,2040214433.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,2046589276.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,5970340537.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,5957312959.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,5940394138.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,4588058643.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,4597951024.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,4599274929.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,4286232970.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,4295876402.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,4302172607.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,6422373265.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,6425482704.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,6414215812.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,5006258237.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,5009888164.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,5022751153.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,8990006636.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,9028750388.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,9031499812.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,25564650908.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,25613738912.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,25486050459.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,448318143.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,452808302.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,449955042.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,1357377443.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,1353740203.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,1352771877.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,540640814.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,540880678.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,541929315.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,462752153.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,467629930.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,469667296.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,7455759892.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,7470021270.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,7467536248.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,6400364999.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,6382539232.0
+"bench::scalar_quickheap::ScalarQuickHeap<u64, 3, false, bench::scalar_quickheap::Search::LinearScan>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,6392800212.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,822120522.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,820078820.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,820418624.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,2341273131.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,2340247728.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,2337060081.0
+bench::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,2011199739.0
+bench::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,2011604392.0
+bench::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,2009070414.0
+bench::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,2355531335.0
+bench::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,2355202507.0
+bench::sequence_heap::SequenceHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,2355944620.0
+bench::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,2871455116.0
+bench::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,2872141986.0
+bench::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,2871124024.0
+bench::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,2694823429.0
+bench::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,2693389718.0
+bench::sequence_heap::SequenceHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,2696858951.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,3890752690.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,3880591802.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,3889957826.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,10299098145.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,10293535120.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,10290066888.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,182970447.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,182198357.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,182301874.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,507531390.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,508960485.0
+bench::sequence_heap::SequenceHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,508625337.0
+bench::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,223020282.0
+bench::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,223213043.0
+bench::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,223189869.0
+bench::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,208363944.0
+bench::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,208230092.0
+bench::sequence_heap::SequenceHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,208677950.0
+bench::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,3248120601.0
+bench::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,3248404621.0
+bench::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,3249166765.0
+bench::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,3190619587.0
+bench::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,3184949560.0
+bench::sequence_heap::SequenceHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,3190670774.0
+bench::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,943775717.0
+bench::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,965909268.0
+bench::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,962052498.0
+bench::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,2880179549.0
+bench::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,2877821547.0
+bench::s3q::S3qHeapU64,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,2880424290.0
+bench::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,2007121582.0
+bench::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,2004967941.0
+bench::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,2007502058.0
+bench::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,2425632923.0
+bench::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,2426204228.0
+bench::s3q::S3qHeapU64,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,2425525240.0
+bench::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,2836422760.0
+bench::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,2836702443.0
+bench::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,2835549247.0
+bench::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,2839415121.0
+bench::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,2839653752.0
+bench::s3q::S3qHeapU64,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,2842851526.0
+bench::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,4400771278.0
+bench::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,4405250311.0
+bench::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,4400002754.0
+bench::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,12965185885.0
+bench::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,13049945832.0
+bench::s3q::S3qHeapU64,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,13049333675.0
+bench::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,165257611.0
+bench::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,165415290.0
+bench::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,165242377.0
+bench::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,582384264.0
+bench::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,583020098.0
+bench::s3q::S3qHeapU64,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,582679461.0
+bench::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,227463991.0
+bench::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,228807757.0
+bench::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,227439024.0
+bench::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,211951368.0
+bench::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,211421215.0
+bench::s3q::S3qHeapU64,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,211653056.0
+bench::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,3138205265.0
+bench::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,3133224682.0
+bench::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,3138457627.0
+bench::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,3303822591.0
+bench::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,3305422214.0
+bench::s3q::S3qHeapU64,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,3304651357.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,1157738772.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,1146079124.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,1156626637.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,3616572257.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,3607928757.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,3611860370.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,2486165870.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,2488314474.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,2485061657.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,3318737200.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,3345036139.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,3340726842.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,3583788076.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,3590586712.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,3595888442.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,3960619552.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,4005143484.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,3981476260.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,5304931428.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,5311521998.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,5272637869.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,15948250682.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,15831932059.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,15843222998.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,238419634.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,237106045.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,241055616.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,784606187.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,771823308.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,778401450.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,285632508.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,285925020.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,285890708.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,434922184.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,427796323.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,403729454.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,4029398418.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,4018385929.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,4025686465.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,5128945899.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,5146846609.0
+bench::original_quickheap::OriginalQuickHeap<u64>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,5130819487.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,1511270522.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,1515819241.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,1514493062.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,5845787288.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,5799651595.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,5833507049.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,1867930840.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,1867526177.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,1868459930.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,2782873559.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,2786006455.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,2784759506.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,2636520650.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,2635241252.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,2638148316.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,3237459645.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,3240191893.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,3238664820.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,10584930291.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,10411362280.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,10580180097.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,34075263407.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,33829521232.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,34060210201.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,250204964.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,249493817.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,249348496.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,860042930.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,859233945.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,861549321.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,199231412.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,199504927.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,199272494.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,222774724.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,223001157.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,222850560.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,2926628115.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,2929455025.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,2929588358.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,3889790281.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,3890832880.0
+alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,3890646728.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,1363727145.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,1348666388.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,1356016018.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,5187032195.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,5182553032.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,5185716353.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,1997907654.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,1997713350.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,1996702219.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,2822726152.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,2821773139.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,2819695873.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,2693569607.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,2694929195.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,2695827686.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,3127511649.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,3126987134.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,3127801247.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,8052997910.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,8004818366.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,8054937816.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,27076377670.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,26791108960.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,27066550722.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,214902107.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,214603644.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,215228272.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,876247293.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,874603359.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,876276989.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,204519011.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,204562207.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,204643230.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,216503343.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,215772311.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,216045496.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,3127107399.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,3127718859.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,3127022550.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,3818869417.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,3818909498.0
+"orx_priority_queue::dary::daryheap::DaryHeap<(), u64, 8>",input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,3825834282.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,1755509838.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,1744999990.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,1751241034.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,0,6104048066.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,1,6139844073.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_22_graph.gr,bench_graph::PrimWorkload,4194304,41312060,20656031,20656031,2,6104538391.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,2740042347.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,2741382629.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,2739951772.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,0,3043439188.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,1,3043435213.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CTR_graph.gr,bench_graph::PrimWorkload,14081816,34292496,17146248,17146248,2,3043697965.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,3716911551.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,3716660126.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,3717825338.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,0,3298280894.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,1,3297848556.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/GER_graph.gr,bench_graph::PrimWorkload,20690320,41791542,21713534,21713534,2,3298104787.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,9614178388.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,9616639826.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,9696316489.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,0,34606298399.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,1,34829506416.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_24_graph.gr,bench_graph::PrimWorkload,16777216,159734888,79867445,79867445,2,34924623958.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,327677348.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,327744701.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,327549264.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,0,1115085366.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,1,1116069542.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/rhg_20_graph.gr,bench_graph::PrimWorkload,1048576,10306351,5153176,5153176,2,1115928648.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,288610944.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,288838389.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,289141321.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,0,264135536.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,1,264403453.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/CAL_graph.gr,bench_graph::PrimWorkload,1890815,4657742,2328871,2328871,2,264452999.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,4356208537.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,4354671230.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,4355754196.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,0,4352128829.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,1,4347586895.0
+weakheap::WeakHeap<core::cmp::Reverse<u64>>,input/USA_graph.gr,bench_graph::PrimWorkload,23947347,58333344,29166672,29166672,2,4337375595.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,0,844295038.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,1,841862831.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_22_graph.gr,bench_graph::DijkstraWorkload,4194304,41312060,7116605,7116605,2,843339375.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,0,2515750320.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,1,2513877943.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CTR_graph.gr,bench_graph::DijkstraWorkload,14081816,34292496,15021215,15021215,2,2507550547.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,0,3271220391.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,1,3271075892.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/GER_graph.gr,bench_graph::DijkstraWorkload,20690320,41791542,21051546,21051546,2,3274064364.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,0,4202239882.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,1,4191666231.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_24_graph.gr,bench_graph::DijkstraWorkload,16777216,159734888,27951438,27951438,2,4206490723.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,0,159272309.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,1,159309615.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/rhg_20_graph.gr,bench_graph::DijkstraWorkload,1048576,10306351,1765860,1765860,2,159365770.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,0,280258396.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,1,279773239.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/CAL_graph.gr,bench_graph::DijkstraWorkload,1890815,4657742,2037969,2037969,2,280021266.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,0,3916711326.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,1,3916609361.0
+"radix_heap::RadixHeapMap<core::cmp::Reverse<u64>, ()>",input/USA_graph.gr,bench_graph::DijkstraWorkload,23947347,58333344,25570326,25570326,2,3924120599.0
