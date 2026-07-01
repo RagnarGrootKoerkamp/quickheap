@@ -308,9 +308,6 @@ where
 
     // AMORTIZED
     bench::<T, impls::WeakHeap<T>>();
-
-    // MONOTONE
-    bench::<T, impls::RadixHeap<T>>();
 }
 
 fn bench_table() {
