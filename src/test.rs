@@ -1,9 +1,8 @@
 use std::cmp::Reverse;
 
 use crate::{
-    ConfigurableSimdQuickHeap, SimdElem,
-    pivot_strategies::MedianOfM,
-    rebalancing_strategies::{NaiveLogRebalancing, NoRebalancing, PivotForgetting},
+    ConfigurableSimdQuickHeap, SimdElem, pivot_strategies::MedianOfM,
+    rebalancing_strategies::PivotForgetting,
 };
 
 /// Element-type capabilities needed by the generators.

@@ -47,7 +47,7 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
         let f = W::setup::<T, H>(n);
 
         let result;
-        #[cfg(not(feature = "perf"))]
+        // #[cfg(not(feature = "perf"))]
         {
             let start = std::time::Instant::now();
             f();

@@ -89,7 +89,7 @@ mod test {
         fn run(n: u64) {
             eprintln!("Test: {:?}", std::any::type_name::<Self>());
             workloads::HeapSort::setup::<T, Self>(n)();
-            workloads::RandomConstantSize::setup::<T, Self>(n)();
+            workloads::MonotoneConstantSize::setup::<T, Self>(n)();
             workloads::MonotoneWiggle::setup::<T, Self>(n)();
             if !Self::MONOTONE {
                 workloads::RandomWiggle::setup::<T, Self>(n)();

@@ -287,8 +287,6 @@ where
     match TypeId::of::<T>() {
         x if x == TypeId::of::<i32>() => {
             bench::<i32, sequence_heap::SequenceHeapI32>();
-            // FIXME???
-            // bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20), false);
             bench::<i32, s3q::S3qHeapI32>();
             bench::<i32, randomized_quickheap::RandQH2HeapI32>();
             bench::<i32, radix_heap::RadixHeapI32>();
@@ -423,7 +421,6 @@ where
 {
     #[cfg(feature = "avx2")]
     {
-        // FIXME: DEDUP results for median of 1/3/5 ablation
         bench::<T, ConfigurableSimdQuickHeap<T, Avx2, RandomPivot>>();
         bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>>>();
         bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<5>>>();

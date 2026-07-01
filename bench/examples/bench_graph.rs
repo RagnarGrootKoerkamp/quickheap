@@ -5,11 +5,8 @@ use bench::scalar_quickheap::Search;
 use clap::Parser;
 #[cfg(feature = "avx512")]
 use quickheap::Avx512;
-use quickheap::pivot_strategies::MedianOfM;
 #[cfg(feature = "avx2")]
-use quickheap::{Avx2, rebalancing_strategies};
-
-use quickheap::ConfigurableSimdQuickHeap as SimdQuickHeap;
+use quickheap::{Avx2, ConfigurableSimdQuickHeap};
 
 use bench::*;
 use serde::Serialize;
@@ -154,20 +151,9 @@ fn main() {
 
     // QUICKHEAP
     #[cfg(feature = "avx2")]
-    bench::<SimdQuickHeap<u64, Avx2, MedianOfM<3>, rebalancing_strategies::NoRebalancing, 16, true>>(
-        &graphs,
-    );
+    bench::<ConfigurableSimdQuickHeap<u64, Avx2>>(&graphs);
     #[cfg(feature = "avx512")]
-    bench::<
-        SimdQuickHeap<
-            u64,
-            Avx512<true>,
-            MedianOfM<3>,
-            rebalancing_strategies::NoRebalancing,
-            16,
-            true,
-        >,
-    >(&graphs);
+    bench::<ConfigurableSimdQuickHeap<u64, Avx512<true>>>(&graphs);
 
     // SCALAR QUICKHEAP
     bench::<scalar_quickheap::ScalarQuickHeap<u64, 3, false, { Search::LinearScan }>>(&graphs);
@@ -183,40 +169,19 @@ fn main() {
     bench::<radix_heap::RadixHeapU64>(&graphs);
 
     // REIMPLS
-    // bench::<binary_heap::CustomBinaryHeap<u64>>(&graphs);
-    // bench::<dary_heap::CustomDaryHeap<u64, 2>>(&graphs);
-    // bench::<dary_heap::CustomDaryHeap<u64, 3>>(&graphs);
-    // bench::<dary_heap::CustomDaryHeap<u64, 4>>(&graphs);
-    // bench::<dary_heap::CustomDaryHeap<u64, 8>>(&graphs);
-    // bench::<dary_heap::CustomDaryHeap<u64, 16>>(&graphs);
     bench::<original_quickheap::OriginalQuickHeap<u64>>(&graphs);
 
     // BASELINE
     bench::<impls::BinaryHeap<u64>>(&graphs);
 
     // DARY
-    // bench::<impls::DaryHeap<u64, 2>>(&graphs);
-    // bench::<impls::DaryHeap<u64, 4>>(&graphs);
-    // bench::<impls::DaryHeap<u64, 8>>(&graphs);
-    // bench::<impls::DaryHeap<u64, 16>>(&graphs);
-    // bench::<impls::OrxDaryHeap<u64, 2>>(&graphs);
-    //* bench::<impls::OrxDaryHeap<u64, 4>>(&graphs);
     bench::<impls::OrxDaryHeap<u64, 8>>(&graphs);
-    // bench::<impls::OrxDaryHeap<u64, 16>>(&graphs);
 
     // AMORTIZED
-    // bench::<impls::PairingHeap<u64>>(&graphs);
-    // bench::<impls::FibonacciHeap<u64>>(&graphs);
     bench::<impls::WeakHeap<u64>>(&graphs);
 
     // MONOTONE
     bench::<impls::RadixHeap<u64>>(&graphs);
-
-    // SET
-    // bench::<impls::BTreeSet<u64>>(&graphs);
-    // bench::<impls::RevBTreeSet<u64>>(&graphs);
-    // bench::<impls::IndexSetBTreeSet<u64>>(&graphs);
-    // bench::<impls::IndexSetRevBTreeSet<u64>>(&graphs);
 
     CSV_WRITER.with(|w| w.borrow_mut().flush().unwrap());
 }
