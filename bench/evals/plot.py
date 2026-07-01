@@ -443,7 +443,13 @@ elif "table" in benchname:
     assert len(df.elem.unique()) == 1
     assert len(df.workload.unique()) == 1
 
-    vals = ["nanos", "l1_cache_misses", "hw_cache_misses", "l3_cache_misses"]
+    vals = [
+        "nanos",
+        "l1_cache_misses",
+        "hw_cache_misses",
+        "hw_cache_references",
+        "l3_cache_misses",
+    ]
     # NOTE: Only normalized per element,
     for val in vals:
         df[val] /= df["ops"]
