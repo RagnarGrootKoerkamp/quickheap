@@ -11,9 +11,9 @@ use original_quickheap_sys::{
     rqh2_u64_pq_empty, rqh2_u64_pq_free, rqh2_u64_pq_new, rqh2_u64_pq_pop, rqh2_u64_pq_push,
 };
 
-/// Default capacity for the randomized quickheap. Must cover the maximum n used by any
-/// benchmark workload (bench goes up to 2^25 = ~33M elements in HeapSort).
-const DEFAULT_CAPACITY: i32 = 1 << 25;
+/// Default capacity for the randomized quickheap.
+/// We set it large since virtual memory is cheap anyway.
+const DEFAULT_CAPACITY: i32 = 1 << 30;
 
 macro_rules! impl_rqh2_heap {
     ($heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident, $counting:ty) => {
