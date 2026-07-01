@@ -28,8 +28,8 @@ pub mod dary_heap;
 pub mod dijkstra;
 pub mod graph;
 pub mod graph_util;
-pub mod original_quickheap;
 pub mod prim;
+pub mod reimplemented_quickheap;
 
 pub trait Heap<T: Elem>
 where
@@ -50,7 +50,7 @@ where
 mod test {
 
     use crate::impls::NoHeap;
-    use crate::original_quickheap::OriginalQuickHeap;
+    use crate::reimplemented_quickheap::ReimplementedQuickHeap;
     #[cfg(feature = "avx512")]
     use crate::simd::Avx512;
     #[cfg(feature = "avx2")]
@@ -104,7 +104,7 @@ mod test {
         type T = u32;
         type Base = impls::BinaryHeap<T>;
 
-        TestHeap::<T, Base, OriginalQuickHeap<T>>::run(n);
+        TestHeap::<T, Base, ReimplementedQuickHeap<T>>::run(n);
 
         TestHeap::<T, Base, binary_heap::CustomBinaryHeap<T>>::run(n);
         TestHeap::<T, Base, dary_heap::CustomDaryHeap<T, 2>>::run(n);

@@ -5,7 +5,7 @@ use crate::workloads::{CountComparisons, CountingHeap, Elem};
 use super::Heap;
 
 #[derive(Debug)]
-pub struct OriginalQuickHeap<T: Elem> {
+pub struct ReimplementedQuickHeap<T: Elem> {
     pub data: VecDeque<T>,
     /// Pivots, from large to small.
     pub pivot_positions: Vec<usize>,
@@ -13,8 +13,8 @@ pub struct OriginalQuickHeap<T: Elem> {
     pub offset: usize,
 }
 
-impl<T: Elem> Heap<T> for OriginalQuickHeap<T> {
-    type CountedHeap = CountingHeap<T, OriginalQuickHeap<CountComparisons<T>>>;
+impl<T: Elem> Heap<T> for ReimplementedQuickHeap<T> {
+    type CountedHeap = CountingHeap<T, ReimplementedQuickHeap<CountComparisons<T>>>;
 
     fn default() -> Self {
         Self {
@@ -62,7 +62,7 @@ impl<T: Elem> Heap<T> for OriginalQuickHeap<T> {
     }
 }
 
-impl<T: Elem> OriginalQuickHeap<T> {
+impl<T: Elem> ReimplementedQuickHeap<T> {
     #[inline(never)]
     fn partition(&mut self) {
         let n = self.pivot_positions.last().unwrap() - self.offset;

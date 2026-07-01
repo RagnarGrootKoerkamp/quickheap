@@ -1930,7 +1930,7 @@ L 344.63625 398.783125
 " style="fill: none; stroke: #f781bf; stroke-width: 1.5; stroke-linecap: square"/>
    </g>
    <g id="text_25">
-    <!-- OriginalQuickHeap -->
+    <!-- ReimplementedQuickHeap -->
     <g transform="translate(351.03625 401.583125) scale(0.08 -0.08)">
      <defs>
       <path id="DejaVuSans-51" d="M 2522 4238 

@@ -72,7 +72,7 @@ type_order = [
     "SequenceHeap",
     "S3qHeap",
     "RandomizedQuickHeap",
-    "OriginalQuickHeap",
+    "ReimplementedQuickHeap",
     "ScalarQuickHeap",
     "SimdQuickHeap",
     # When plotting all:
