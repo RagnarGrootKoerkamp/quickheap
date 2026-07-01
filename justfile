@@ -20,7 +20,7 @@ bench-all:
     cd bench && cargo run -r --example bench       -F avx512 -- --comparisons     > evals/data/comparisons.csv
     cd bench && cargo run -r --example bench       -F avx512 -- --memory          > evals/data/memory.txt
     cd bench && cargo run -r --example bench_graph -F avx512                      > evals/data/graphs.csv
-    cd bench && cargo run -r --example bench       -F avx512,boost,ffi -- --table > evals/data/table.csv
+    cd bench && cargo run -r --example bench       -F avx512,boost,perf -- --table > evals/data/table.csv
 
 # A smaller benchmark for testing.
 bench-small:
