@@ -300,8 +300,6 @@ where
         _ => unimplemented!(),
     }
 
-    bench::<T, reimplemented_quickheap::ReimplementedQuickHeap<T>>();
-
     // BASELINE
     bench::<T, impls::BinaryHeap<T>>();
 
@@ -347,8 +345,6 @@ fn bench_table() {
         bench::<i64, boost_heap::BoostSkewHeapI64>();
     }
 
-    bench::<T, reimplemented_quickheap::ReimplementedQuickHeap<T>>();
-
     // BASELINE
     bench::<T, impls::BinaryHeap<T>>();
 
@@ -387,18 +383,14 @@ fn bench_comparisons() {
             bench::<i32, sequence_heap::SequenceHeapI32>();
             bench::<i32, s3q::S3qHeapI32>();
             bench::<i32, original_quickheap::OriginalQuickHeapI32>();
-            bench::<i32, radix_heap::RadixHeapI32>();
         }
         x if x == TypeId::of::<i64>() => {
             bench::<i64, sequence_heap::SequenceHeapI64>();
             bench::<i64, s3q::S3qHeapI64>();
             bench::<i64, original_quickheap::OriginalQuickHeapI64>();
-            bench::<i64, radix_heap::RadixHeapI64>();
         }
         _ => unimplemented!(),
     }
-
-    bench::<T, reimplemented_quickheap::ReimplementedQuickHeap<T>>();
 
     // BASELINE
     bench::<T, impls::BinaryHeap<T>>();

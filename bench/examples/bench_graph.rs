@@ -168,9 +168,6 @@ fn main() {
     #[cfg(feature = "ffi")]
     bench::<radix_heap::RadixHeapU64>(&graphs);
 
-    // REIMPLS
-    bench::<reimplemented_quickheap::ReimplementedQuickHeap<u64>>(&graphs);
-
     // BASELINE
     bench::<impls::BinaryHeap<u64>>(&graphs);
 
