@@ -288,13 +288,13 @@ where
         x if x == TypeId::of::<i32>() => {
             bench::<i32, sequence_heap::SequenceHeapI32>();
             bench::<i32, s3q::S3qHeapI32>();
-            bench::<i32, randomized_quickheap::RandQH2HeapI32>();
+            bench::<i32, original_quickheap::OriginalQuickHeapI32>();
             bench::<i32, radix_heap::RadixHeapI32>();
         }
         x if x == TypeId::of::<i64>() => {
             bench::<i64, sequence_heap::SequenceHeapI64>();
             bench::<i64, s3q::S3qHeapI64>();
-            bench::<i64, randomized_quickheap::RandQH2HeapI64>();
+            bench::<i64, original_quickheap::OriginalQuickHeapI64>();
             bench::<i64, radix_heap::RadixHeapI64>();
         }
         _ => unimplemented!(),
@@ -333,7 +333,7 @@ fn bench_table() {
     {
         bench::<i64, sequence_heap::SequenceHeapI64>();
         bench::<i64, s3q::S3qHeapI64>();
-        bench::<i64, randomized_quickheap::RandQH2HeapI64>();
+        bench::<i64, original_quickheap::OriginalQuickHeapI64>();
         bench::<i64, radix_heap::RadixHeapI64>();
     }
 
@@ -386,13 +386,13 @@ fn bench_comparisons() {
         x if x == TypeId::of::<i32>() => {
             bench::<i32, sequence_heap::SequenceHeapI32>();
             bench::<i32, s3q::S3qHeapI32>();
-            bench::<i32, randomized_quickheap::RandQH2HeapI32>();
+            bench::<i32, original_quickheap::OriginalQuickHeapI32>();
             bench::<i32, radix_heap::RadixHeapI32>();
         }
         x if x == TypeId::of::<i64>() => {
             bench::<i64, sequence_heap::SequenceHeapI64>();
             bench::<i64, s3q::S3qHeapI64>();
-            bench::<i64, randomized_quickheap::RandQH2HeapI64>();
+            bench::<i64, original_quickheap::OriginalQuickHeapI64>();
             bench::<i64, radix_heap::RadixHeapI64>();
         }
         _ => unimplemented!(),

@@ -27,7 +27,7 @@ fn main() {
         }
     }
 
-    build.compile("randomized_quickheap_wrapper");
+    build.compile("original_quickheap_wrapper");
 
     println!("cargo:rerun-if-changed=csrc/wrapper.cpp");
     println!("cargo:rerun-if-changed=csrc/wrapper.hpp");

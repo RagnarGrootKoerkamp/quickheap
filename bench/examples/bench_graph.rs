@@ -164,7 +164,7 @@ fn main() {
     #[cfg(feature = "ffi")]
     bench::<s3q::S3qHeapU64>(&graphs);
     #[cfg(feature = "ffi")]
-    bench::<randomized_quickheap::RandQH2HeapU64>(&graphs);
+    bench::<original_quickheap::OriginalQuickHeapU64>(&graphs);
     #[cfg(feature = "ffi")]
     bench::<radix_heap::RadixHeapU64>(&graphs);
 

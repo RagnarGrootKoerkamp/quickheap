@@ -1,16 +1,14 @@
 use crate::Heap;
 use crate::impls::NoHeap;
 use crate::workloads::CountingHeapT;
-use randomized_quickheap_sys::{
-    Rqh2I32Pq, Rqh2I64CountingPq, Rqh2I64Pq, Rqh2U32Pq, Rqh2U64Pq, rqh2_i32_pq_empty,
-    rqh2_i32_pq_free, rqh2_i32_pq_new, rqh2_i32_pq_pop, rqh2_i32_pq_push,
+use original_quickheap_sys::{
+    rqh2_i32_pq_empty, rqh2_i32_pq_free, rqh2_i32_pq_new, rqh2_i32_pq_pop, rqh2_i32_pq_push,
     rqh2_i64_counting_pq_empty, rqh2_i64_counting_pq_free, rqh2_i64_counting_pq_new,
-    rqh2_i64_counting_pq_pop, rqh2_i64_counting_pq_pop_comparisons,
-    rqh2_i64_counting_pq_push, rqh2_i64_counting_pq_push_comparisons,
-    rqh2_i64_counting_pq_reset_comparisons, rqh2_i64_pq_empty, rqh2_i64_pq_free,
-    rqh2_i64_pq_new, rqh2_i64_pq_pop, rqh2_i64_pq_push, rqh2_u32_pq_empty, rqh2_u32_pq_free,
-    rqh2_u32_pq_new, rqh2_u32_pq_pop, rqh2_u32_pq_push, rqh2_u64_pq_empty, rqh2_u64_pq_free,
-    rqh2_u64_pq_new, rqh2_u64_pq_pop, rqh2_u64_pq_push,
+    rqh2_i64_counting_pq_pop, rqh2_i64_counting_pq_pop_comparisons, rqh2_i64_counting_pq_push,
+    rqh2_i64_counting_pq_push_comparisons, rqh2_i64_counting_pq_reset_comparisons,
+    rqh2_i64_pq_empty, rqh2_i64_pq_free, rqh2_i64_pq_new, rqh2_i64_pq_pop, rqh2_i64_pq_push,
+    rqh2_u32_pq_empty, rqh2_u32_pq_free, rqh2_u32_pq_new, rqh2_u32_pq_pop, rqh2_u32_pq_push,
+    rqh2_u64_pq_empty, rqh2_u64_pq_free, rqh2_u64_pq_new, rqh2_u64_pq_pop, rqh2_u64_pq_push,
 };
 
 /// Default capacity for the randomized quickheap. Must cover the maximum n used by any
@@ -73,9 +71,9 @@ macro_rules! impl_rqh2_heap {
 }
 
 impl_rqh2_heap!(
-    RandQH2HeapI32,
+    OriginalQuickHeapI32,
     i32,
-    Rqh2I32Pq,
+    original_quickheap_sys::OriginalQuickHeapI32,
     rqh2_i32_pq_new,
     rqh2_i32_pq_free,
     rqh2_i32_pq_push,
@@ -84,20 +82,20 @@ impl_rqh2_heap!(
     NoHeap
 );
 impl_rqh2_heap!(
-    RandQH2HeapI64,
+    OriginalQuickHeapI64,
     i64,
-    Rqh2I64Pq,
+    original_quickheap_sys::OriginalQuickHeapI64,
     rqh2_i64_pq_new,
     rqh2_i64_pq_free,
     rqh2_i64_pq_push,
     rqh2_i64_pq_pop,
     rqh2_i64_pq_empty,
-    RandQH2HeapI64Counting
+    OriginalQuickHeapI64Counting
 );
 impl_rqh2_heap!(
-    RandQH2HeapU32,
+    OriginalQuickHeapU32,
     u32,
-    Rqh2U32Pq,
+    original_quickheap_sys::OriginalQuickHeapU32,
     rqh2_u32_pq_new,
     rqh2_u32_pq_free,
     rqh2_u32_pq_push,
@@ -106,9 +104,9 @@ impl_rqh2_heap!(
     NoHeap
 );
 impl_rqh2_heap!(
-    RandQH2HeapU64,
+    OriginalQuickHeapU64,
     u64,
-    Rqh2U64Pq,
+    original_quickheap_sys::OriginalQuickHeapU64,
     rqh2_u64_pq_new,
     rqh2_u64_pq_free,
     rqh2_u64_pq_push,
@@ -119,7 +117,7 @@ impl_rqh2_heap!(
 
 impl_rqh2_heap!(
     counting:
-    RandQH2HeapI64Counting, i64, Rqh2I64CountingPq,
+    OriginalQuickHeapI64Counting, i64, original_quickheap_sys::OriginalQuickHeapI64Counting,
     rqh2_i64_counting_pq_new, rqh2_i64_counting_pq_free,
     rqh2_i64_counting_pq_push, rqh2_i64_counting_pq_pop, rqh2_i64_counting_pq_empty,
     rqh2_i64_counting_pq_reset_comparisons,

@@ -30,7 +30,7 @@ macro_rules! rqh2_ffi {
 }
 
 rqh2_ffi!(
-    Rqh2I32Pq,
+    OriginalQuickHeapI32,
     i32,
     rqh2_i32_pq_new,
     rqh2_i32_pq_free,
@@ -42,7 +42,7 @@ rqh2_ffi!(
 );
 
 rqh2_ffi!(
-    Rqh2I64Pq,
+    OriginalQuickHeapI64,
     i64,
     rqh2_i64_pq_new,
     rqh2_i64_pq_free,
@@ -54,7 +54,7 @@ rqh2_ffi!(
 );
 
 rqh2_ffi!(
-    Rqh2U32Pq,
+    OriginalQuickHeapU32,
     u32,
     rqh2_u32_pq_new,
     rqh2_u32_pq_free,
@@ -66,7 +66,7 @@ rqh2_ffi!(
 );
 
 rqh2_ffi!(
-    Rqh2U64Pq,
+    OriginalQuickHeapU64,
     u64,
     rqh2_u64_pq_new,
     rqh2_u64_pq_free,
@@ -78,14 +78,14 @@ rqh2_ffi!(
 );
 
 #[repr(C)]
-pub struct Rqh2I64CountingPq(std::ffi::c_void);
+pub struct OriginalQuickHeapI64Counting(std::ffi::c_void);
 
 unsafe extern "C" {
-    pub fn rqh2_i64_counting_pq_new(capacity: i32) -> *mut Rqh2I64CountingPq;
-    pub fn rqh2_i64_counting_pq_free(pq: *mut Rqh2I64CountingPq);
-    pub fn rqh2_i64_counting_pq_push(pq: *mut Rqh2I64CountingPq, item: i64) -> bool;
-    pub fn rqh2_i64_counting_pq_pop(pq: *mut Rqh2I64CountingPq) -> i64;
-    pub fn rqh2_i64_counting_pq_empty(pq: *const Rqh2I64CountingPq) -> bool;
+    pub fn rqh2_i64_counting_pq_new(capacity: i32) -> *mut OriginalQuickHeapI64Counting;
+    pub fn rqh2_i64_counting_pq_free(pq: *mut OriginalQuickHeapI64Counting);
+    pub fn rqh2_i64_counting_pq_push(pq: *mut OriginalQuickHeapI64Counting, item: i64) -> bool;
+    pub fn rqh2_i64_counting_pq_pop(pq: *mut OriginalQuickHeapI64Counting) -> i64;
+    pub fn rqh2_i64_counting_pq_empty(pq: *const OriginalQuickHeapI64Counting) -> bool;
     pub fn rqh2_i64_counting_pq_reset_comparisons();
     pub fn rqh2_i64_counting_pq_push_comparisons() -> u64;
     pub fn rqh2_i64_counting_pq_pop_comparisons() -> u64;

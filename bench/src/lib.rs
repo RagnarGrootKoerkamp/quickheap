@@ -8,9 +8,9 @@ pub mod impls;
 #[cfg(feature = "boost")]
 pub mod boost_heap;
 #[cfg(feature = "ffi")]
-pub mod radix_heap;
+pub mod original_quickheap;
 #[cfg(feature = "ffi")]
-pub mod randomized_quickheap;
+pub mod radix_heap;
 #[cfg(feature = "ffi")]
 pub mod s3q;
 #[cfg(feature = "ffi")]
@@ -159,7 +159,7 @@ mod test {
         #[cfg(feature = "ffi")]
         TestHeap::<T, Base, s3q::S3qHeapU32>::run(n);
         #[cfg(feature = "ffi")]
-        TestHeap::<T, Base, randomized_quickheap::RandQH2HeapU32>::run(n);
+        TestHeap::<T, Base, original_quickheap::OriginalQuickHeapU32>::run(n);
         #[cfg(feature = "ffi")]
         TestHeap::<T, Base, radix_heap::RadixHeapU32>::run(n);
 

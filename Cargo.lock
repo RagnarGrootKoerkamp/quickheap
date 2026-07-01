@@ -77,6 +77,7 @@ dependencies = [
  "indexset",
  "itertools",
  "min_max_traits",
+ "original-quickheap-sys",
  "orx-priority-queue",
  "perfcnt",
  "pheap",
@@ -86,7 +87,6 @@ dependencies = [
  "rand 0.10.1",
  "rand_distr",
  "random",
- "randomized-quickheap-sys",
  "s3q-sys",
  "sequence-heap-sys",
  "serde",
@@ -464,6 +464,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
+name = "original-quickheap-sys"
+version = "0.1.0"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "orx-priority-queue"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -684,13 +691,6 @@ name = "random"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d62d9cce151a97168445d78542558d3bddf6cf99f283c475f2eaf5cc14c364a"
-
-[[package]]
-name = "randomized-quickheap-sys"
-version = "0.1.0"
-dependencies = [
- "cc",
-]
 
 [[package]]
 name = "raw-cpuid"
