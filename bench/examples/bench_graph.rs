@@ -177,8 +177,5 @@ fn main() {
     // AMORTIZED
     bench::<impls::WeakHeap<u64>>(&graphs);
 
-    // MONOTONE
-    bench::<impls::RadixHeap<u64>>(&graphs);
-
     CSV_WRITER.with(|w| w.borrow_mut().flush().unwrap());
 }
