@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "bench", "ext/s3q-sys", "ext/sequence-heap-sys", "ext/boost-heap-sys", "ext/randomized-quickheap-sys"]
+members = [".", "bench", "ext/s3q-sys", "ext/sequence-heap-sys", "ext/boost-heap-sys", "ext/randomized-quickheap-sys", "ext/radix-heap-sys"]
 
 [profile.release]
 debug = true

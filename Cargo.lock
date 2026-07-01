@@ -82,6 +82,7 @@ dependencies = [
  "pheap",
  "quickheap",
  "radix-heap",
+ "radix-heap-sys",
  "rand 0.10.1",
  "rand_distr",
  "random",
@@ -585,6 +586,13 @@ name = "radix-heap"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59ffec9df464013295b499298811e6a3de31bf8128092135826517db12dee601"
+
+[[package]]
+name = "radix-heap-sys"
+version = "0.1.0"
+dependencies = [
+ "cc",
+]
 
 [[package]]
 name = "rand"

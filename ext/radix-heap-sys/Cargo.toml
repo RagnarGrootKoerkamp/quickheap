@@ -1,0 +1,10 @@
+[package]
+name = "radix-heap-sys"
+version = "0.1.0"
+edition = "2024"
+links = "radix_heap_wrapper"
+
+[build-dependencies]
+cc = "1"
+
+[dependencies]

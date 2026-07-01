@@ -13,3 +13,6 @@
 [submodule "ext/sequence-heap-sys/third_party/SequenceHeap"]
 	path = ext/sequence-heap-sys/third_party/SequenceHeap
 	url = https://github.com/raphinesse/SequenceHeap.git
+[submodule "ext/radix-heap-sys/third_party/radix-heap"]
+	path = ext/radix-heap-sys/third_party/radix-heap
+	url = github:iwiwi/radix-heap
