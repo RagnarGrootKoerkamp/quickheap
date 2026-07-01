@@ -212,7 +212,6 @@ pub fn bench<T: Elem, H: Heap<T>>() {
             eprint!(" {t:>8.2}");
 
             // Don't test larger n for this workflow once things get too slow.
-            // FIXME: Increase for table benchmark
             let cutoff = if ARGS.table { 128.0 } else { 32.0 };
             if t > cutoff {
                 *ok = false;
@@ -292,11 +291,13 @@ where
             // bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20), false);
             bench::<i32, s3q::S3qHeapI32>();
             bench::<i32, randomized_quickheap::RandQH2HeapI32>();
+            bench::<i32, radix_heap::RadixHeapI32>();
         }
         x if x == TypeId::of::<i64>() => {
             bench::<i64, sequence_heap::SequenceHeapI64>();
             bench::<i64, s3q::S3qHeapI64>();
             bench::<i64, randomized_quickheap::RandQH2HeapI64>();
+            bench::<i64, radix_heap::RadixHeapI64>();
         }
         _ => unimplemented!(),
     }
@@ -335,6 +336,7 @@ fn bench_table() {
         bench::<i64, sequence_heap::SequenceHeapI64>();
         bench::<i64, s3q::S3qHeapI64>();
         bench::<i64, randomized_quickheap::RandQH2HeapI64>();
+        bench::<i64, radix_heap::RadixHeapI64>();
     }
 
     // BOOST
@@ -385,15 +387,15 @@ fn bench_comparisons() {
     match TypeId::of::<T>() {
         x if x == TypeId::of::<i32>() => {
             bench::<i32, sequence_heap::SequenceHeapI32>();
-            // FIXME???
-            // bench::<i32, s3q::S3qHeapI32>(minpow, maxpow.min(20), false);
             bench::<i32, s3q::S3qHeapI32>();
             bench::<i32, randomized_quickheap::RandQH2HeapI32>();
+            bench::<i32, radix_heap::RadixHeapI32>();
         }
         x if x == TypeId::of::<i64>() => {
             bench::<i64, sequence_heap::SequenceHeapI64>();
             bench::<i64, s3q::S3qHeapI64>();
             bench::<i64, randomized_quickheap::RandQH2HeapI64>();
+            bench::<i64, radix_heap::RadixHeapI64>();
         }
         _ => unimplemented!(),
     }

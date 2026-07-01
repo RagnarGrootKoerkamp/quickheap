@@ -178,17 +178,9 @@ fn main() {
     #[cfg(feature = "ffi")]
     bench::<s3q::S3qHeapU64>(&graphs);
     #[cfg(feature = "ffi")]
-    bench::<randomized_quickheap::RandQH2HeapI64>(&graphs);
-    // #[cfg(feature = "ffi")]
-    // bench::<boost_heap::BoostDary4HeapU64>(&graphs);
-    // #[cfg(feature = "ffi")]
-    // bench::<boost_heap::BoostFibHeapU64>(&graphs);
-    // #[cfg(feature = "ffi")]
-    // bench::<boost_heap::BoostPairingHeapU64>(&graphs);
-    // #[cfg(feature = "ffi")]
-    // bench::<boost_heap::BoostBinomialHeapU64>(&graphs);
-    // #[cfg(feature = "ffi")]
-    // bench::<boost_heap::BoostSkewHeapU64>(&graphs);
+    bench::<randomized_quickheap::RandQH2HeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<radix_heap::RadixHeapU64>(&graphs);
 
     // REIMPLS
     // bench::<binary_heap::CustomBinaryHeap<u64>>(&graphs);
