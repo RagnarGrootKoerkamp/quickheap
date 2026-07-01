@@ -1,0 +1,24 @@
+Workload: bench::workloads::HeapSort
+quickheap::ConfigurableSimdQuickHeap<i64>  n:       1024  Cap:       3613  Ratio:  3.528
+quickheap::ConfigurableSimdQuickHeap<i64>  n:      32768  Cap:     143720  Ratio:  4.386
+quickheap::ConfigurableSimdQuickHeap<i64>  n:    1048576  Cap:    4357731  Ratio:  4.156
+quickheap::ConfigurableSimdQuickHeap<i64>  n:   33554432  Cap:  128701269  Ratio:  3.836
+
+Workload: bench::workloads::MonotoneConstantSize
+quickheap::ConfigurableSimdQuickHeap<i64>  n:       1024  Cap:       6727  Ratio:  6.569
+quickheap::ConfigurableSimdQuickHeap<i64>  n:      32768  Cap:     248121  Ratio:  7.572
+quickheap::ConfigurableSimdQuickHeap<i64>  n:    1048576  Cap:   10162119  Ratio:  9.691
+quickheap::ConfigurableSimdQuickHeap<i64>  n:   33554432  Cap:  414410496  Ratio: 12.350
+
+Workload: bench::workloads::MonotoneWiggle
+quickheap::ConfigurableSimdQuickHeap<i64>  n:       1024  Cap:       4848  Ratio:  4.734
+quickheap::ConfigurableSimdQuickHeap<i64>  n:      32768  Cap:     144694  Ratio:  4.416
+quickheap::ConfigurableSimdQuickHeap<i64>  n:    1048576  Cap:    5016598  Ratio:  4.784
+quickheap::ConfigurableSimdQuickHeap<i64>  n:   33554432  Cap:  182685970  Ratio:  5.444
+
+Workload: bench::workloads::RandomWiggle
+quickheap::ConfigurableSimdQuickHeap<i64>  n:       1024  Cap:       3591  Ratio:  3.507
+quickheap::ConfigurableSimdQuickHeap<i64>  n:      32768  Cap:     107609  Ratio:  3.284
+quickheap::ConfigurableSimdQuickHeap<i64>  n:    1048576  Cap:    3830930  Ratio:  3.653
+quickheap::ConfigurableSimdQuickHeap<i64>  n:   33554432  Cap:  113049611  Ratio:  3.369
+
