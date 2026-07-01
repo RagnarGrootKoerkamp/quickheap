@@ -342,6 +342,8 @@ fn bench_table() {
         bench::<i64, boost_heap::BoostSkewHeapI64>();
     }
 
+    bench::<T, reimplemented_quickheap::ReimplementedQuickHeap<T>>();
+
     // BASELINE
     bench::<T, impls::BinaryHeap<T>>();
 
