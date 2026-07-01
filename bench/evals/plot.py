@@ -10,13 +10,6 @@ import sys
 
 benchname = sys.argv[1]
 
-
-all = False
-if len(sys.argv) > 2 and sys.argv[2] == "all":
-    all = True
-
-suff = "-all" if all else ""
-
 df = pd.read_csv(f"data/{benchname}.csv")
 
 # Shorten heap names
@@ -60,12 +53,6 @@ df["name"] = df["name"].str.replace(
 df["workload"] = (
     df["workload"].str.split("::").str[-1].str.replace("Workload", "", regex=False)
 )
-
-df["workload"] = df["workload"].str.replace(r"RandomConstantSize", "rcs", regex=True)
-df["workload"] = df["workload"].str.replace(
-    r"ConstantSize", "MonotoneConstantSize", regex=True
-)
-df["workload"] = df["workload"].str.replace(r"rcs", "ConstantSize", regex=True)
 
 
 df = df[~df["name"].str.contains("SimdQuickHeap<T, Avx512>")]
@@ -137,32 +124,6 @@ type_colour = {tp: colours[k % len(colours)] for k, tp in enumerate(type_order)}
 type_colour["ScalarQuickHeap"] = "black"
 type_colour["SimdQuickHeap"] = "black"
 
-is_categorical = "graph" in df.columns
-
-
-if "ops" not in df.columns and "graph" not in df.columns:
-    # TODO: Drop this after the next rerun.
-    # Mixed normalization factors because the bench data is mixed between different runs
-    # Some data didn't have normalization applied, and then we fixed it for a partial rerun that _does_ have it correct.
-    df["normalization"] = df.apply(
-        lambda row: (
-            (
-                3
-                if "Wiggle" in row["workload"]
-                else (10 if "ConstantSize" in row["workload"] else 1)
-            )
-            if "SimdQuickHeap" in row["name"]
-            else (
-                3
-                if "Wiggle" in row["workload"]
-                else (1 if "ConstantSize" in row["workload"] else 1)
-            )
-        ),
-        axis=1,
-    )  # TODO!!!
-
-    df["ops"] = df["normalization"] * df["n"]
-
 
 def rewrite_legend(s):
     s = re.sub("<T>", "", s)
@@ -178,7 +139,7 @@ def rewrite_legend(s):
     return s
 
 
-if is_categorical:
+if "graph" in benchname:
     # Shorten graph input names: "input/GER_graph.gr" -> "GER"
     df["graph_name"] = df["graph"].str.replace(
         r".*/(.*?)(?:_graph)?\.gr$", r"\1", regex=True
@@ -192,9 +153,18 @@ if is_categorical:
 
     # Take median over repeats
     df = (
-        df.groupby(["name", "type", "graph_name", "workload", "vertices", "edges"])[
-            "nanos"
-        ]
+        df.groupby(
+            [
+                "name",
+                "type",
+                "graph_name",
+                "workload",
+                "vertices",
+                "edges",
+                "push_count",
+                "pop_count",
+            ]
+        )["nanos"]
         .median()
         .reset_index()
     )
@@ -204,7 +174,7 @@ if is_categorical:
     df = df.sort_values(["order", "name"])
 
     # Normalize: for each (graph_name, workload), divide by the number of edges in the graph to get ns/edge.
-    df["rel"] = df["nanos"] / df["edges"]
+    df["rel"] = df["nanos"] / df["push_count"]
 
     all_types = df["type"].unique()
     workloads = df["workload"].unique()
@@ -277,6 +247,7 @@ if is_categorical:
             )
 
         ymax = df[df["workload"] == workload]["rel"].max()
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(base=50))
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}"))
         ax.set_title(workload)
         ax.grid(axis="y", which="major", linestyle="-", alpha=0.4)
@@ -340,12 +311,11 @@ if is_categorical:
         bbox_to_anchor=(0.93, 0.96),
     )
 
-    fig.supylabel(r"ns/edge")
+    fig.supylabel(r"ns / element")
     fig.tight_layout()
-    fig.savefig(f"plots/{benchname}{suff}.pdf", bbox_inches="tight")
-    fig.savefig(f"plots/{benchname}{suff}.png", bbox_inches="tight")
-    fig.savefig(f"plots/{benchname}{suff}.svg", bbox_inches="tight")
-
+    fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}.png", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
 
 elif "comparisons" in benchname:
     n_max = df["n"].max()
@@ -459,9 +429,9 @@ elif "comparisons" in benchname:
     ax.legend(handles=legend_handles, loc="upper right", fontsize=8, ncol=1)
 
     fig.tight_layout()
-    fig.savefig(f"plots/{benchname}{suff}.svg", bbox_inches="tight")
-    fig.savefig(f"plots/{benchname}{suff}.pdf", bbox_inches="tight")
-    fig.savefig(f"plots/{benchname}{suff}.png", bbox_inches="tight", dpi=300)
+    fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
+    fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)
 
 elif "table" in benchname:
     # pivot table
@@ -482,7 +452,7 @@ elif "table" in benchname:
         index=["name"],
         columns="n",
         values=vals,
-        aggfunc="mean",
+        aggfunc="median",
         sort=False,
     )
     print(pivot)
@@ -557,23 +527,16 @@ else:
     # workloads = df["workload"].unique()
     workload_set = [
         ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "RandomWiggle"],
-        ["MonotoneConstantSize"],
+        # ["MonotoneConstantSize"],
     ]
     for workloads in workload_set:
-        if len(workloads) == 1:
-            single = True
-            suff += "-single"
-        else:
-            single = False
         for metric, label in metrics:
             plt.close("all")
             p_width = 2
             fig, axs = plt.subplots(
                 len(workloads),
                 len(elems),
-                figsize=(
-                    (10, 6) if single else (21 / 2.54, 29.7 / 2.54)
-                ),  # Size for A4 PDF
+                figsize=((21 / 2.54, 29.7 / 2.54)),  # Size for A4 PDF
                 sharex=True,
                 sharey=True,
                 squeeze=False,
@@ -584,14 +547,22 @@ else:
                 for i, workload in enumerate(workloads):
                     wdf = edf[edf["workload"] == workload]
                     for tp, tgroup in wdf.groupby("type", sort=False):
-                        if not all and tp in nanos_filter:
-                            continue
-
                         c = type_colour[tp]
-
                         for name, ngroup in tgroup.groupby("name", sort=False):
-                            if not all and name in nanos_filter:
-                                continue
+                            if benchname == "ablation":
+                                if "Avx2" in name:
+                                    c = "red"
+                                    if "RandomPivot" in name:
+                                        c = "orange"
+                                    if "<5" in name:
+                                        c = "brown"
+
+                                if "Avx512" in name:
+                                    c = "blue"
+                                    if "RandomPivot" in name:
+                                        c = "green"
+                                    if "<5" in name:
+                                        c = "cyan"
 
                             lw = width_for_type(tp)
                             ngroup.plot(
@@ -610,7 +581,8 @@ else:
                     axs[i][j].set_xscale("log", base=2)
                     axs[i][j].set_xticks([2**i for i in [10, 15, 20, 25]])
                     axs[i][j].set_xlabel(None)
-                    axs[i][j].set_yticks([2**i for i in [0, 1, 2, 3, 4]])
+                    if benchname != "ablation":
+                        axs[i][j].set_yticks([2**i for i in [0, 1, 2, 3, 4]])
                     axs[i][j].set_ylabel(None)
                     # axs[i][j].set_ylim(0.1, 16)
                     axs[i][j].grid(axis="both", which="both", linestyle="-")
@@ -634,6 +606,6 @@ else:
             fig.supxlabel("$n$", y=0.02)
             fig.subplots_adjust(left=0.12, bottom=0.055, wspace=0.12, hspace=0.08)
 
-            fig.savefig(f"plots/{metric}{suff}.svg", bbox_inches="tight")
-            fig.savefig(f"plots/{metric}{suff}.pdf", bbox_inches="tight")
-            fig.savefig(f"plots/{metric}{suff}.png", bbox_inches="tight", dpi=300)
+            fig.savefig(f"plots/{benchname}.svg", bbox_inches="tight")
+            fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
+            fig.savefig(f"plots/{benchname}.png", bbox_inches="tight", dpi=300)

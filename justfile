@@ -15,24 +15,24 @@ rebalancing:
 
 # Run all benchmarks. Takes a bunch of hours.
 bench-all:
-    cd bench && cargo run -r --example bench       -F avx512                  > evals/data/nanos.csv
-    cd bench && cargo run -r --example bench       -F avx512 -- --comparisons > evals/data/comparisons.csv
-    cd bench && cargo run -r --example bench_graph -F avx512                  > evals/data/graphs.csv
+    cd bench && cargo run -r --example bench       -F avx512                      > evals/data/plot.csv
+    cd bench && cargo run -r --example bench       -F avx512 -- --ablation        > evals/data/ablation.csv
+    cd bench && cargo run -r --example bench       -F avx512 -- --comparisons     > evals/data/comparisons.csv
+    cd bench && cargo run -r --example bench       -F avx512 -- --memory          > evals/data/memory.txt
+    cd bench && cargo run -r --example bench_graph -F avx512                      > evals/data/graphs.csv
+    cd bench && cargo run -r --example bench       -F avx512,boost,ffi -- --table > evals/data/table.csv
 
 # A smaller benchmark for testing.
 bench-small:
-    cd bench && cargo run -r --example bench       -- --max 18               > evals/data/nanos.csv
+    cd bench && cargo run -r --example bench       -- --max 18               > evals/data/plot.csv
     cd bench && cargo run -r --example bench       -- --max 18 --comparisons > evals/data/comparisons.csv
     # cd bench && cargo run -r --example bench_graph                           > evals/data/graphs.csv
 
 # Generate all plots.
 # See bench/evals/plots/
-plot-all:
-    cd bench/evals && ./plot.py nanos
-    cd bench/evals && ./plot.py nanos all
+plot:
+    cd bench/evals && ./plot.py plot
     cd bench/evals && ./plot.py comparisons
     cd bench/evals && ./plot.py graphs
-
-plot-nanos:
-    cd bench/evals && ./plot.py nanos
-    cd bench/evals && ./plot.py nanos all
+    cd bench/evals && ./plot.py ablation
+    cd bench/evals && ./plot.py table
