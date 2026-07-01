@@ -38,6 +38,7 @@ struct Result {
     branch_misses: f64,
     l1_cache_misses: f64,
     hw_cache_misses: f64,
+    hw_cache_references: f64,
     l3_cache_misses: f64,
 }
 
@@ -95,6 +96,11 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
             )
                 .finish()
                 .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
+            let mut hw_cache_references = PerfCounterBuilderLinux::from_hardware_event(
+                perfcnt::linux::HardwareEventType::CacheReferences,
+            )
+                .finish()
+                .expect("Could not initialize perfcnt. Run:\necho '1' | sudo tee /proc/sys/kernel/perf_event_paranoid\n");
             let l3_cache_misses = PerfCounterBuilderLinux::from_cache_event(
                 CacheId::LL,
                 CacheOpId::Read,
@@ -110,6 +116,7 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
             branch_misses.start().unwrap();
             l1_cache_misses.start().unwrap();
             hw_cache_misses.start().unwrap();
+            hw_cache_references.start().unwrap();
             let _ = l3_cache_misses.as_ref().map(|c| c.start().unwrap());
 
             let start = std::time::Instant::now();
@@ -134,6 +141,7 @@ fn time_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
                 branch_misses: branch_misses.read().unwrap() as f64,
                 l1_cache_misses: l1_cache_misses.read().unwrap() as f64,
                 hw_cache_misses: hw_cache_misses.read().unwrap() as f64,
+                hw_cache_references: hw_cache_references.read().unwrap() as f64,
                 l3_cache_misses: l3_cache_misses
                     .map(|mut c| c.read().unwrap() as f64)
                     .unwrap_or_default(),
