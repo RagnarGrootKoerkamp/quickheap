@@ -35,10 +35,6 @@ i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::H
 i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::MonotoneConstantSize,0,0,0.0,822981811.0,12374045830.0,0.0,0.0,0.0,0.0
 i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::MonotoneWiggle,0,0,0.0,235872348.0,3341479134.0,0.0,0.0,0.0,0.0
 i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::RandomWiggle,0,0,0.0,1025510714.0,2950818817.0,0.0,0.0,0.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::HeapSort,0,0,0.0,0.0,1073215262.0,0.0,0.0,0.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,0,0,0.0,481658372.0,10888718817.0,0.0,0.0,0.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::MonotoneWiggle,0,0,0.0,139496914.0,3063343255.0,0.0,0.0,0.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::RandomWiggle,0,0,0.0,1902831678.0,1260324691.0,0.0,0.0,0.0,0.0
 i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::HeapSort,0,0,0.0,76547464.0,795335068.0,0.0,0.0,0.0,0.0
 i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,0,0,0.0,338253178.0,8580636328.0,0.0,0.0,0.0,0.0
 i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneWiggle,0,0,0.0,169182758.0,2393314383.0,0.0,0.0,0.0,0.0

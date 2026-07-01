@@ -321,13 +321,24 @@ elif "comparisons" in benchname:
     n_max = df["n"].max()
     df = df[df["n"] == n_max].copy()
 
+    def norm(x):
+        if "HeapSort" in x:
+            return 1
+        if "Wiggle" in x:
+            return 3
+        if "ConstantSize" in x:
+            return 10
+        assert False
+
+    df["ops"] = df.apply(lambda row: norm(row["workload"]) * row["n"], axis=1)
+
     df["push_comparisons"] /= df["ops"]
     df["pop_comparisons"] /= df["ops"]
     df["comparisons"] = df["push_comparisons"] + df["pop_comparisons"]
 
     # workloads = list(df["workload"].unique())
     # workloads = ['HeapSort', 'MonotoneConstantSize', 'MonotoneWiggle', 'ConstantSize', 'Wiggle']
-    workloads = ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "Wiggle"]
+    workloads = ["HeapSort", "MonotoneConstantSize", "MonotoneWiggle", "RandomWiggle"]
 
     df = (
         df.groupby(["elem", "name", "type", "workload"])[

@@ -172,6 +172,7 @@ fn comparisons_workload<T: Elem, H: Heap<T>, W: Workload>(n: u64) -> f64 {
         heap: type_name::<H>(),
         n,
         workload: type_name::<W>(),
+        ops: n * W::NORMALIZATION,
         push_comparisons: push_comparisons as f64,
         pop_comparisons: pop_comparisons as f64,
         ..Default::default()
