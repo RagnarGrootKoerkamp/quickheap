@@ -177,6 +177,8 @@ fn main() {
     bench::<sequence_heap::SequenceHeapU64>(&graphs);
     #[cfg(feature = "ffi")]
     bench::<s3q::S3qHeapU64>(&graphs);
+    #[cfg(feature = "ffi")]
+    bench::<randomized_quickheap::RandQH2HeapI64>(&graphs);
     // #[cfg(feature = "ffi")]
     // bench::<boost_heap::BoostDary4HeapU64>(&graphs);
     // #[cfg(feature = "ffi")]
