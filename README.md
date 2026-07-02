@@ -72,7 +72,7 @@ containing the original C++ sources are in  nested `third_party` directories.
 
 ### Build errors
 - The benchmarks need nightly Rust for some unstable convenience features.
-- If you get linker errors, comment out the `.flag("-flto")` in `ext/{s3q-sys,sequence-heap-sys,boost-heap-sys}/build.rs`.
+- If you get linker errors, comment out the `.flag("-flto")` in `ext/{boost-heap-sys,s3q-sys,sequence-heap-sys,original-quickheap-sys}/build.rs`.
 - To include boost implementations, add `-F boost`. In `spack`:
   - `spack env activate .` to activate the environment.
   - `spack find --path | grep boost` to get the path to the boost libraries
