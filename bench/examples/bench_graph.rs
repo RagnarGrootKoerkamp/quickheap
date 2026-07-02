@@ -86,7 +86,10 @@ fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u
             nanos,
         };
 
-        CSV_WRITER.with(|w| w.borrow_mut().serialize(&result).unwrap());
+        CSV_WRITER.with(|w| {
+            w.borrow_mut().serialize(&result).unwrap();
+            w.borrow_mut().flush().unwrap();
+        });
         all_nanos.push(result.nanos);
     }
 

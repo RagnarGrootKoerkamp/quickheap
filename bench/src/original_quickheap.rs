@@ -13,7 +13,7 @@ use original_quickheap_sys::{
 
 /// Default capacity for the randomized quickheap.
 /// We set it large since virtual memory is cheap anyway.
-const DEFAULT_CAPACITY: i32 = 1 << 30;
+const DEFAULT_CAPACITY: i32 = 1 << 28;
 
 macro_rules! impl_rqh2_heap {
     ($heap:ident, $t:ty, $pq:ty, $new:ident, $free:ident, $push:ident, $pop:ident, $empty:ident, $counting:ty) => {
