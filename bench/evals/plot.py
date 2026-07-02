@@ -67,7 +67,6 @@ type_order = [
     # Amortized
     "WeakHeap",
     # Actual Competitors
-    "RadixHeapMap",
     "RadixHeap",
     "SequenceHeap",
     "S3qHeap",
@@ -76,6 +75,7 @@ type_order = [
     "ScalarQuickHeap",
     "SimdQuickHeap",
     # When plotting all:
+    "RadixHeapMap",
     "BoostDary4Heap",
     "BoostBinomialHeap",
     "FibonacciHeap",
