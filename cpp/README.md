@@ -1,5 +1,7 @@
 # QuickHeap C++ bindings
 
+> (This is LLM generated)
+
 This directory provides C++ bindings for `SimdQuickHeap`, built on top of a
 thin `extern "C"` layer (`src/c.rs`, enabled via the `c` Cargo feature).
 
