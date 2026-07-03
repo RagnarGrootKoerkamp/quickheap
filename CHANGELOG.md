@@ -6,7 +6,7 @@
 
 ## git
 
-- Add C++ bindings (`c` feature, `src/c.rs`, `cpp/`).
+- Add (LLM generated) C++ bindings.
 
 ## 0.1.0
 
