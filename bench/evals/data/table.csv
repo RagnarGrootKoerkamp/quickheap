@@ -1,180 +1,265 @@
-elem,heap,n,workload,ops,repeat,nanos,push_comparisons,pop_comparisons,branch_misses,l1_cache_misses,hw_cache_misses,l3_cache_misses
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1024,bench::workloads::MonotoneConstantSize,10240,0,265103.0,0.0,0.0,19886.0,5652.0,1093.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1024,bench::workloads::MonotoneConstantSize,10240,1,257632.0,0.0,0.0,18956.0,4561.0,103.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1024,bench::workloads::MonotoneConstantSize,10240,2,255918.0,0.0,0.0,18915.0,4964.0,567.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",32768,bench::workloads::MonotoneConstantSize,327680,0,9697640.0,0.0,0.0,585810.0,722425.0,35866.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",32768,bench::workloads::MonotoneConstantSize,327680,1,9217881.0,0.0,0.0,570610.0,700765.0,28610.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",32768,bench::workloads::MonotoneConstantSize,327680,2,9222799.0,0.0,0.0,573029.0,704231.0,28552.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,331388700.0,0.0,0.0,18394108.0,39293069.0,1000486.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,331524446.0,0.0,0.0,18455646.0,38278063.0,947574.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,334263162.0,0.0,0.0,18427539.0,38396997.0,869073.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,11735514442.0,0.0,0.0,586891800.0,1687490113.0,30499221.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,11847980055.0,0.0,0.0,585331651.0,1713436051.0,30251454.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,11794095509.0,0.0,0.0,585842925.0,1712242702.0,29708427.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1024,bench::workloads::MonotoneConstantSize,10240,0,242808.0,0.0,0.0,18423.0,4970.0,426.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1024,bench::workloads::MonotoneConstantSize,10240,1,249930.0,0.0,0.0,18234.0,5600.0,1115.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1024,bench::workloads::MonotoneConstantSize,10240,2,241186.0,0.0,0.0,17834.0,5517.0,87.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",32768,bench::workloads::MonotoneConstantSize,327680,0,8209832.0,0.0,0.0,545006.0,683850.0,23429.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",32768,bench::workloads::MonotoneConstantSize,327680,1,8263442.0,0.0,0.0,545612.0,698102.0,23657.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",32768,bench::workloads::MonotoneConstantSize,327680,2,8159735.0,0.0,0.0,545025.0,674823.0,24041.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,295709735.0,0.0,0.0,17728724.0,38150426.0,1151309.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,296370218.0,0.0,0.0,17656993.0,39156180.0,1047927.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,294896901.0,0.0,0.0,17711749.0,39091823.0,1180676.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,10553996437.0,0.0,0.0,557557018.0,1780558952.0,39876383.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,10446236445.0,0.0,0.0,556930634.0,1766858156.0,37503990.0,0.0
-i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,10353817430.0,0.0,0.0,556361785.0,1737530680.0,37933210.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1024,bench::workloads::MonotoneConstantSize,10240,0,1747082.0,0.0,0.0,114429.0,18652.0,895.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1024,bench::workloads::MonotoneConstantSize,10240,1,1759250.0,0.0,0.0,112537.0,20471.0,389.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1024,bench::workloads::MonotoneConstantSize,10240,2,1749585.0,0.0,0.0,113687.0,18807.0,791.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",32768,bench::workloads::MonotoneConstantSize,327680,0,62858267.0,0.0,0.0,4324074.0,1772433.0,61346.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",32768,bench::workloads::MonotoneConstantSize,327680,1,62703813.0,0.0,0.0,4317773.0,1758802.0,62075.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",32768,bench::workloads::MonotoneConstantSize,327680,2,63738804.0,0.0,0.0,4390859.0,1821795.0,66158.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,2257354647.0,0.0,0.0,163515810.0,88451592.0,3164347.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,2241450567.0,0.0,0.0,161044027.0,87164231.0,2978017.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,2261950252.0,0.0,0.0,162334225.0,89912652.0,3015433.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,81132109238.0,0.0,0.0,5985839460.0,4015036408.0,206051138.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,80469040968.0,0.0,0.0,5976078413.0,3977519952.0,198596991.0,0.0
-i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,80756587780.0,0.0,0.0,5987846137.0,3958586028.0,201027950.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,422913.0,0.0,0.0,21321.0,10524.0,412.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,426898.0,0.0,0.0,21513.0,10667.0,393.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,422412.0,0.0,0.0,21179.0,10691.0,65.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,21723572.0,0.0,0.0,1498877.0,731846.0,38438.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,21731724.0,0.0,0.0,1499551.0,727211.0,40309.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,21692445.0,0.0,0.0,1498951.0,726373.0,39273.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,972550876.0,0.0,0.0,74881240.0,28980327.0,3088429.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,977601261.0,0.0,0.0,74860566.0,28066273.0,3098768.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,975644581.0,0.0,0.0,75326172.0,28953317.0,3215850.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,39867677913.0,0.0,0.0,3238055219.0,1091479104.0,149088487.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,39866824969.0,0.0,0.0,3238338410.0,1088512346.0,149736582.0,0.0
-i64,bench::sequence_heap::SequenceHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,39844807608.0,0.0,0.0,3237673473.0,1081226855.0,148810469.0,0.0
-i64,bench::s3q::S3qHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,303750.0,0.0,0.0,7836.0,2025.0,417.0,0.0
-i64,bench::s3q::S3qHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,311263.0,0.0,0.0,8038.0,2362.0,469.0,0.0
-i64,bench::s3q::S3qHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,304893.0,0.0,0.0,7756.0,1932.0,20.0,0.0
-i64,bench::s3q::S3qHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,12515863.0,0.0,0.0,233269.0,546395.0,27671.0,0.0
-i64,bench::s3q::S3qHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,12454730.0,0.0,0.0,227432.0,516611.0,25658.0,0.0
-i64,bench::s3q::S3qHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,12493589.0,0.0,0.0,227219.0,516648.0,25587.0,0.0
-i64,bench::s3q::S3qHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,548697071.0,0.0,0.0,6940684.0,32470888.0,2538831.0,0.0
-i64,bench::s3q::S3qHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,552537579.0,0.0,0.0,6873748.0,32556959.0,2524901.0,0.0
-i64,bench::s3q::S3qHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,552736741.0,0.0,0.0,6904490.0,33515473.0,2591188.0,0.0
-i64,bench::s3q::S3qHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,23215035722.0,0.0,0.0,241235895.0,1670401300.0,118531958.0,0.0
-i64,bench::s3q::S3qHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,22598569321.0,0.0,0.0,237490531.0,1568382075.0,113920831.0,0.0
-i64,bench::s3q::S3qHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,23317591732.0,0.0,0.0,240135524.0,1679153019.0,117516212.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,606651.0,0.0,0.0,60265.0,6833.0,1536.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,577497.0,0.0,0.0,58388.0,6394.0,494.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,587682.0,0.0,0.0,58379.0,6288.0,384.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,22618093.0,0.0,0.0,2405503.0,563569.0,27854.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,22685836.0,0.0,0.0,2406915.0,554711.0,26998.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,22474845.0,0.0,0.0,2389536.0,545224.0,27141.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,862628953.0,0.0,0.0,95462508.0,27772023.0,792108.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,849334470.0,0.0,0.0,94294326.0,25694981.0,777957.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,875144667.0,0.0,0.0,96754996.0,27969876.0,799091.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,32025624695.0,0.0,0.0,3683197885.0,1021138030.0,12870725.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,32054018943.0,0.0,0.0,3687351813.0,999585279.0,13056464.0,0.0
-i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,32060734874.0,0.0,0.0,3677788042.0,1027176843.0,12984451.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,0,605849.0,0.0,0.0,54286.0,2375.0,703.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,1,602985.0,0.0,0.0,53177.0,2332.0,229.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,2,595173.0,0.0,0.0,52322.0,1887.0,72.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,0,24981690.0,0.0,0.0,2287229.0,331102.0,4455.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,1,25105087.0,0.0,0.0,2273655.0,329208.0,6785.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,2,25267995.0,0.0,0.0,2274773.0,343007.0,5139.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,0,1005209390.0,0.0,0.0,92751499.0,20284672.0,346372.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,1,1014069686.0,0.0,0.0,94097054.0,19727723.0,344036.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,2,1007753270.0,0.0,0.0,93309177.0,19713430.0,337380.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,0,38709768506.0,0.0,0.0,3626479495.0,941109277.0,17455444.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,1,38495932860.0,0.0,0.0,3623311368.0,924336448.0,17065445.0,0.0
-i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,2,38593595603.0,0.0,0.0,3611455044.0,947094687.0,16820238.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,0,280977.0,0.0,0.0,7845.0,2141.0,359.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,1,280276.0,0.0,0.0,8023.0,2168.0,38.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,2,284131.0,0.0,0.0,8047.0,2490.0,338.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,0,15146035.0,0.0,0.0,199258.0,1858886.0,7630.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,1,15038541.0,0.0,0.0,199220.0,1858779.0,6175.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,2,15062277.0,0.0,0.0,199036.0,1858810.0,6604.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,0,1110084339.0,0.0,0.0,6568547.0,139708745.0,58074950.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,1,1110922411.0,0.0,0.0,6571646.0,139696633.0,58077750.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,2,1107860974.0,0.0,0.0,6559613.0,139714746.0,57804777.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,0,167231700027.0,0.0,0.0,244318081.0,7951449766.0,5089560994.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,1,167072652974.0,0.0,0.0,244284424.0,7954090275.0,5103542087.0,0.0
-i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,2,167126708651.0,0.0,0.0,244229816.0,7953423527.0,5099735584.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1024,bench::workloads::MonotoneConstantSize,10240,0,237641.0,0.0,0.0,6021.0,2158.0,351.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1024,bench::workloads::MonotoneConstantSize,10240,1,234055.0,0.0,0.0,5663.0,2127.0,84.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1024,bench::workloads::MonotoneConstantSize,10240,2,240214.0,0.0,0.0,5966.0,2518.0,297.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",32768,bench::workloads::MonotoneConstantSize,327680,0,14408842.0,0.0,0.0,232507.0,1275592.0,20889.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",32768,bench::workloads::MonotoneConstantSize,327680,1,14412418.0,0.0,0.0,233033.0,1275550.0,22457.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",32768,bench::workloads::MonotoneConstantSize,327680,2,14402743.0,0.0,0.0,232732.0,1274280.0,22008.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,775783094.0,0.0,0.0,3482923.0,86668987.0,37888160.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,776387400.0,0.0,0.0,3483862.0,86671744.0,37917575.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,776355262.0,0.0,0.0,3484898.0,86675109.0,37840140.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,122850106573.0,0.0,0.0,251291881.0,5591433233.0,3005917679.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,122791872628.0,0.0,0.0,251023748.0,5589953163.0,2990277410.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,122589705132.0,0.0,0.0,251190804.0,5592614817.0,2983986929.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1024,bench::workloads::MonotoneConstantSize,10240,0,476443.0,0.0,0.0,59735.0,3664.0,498.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1024,bench::workloads::MonotoneConstantSize,10240,1,468101.0,0.0,0.0,58681.0,2927.0,70.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1024,bench::workloads::MonotoneConstantSize,10240,2,468181.0,0.0,0.0,57495.0,3014.0,176.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",32768,bench::workloads::MonotoneConstantSize,327680,0,26144067.0,0.0,0.0,3297474.0,3672595.0,752999.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",32768,bench::workloads::MonotoneConstantSize,327680,1,26209336.0,0.0,0.0,3302980.0,3671402.0,758589.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",32768,bench::workloads::MonotoneConstantSize,327680,2,26150988.0,0.0,0.0,3298173.0,3678805.0,754575.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,1271839363.0,0.0,0.0,133795626.0,235872278.0,135080280.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,1271765360.0,0.0,0.0,133766651.0,235943184.0,135144295.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,1271754093.0,0.0,0.0,133806487.0,235882675.0,135115313.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,90557645353.0,0.0,0.0,5233371979.0,11312134336.0,6827673754.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,90365573133.0,0.0,0.0,5233387788.0,11316837051.0,6859487921.0,0.0
-i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,90379902565.0,0.0,0.0,5230629075.0,11313702504.0,6789840543.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1024,bench::workloads::MonotoneConstantSize,10240,0,205653.0,0.0,0.0,5327.0,2132.0,315.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1024,bench::workloads::MonotoneConstantSize,10240,1,207095.0,0.0,0.0,4915.0,2136.0,80.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1024,bench::workloads::MonotoneConstantSize,10240,2,213204.0,0.0,0.0,5669.0,2551.0,817.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",32768,bench::workloads::MonotoneConstantSize,327680,0,11733498.0,0.0,0.0,216333.0,1299751.0,25193.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",32768,bench::workloads::MonotoneConstantSize,327680,1,11733438.0,0.0,0.0,216338.0,1299692.0,23975.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",32768,bench::workloads::MonotoneConstantSize,327680,2,11737875.0,0.0,0.0,216052.0,1298649.0,24461.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,672686728.0,0.0,0.0,2926458.0,58035709.0,25665151.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,674651403.0,0.0,0.0,2928612.0,58033092.0,25814999.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,674551992.0,0.0,0.0,2928034.0,58039385.0,25763841.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,133758771457.0,0.0,0.0,229821798.0,5748385101.0,3261483547.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,133798022759.0,0.0,0.0,228990583.0,5747581742.0,3243627235.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,133886547735.0,0.0,0.0,229917908.0,5746199318.0,3255878306.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1024,bench::workloads::MonotoneConstantSize,10240,0,263651.0,0.0,0.0,10369.0,5170.0,349.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1024,bench::workloads::MonotoneConstantSize,10240,1,261007.0,0.0,0.0,9938.0,5235.0,54.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1024,bench::workloads::MonotoneConstantSize,10240,2,266816.0,0.0,0.0,10129.0,5877.0,571.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",32768,bench::workloads::MonotoneConstantSize,327680,0,11049432.0,0.0,0.0,208574.0,1203007.0,7115.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",32768,bench::workloads::MonotoneConstantSize,327680,1,11068871.0,0.0,0.0,208949.0,1205093.0,7608.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",32768,bench::workloads::MonotoneConstantSize,327680,2,11100609.0,0.0,0.0,209262.0,1204585.0,8299.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,763114821.0,0.0,0.0,10922223.0,90234425.0,40418087.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,763751088.0,0.0,0.0,10895993.0,90211650.0,40428492.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,773577521.0,0.0,0.0,10901588.0,90210268.0,40444175.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,111759184189.0,0.0,0.0,531193455.0,5545545344.0,2974300113.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,111604842486.0,0.0,0.0,524843176.0,5534992005.0,2998420727.0,0.0
-i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,111746634126.0,0.0,0.0,529771517.0,5546066928.0,2984381478.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",1024,bench::workloads::MonotoneConstantSize,10240,0,1800205.0,0.0,0.0,94373.0,100151.0,729.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",1024,bench::workloads::MonotoneConstantSize,10240,1,1811703.0,0.0,0.0,93745.0,93993.0,1097.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",1024,bench::workloads::MonotoneConstantSize,10240,2,1858794.0,0.0,0.0,97942.0,93302.0,630.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",32768,bench::workloads::MonotoneConstantSize,327680,0,100017638.0,0.0,0.0,3948555.0,5226790.0,824751.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",32768,bench::workloads::MonotoneConstantSize,327680,1,99937516.0,0.0,0.0,3949730.0,5221001.0,826764.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",32768,bench::workloads::MonotoneConstantSize,327680,2,99762981.0,0.0,0.0,3976323.0,5227006.0,827567.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,8030821966.0,0.0,0.0,164709380.0,271336063.0,163834230.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,8113374115.0,0.0,0.0,166645033.0,272168391.0,163259029.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,8028554060.0,0.0,0.0,164758281.0,270989781.0,163909047.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,829732866413.0,0.0,0.0,6433416272.0,12397458893.0,15136793349.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,811320605244.0,0.0,0.0,6435550941.0,12349954960.0,14450953717.0,0.0
-i64,"pheap::ph::PairingHeap<(), i64>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,688105213313.0,0.0,0.0,6403436354.0,11955680440.0,9745105085.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,0,3986828.0,0.0,0.0,95426.0,194362.0,2238.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,1,3957303.0,0.0,0.0,95479.0,196350.0,1108.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,2,3878654.0,0.0,0.0,92794.0,182090.0,1028.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,0,211846943.0,0.0,0.0,5442532.0,15141982.0,5389548.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,1,195264183.0,0.0,0.0,5778180.0,13727066.0,4597798.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,2,210371190.0,0.0,0.0,5435965.0,15042337.0,5401700.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,0,13200787813.0,0.0,0.0,249147795.0,868786989.0,452187305.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,1,13189591179.0,0.0,0.0,249096870.0,841821789.0,460982375.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,2,13296860360.0,0.0,0.0,247314014.0,862298192.0,455294813.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,0,797794887027.0,0.0,0.0,9887836600.0,37995777784.0,28847452522.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,1,807191030788.0,0.0,0.0,10004169196.0,38218014430.0,28873502213.0,0.0
-i64,fibonacci_heap::GenericFibonacciHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,2,794628529172.0,0.0,0.0,9843189139.0,38137851825.0,29079789589.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,0,624349.0,0.0,0.0,65908.0,1981.0,640.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,1,629357.0,0.0,0.0,67001.0,2292.0,295.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,2,624379.0,0.0,0.0,66383.0,2278.0,165.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,0,29709705.0,0.0,0.0,2889062.0,2627380.0,7794.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,1,29905602.0,0.0,0.0,2893094.0,2627629.0,8526.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,2,29798810.0,0.0,0.0,2894195.0,2627838.0,9424.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,0,1793390583.0,0.0,0.0,116466209.0,228014224.0,81098029.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,1,1795686071.0,0.0,0.0,116513000.0,226824972.0,81330279.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,2,1798714853.0,0.0,0.0,116506459.0,227801257.0,81686723.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,0,175407731153.0,0.0,0.0,4596357520.0,14031391161.0,7009565964.0,0.0
-i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,1,175102537723.0,0.0,0.0,4606126174.0,14076616660.0,6994200500.0,0.0
+elem,heap,n,workload,ops,repeat,nanos,push_comparisons,pop_comparisons,branch_misses,l1_cache_misses,hw_cache_misses,hw_cache_references,l3_cache_misses
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1024,bench::workloads::MonotoneConstantSize,10240,0,277021.0,0.0,0.0,0.0,0.0,1469.0,12370.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1024,bench::workloads::MonotoneConstantSize,10240,1,277241.0,0.0,0.0,0.0,0.0,430.0,11570.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1024,bench::workloads::MonotoneConstantSize,10240,2,269269.0,0.0,0.0,0.0,0.0,921.0,10246.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",32768,bench::workloads::MonotoneConstantSize,327680,0,9502948.0,0.0,0.0,0.0,0.0,32169.0,1054565.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",32768,bench::workloads::MonotoneConstantSize,327680,1,9255622.0,0.0,0.0,0.0,0.0,25439.0,1039477.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",32768,bench::workloads::MonotoneConstantSize,327680,2,9758807.0,0.0,0.0,0.0,0.0,27643.0,1048917.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,335943539.0,0.0,0.0,0.0,0.0,866707.0,78072951.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,339048927.0,0.0,0.0,0.0,0.0,985915.0,77359153.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,341493431.0,0.0,0.0,0.0,0.0,938786.0,80957581.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,12145215876.0,0.0,0.0,0.0,0.0,32657724.0,3738771508.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,11939186555.0,0.0,0.0,0.0,0.0,31553144.0,3619734410.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx2>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,11889925813.0,0.0,0.0,0.0,0.0,30274188.0,3489012230.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1024,bench::workloads::MonotoneConstantSize,10240,0,253325.0,0.0,0.0,0.0,0.0,1390.0,8969.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1024,bench::workloads::MonotoneConstantSize,10240,1,240475.0,0.0,0.0,0.0,0.0,77.0,5967.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1024,bench::workloads::MonotoneConstantSize,10240,2,240987.0,0.0,0.0,0.0,0.0,212.0,7035.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",32768,bench::workloads::MonotoneConstantSize,327680,0,8516099.0,0.0,0.0,0.0,0.0,20703.0,958548.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",32768,bench::workloads::MonotoneConstantSize,327680,1,8628209.0,0.0,0.0,0.0,0.0,25025.0,950925.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",32768,bench::workloads::MonotoneConstantSize,327680,2,8687939.0,0.0,0.0,0.0,0.0,22737.0,973315.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,297701828.0,0.0,0.0,0.0,0.0,1027168.0,80100581.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,309811957.0,0.0,0.0,0.0,0.0,1184157.0,80713668.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,308508547.0,0.0,0.0,0.0,0.0,1075696.0,79592750.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,10842921992.0,0.0,0.0,0.0,0.0,38231543.0,3678171768.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,10819372216.0,0.0,0.0,0.0,0.0,37285308.0,3731506976.0,0.0
+i64,"quickheap::ConfigurableSimdQuickHeap<i64, quickheap::simd::Avx512<true>>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,10353898068.0,0.0,0.0,0.0,0.0,36791147.0,3473441109.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1024,bench::workloads::MonotoneConstantSize,10240,0,1778270.0,0.0,0.0,0.0,0.0,913.0,24888.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1024,bench::workloads::MonotoneConstantSize,10240,1,1774374.0,0.0,0.0,0.0,0.0,1018.0,26976.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1024,bench::workloads::MonotoneConstantSize,10240,2,1771460.0,0.0,0.0,0.0,0.0,351.0,26305.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",32768,bench::workloads::MonotoneConstantSize,327680,0,63987079.0,0.0,0.0,0.0,0.0,67285.0,2812704.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",32768,bench::workloads::MonotoneConstantSize,327680,1,63807166.0,0.0,0.0,0.0,0.0,62450.0,2713426.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",32768,bench::workloads::MonotoneConstantSize,327680,2,63721667.0,0.0,0.0,0.0,0.0,65513.0,2820682.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,2258317943.0,0.0,0.0,0.0,0.0,2814504.0,162415925.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,2268592682.0,0.0,0.0,0.0,0.0,2684624.0,168599127.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,2254845030.0,0.0,0.0,0.0,0.0,2656354.0,170500662.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,80908303862.0,0.0,0.0,0.0,0.0,214333881.0,8053981264.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,81335628618.0,0.0,0.0,0.0,0.0,215346112.0,8176563995.0,0.0
+i64,"bench::scalar_quickheap::ScalarQuickHeap<i64, 3, false, bench::scalar_quickheap::Search::LinearScan>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,81293517572.0,0.0,0.0,0.0,0.0,221861619.0,8197252282.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,426957.0,0.0,0.0,0.0,0.0,982.0,13314.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,424404.0,0.0,0.0,0.0,0.0,68.0,11432.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,427087.0,0.0,0.0,0.0,0.0,236.0,12688.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,21829502.0,0.0,0.0,0.0,0.0,48775.0,1192477.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,21448505.0,0.0,0.0,0.0,0.0,34207.0,1242182.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,21441143.0,0.0,0.0,0.0,0.0,32555.0,1207685.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,968453668.0,0.0,0.0,0.0,0.0,2910239.0,46952244.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,962535107.0,0.0,0.0,0.0,0.0,2985021.0,48323361.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,965030750.0,0.0,0.0,0.0,0.0,3120475.0,47122530.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,39331468458.0,0.0,0.0,0.0,0.0,144735899.0,1841653687.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,39321505392.0,0.0,0.0,0.0,0.0,142674931.0,1830101521.0,0.0
+i64,bench::sequence_heap::SequenceHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,39324384266.0,0.0,0.0,0.0,0.0,144007903.0,1827689386.0,0.0
+i64,bench::s3q::S3qHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,308668.0,0.0,0.0,0.0,0.0,230.0,2247.0,0.0
+i64,bench::s3q::S3qHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,309890.0,0.0,0.0,0.0,0.0,634.0,5115.0,0.0
+i64,bench::s3q::S3qHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,307096.0,0.0,0.0,0.0,0.0,33.0,2987.0,0.0
+i64,bench::s3q::S3qHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,12656352.0,0.0,0.0,0.0,0.0,22532.0,764866.0,0.0
+i64,bench::s3q::S3qHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,12154250.0,0.0,0.0,0.0,0.0,22590.0,762506.0,0.0
+i64,bench::s3q::S3qHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,12109413.0,0.0,0.0,0.0,0.0,20283.0,760319.0,0.0
+i64,bench::s3q::S3qHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,558089970.0,0.0,0.0,0.0,0.0,2572519.0,68449591.0,0.0
+i64,bench::s3q::S3qHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,553333186.0,0.0,0.0,0.0,0.0,2451174.0,65494094.0,0.0
+i64,bench::s3q::S3qHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,558636709.0,0.0,0.0,0.0,0.0,2577642.0,68665551.0,0.0
+i64,bench::s3q::S3qHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,22875241593.0,0.0,0.0,0.0,0.0,118060745.0,3446095416.0,0.0
+i64,bench::s3q::S3qHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,22745842705.0,0.0,0.0,0.0,0.0,116868177.0,3405101956.0,0.0
+i64,bench::s3q::S3qHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,22837521560.0,0.0,0.0,0.0,0.0,116592726.0,3438871317.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,590945.0,0.0,0.0,0.0,0.0,1709.0,14215.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,603194.0,0.0,0.0,0.0,0.0,906.0,13209.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,591016.0,0.0,0.0,0.0,0.0,372.0,11489.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,22436597.0,0.0,0.0,0.0,0.0,25593.0,795833.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,22459642.0,0.0,0.0,0.0,0.0,24467.0,808886.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,22692315.0,0.0,0.0,0.0,0.0,24169.0,840439.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,864230346.0,0.0,0.0,0.0,0.0,797242.0,57093006.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,851284334.0,0.0,0.0,0.0,0.0,776410.0,57863191.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,862498522.0,0.0,0.0,0.0,0.0,772373.0,57486839.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,32396741528.0,0.0,0.0,0.0,0.0,21819948.0,3112368816.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,32600342490.0,0.0,0.0,0.0,0.0,22108498.0,3266443756.0,0.0
+i64,bench::original_quickheap::OriginalQuickHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,32681912521.0,0.0,0.0,0.0,0.0,22214492.0,3222025532.0,0.0
+i64,bench::radix_heap::RadixHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,374418.0,0.0,0.0,0.0,0.0,303.0,6656.0,0.0
+i64,bench::radix_heap::RadixHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,373466.0,0.0,0.0,0.0,0.0,45.0,5988.0,0.0
+i64,bench::radix_heap::RadixHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,378253.0,0.0,0.0,0.0,0.0,83.0,6395.0,0.0
+i64,bench::radix_heap::RadixHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,12696166.0,0.0,0.0,0.0,0.0,9404.0,675910.0,0.0
+i64,bench::radix_heap::RadixHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,12787936.0,0.0,0.0,0.0,0.0,9867.0,689481.0,0.0
+i64,bench::radix_heap::RadixHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,12774014.0,0.0,0.0,0.0,0.0,10054.0,696905.0,0.0
+i64,bench::radix_heap::RadixHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,448914891.0,0.0,0.0,0.0,0.0,357144.0,42851398.0,0.0
+i64,bench::radix_heap::RadixHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,440921138.0,0.0,0.0,0.0,0.0,369668.0,43295685.0,0.0
+i64,bench::radix_heap::RadixHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,446331493.0,0.0,0.0,0.0,0.0,371579.0,43105598.0,0.0
+i64,bench::radix_heap::RadixHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,15049171390.0,0.0,0.0,0.0,0.0,22349254.0,1991699225.0,0.0
+i64,bench::radix_heap::RadixHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,15094721576.0,0.0,0.0,0.0,0.0,22083121.0,2021329894.0,0.0
+i64,bench::radix_heap::RadixHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,15002680297.0,0.0,0.0,0.0,0.0,21257326.0,1988961345.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,263270.0,0.0,0.0,0.0,0.0,688.0,4961.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,258002.0,0.0,0.0,0.0,0.0,64.0,2193.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,262698.0,0.0,0.0,0.0,0.0,105.0,2411.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,14352510.0,0.0,0.0,0.0,0.0,27592.0,2373423.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,14269744.0,0.0,0.0,0.0,0.0,26608.0,2375782.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,14302154.0,0.0,0.0,0.0,0.0,27286.0,2409206.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,894126546.0,0.0,0.0,0.0,0.0,37548798.0,114817905.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,946894945.0,0.0,0.0,0.0,0.0,39471277.0,117796669.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,948933918.0,0.0,0.0,0.0,0.0,39532740.0,117834354.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,140877223697.0,0.0,0.0,0.0,0.0,2707517750.0,8323473668.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,140959281079.0,0.0,0.0,0.0,0.0,2695565519.0,8314951415.0,0.0
+i64,bench::boost_heap::BoostDary4HeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,140837699299.0,0.0,0.0,0.0,0.0,2706609450.0,8322938182.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,1245641.0,0.0,0.0,0.0,0.0,410.0,138549.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,1253283.0,0.0,0.0,0.0,0.0,311.0,135204.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,1253214.0,0.0,0.0,0.0,0.0,333.0,137964.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,70869919.0,0.0,0.0,0.0,0.0,1936316.0,8775968.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,71271349.0,0.0,0.0,0.0,0.0,1949727.0,8810207.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,70935008.0,0.0,0.0,0.0,0.0,1943694.0,8808143.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,7541767543.0,0.0,0.0,0.0,0.0,235849400.0,551470232.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,7542959304.0,0.0,0.0,0.0,0.0,236212265.0,552702628.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,7541863672.0,0.0,0.0,0.0,0.0,235682659.0,552246064.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,712778174667.0,0.0,0.0,0.0,0.0,19774271234.0,41757746864.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,680445732318.0,0.0,0.0,0.0,0.0,18219370814.0,38330412970.0,0.0
+i64,bench::boost_heap::BoostFibHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,606207438431.0,0.0,0.0,0.0,0.0,14637790983.0,30185161667.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,2647750.0,0.0,0.0,0.0,0.0,1339.0,103424.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,2668011.0,0.0,0.0,0.0,0.0,362.0,101445.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,2673048.0,0.0,0.0,0.0,0.0,781.0,104599.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,135263424.0,0.0,0.0,0.0,0.0,1321178.0,10611496.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,134063181.0,0.0,0.0,0.0,0.0,1301855.0,10571317.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,134296475.0,0.0,0.0,0.0,0.0,1306722.0,10577611.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,11677917514.0,0.0,0.0,0.0,0.0,311291218.0,805585563.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,11664482706.0,0.0,0.0,0.0,0.0,311397294.0,806174241.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,11661235936.0,0.0,0.0,0.0,0.0,311193133.0,805893308.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,1000642081870.0,0.0,0.0,0.0,0.0,17541506547.0,39868973949.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,1000366015715.0,0.0,0.0,0.0,0.0,17545487119.0,39867111049.0,0.0
+i64,bench::boost_heap::BoostPairingHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,1000481755489.0,0.0,0.0,0.0,0.0,17544558638.0,39872106202.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,4857175.0,0.0,0.0,0.0,0.0,1347.0,104759.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,4755962.0,0.0,0.0,0.0,0.0,616.0,158259.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,4766697.0,0.0,0.0,0.0,0.0,329.0,151761.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,242288837.0,0.0,0.0,0.0,0.0,1936957.0,9562016.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,242240925.0,0.0,0.0,0.0,0.0,1940698.0,9571544.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,240871585.0,0.0,0.0,0.0,0.0,1942759.0,9559151.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,16002942115.0,0.0,0.0,0.0,0.0,227823859.0,529996274.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,15999727374.0,0.0,0.0,0.0,0.0,227734785.0,528756413.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,15996766337.0,0.0,0.0,0.0,0.0,228161748.0,527117400.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,896446546994.0,0.0,0.0,0.0,0.0,11369817179.0,23819809149.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,896058801545.0,0.0,0.0,0.0,0.0,11419269704.0,23915586754.0,0.0
+i64,bench::boost_heap::BoostBinomialHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,897401362846.0,0.0,0.0,0.0,0.0,11414974682.0,23854699162.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,0,1063045.0,0.0,0.0,0.0,0.0,1114.0,35917.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,1,1049303.0,0.0,0.0,0.0,0.0,481.0,33290.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,1024,bench::workloads::MonotoneConstantSize,10240,2,1058427.0,0.0,0.0,0.0,0.0,221.0,33533.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,0,74973759.0,0.0,0.0,0.0,0.0,448493.0,9163257.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,1,75066919.0,0.0,0.0,0.0,0.0,430768.0,9178661.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,32768,bench::workloads::MonotoneConstantSize,327680,2,75050916.0,0.0,0.0,0.0,0.0,435176.0,9153933.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,0,8011763734.0,0.0,0.0,0.0,0.0,236996013.0,599194719.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,1,8012537508.0,0.0,0.0,0.0,0.0,237404032.0,599737803.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,1048576,bench::workloads::MonotoneConstantSize,10485760,2,8016793851.0,0.0,0.0,0.0,0.0,237550770.0,600371215.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,0,923811289466.0,0.0,0.0,0.0,0.0,12013737463.0,26944927646.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,1,924219170709.0,0.0,0.0,0.0,0.0,12040077600.0,26999951794.0,0.0
+i64,bench::boost_heap::BoostSkewHeapI64,33554432,bench::workloads::MonotoneConstantSize,335544320,2,924153193030.0,0.0,0.0,0.0,0.0,12027486820.0,26984414223.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,0,600632.0,0.0,0.0,0.0,0.0,732.0,4040.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,1,603626.0,0.0,0.0,0.0,0.0,411.0,4167.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,2,599620.0,0.0,0.0,0.0,0.0,290.0,3817.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,0,24964148.0,0.0,0.0,0.0,0.0,3611.0,490604.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,1,25209151.0,0.0,0.0,0.0,0.0,3949.0,486674.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,2,25513513.0,0.0,0.0,0.0,0.0,4136.0,511446.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,0,1003541945.0,0.0,0.0,0.0,0.0,318438.0,42573151.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,1,1015280820.0,0.0,0.0,0.0,0.0,328649.0,42326100.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,2,1004921740.0,0.0,0.0,0.0,0.0,323124.0,42126448.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,0,38896757642.0,0.0,0.0,0.0,0.0,15369840.0,2198950729.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,1,39264158245.0,0.0,0.0,0.0,0.0,15066838.0,2134295715.0,0.0
+i64,bench::reimplemented_quickheap::ReimplementedQuickHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,2,38519556105.0,0.0,0.0,0.0,0.0,14699573.0,2086374692.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,0,277511.0,0.0,0.0,0.0,0.0,217.0,2077.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,1,285274.0,0.0,0.0,0.0,0.0,622.0,3652.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,2,280216.0,0.0,0.0,0.0,0.0,60.0,2030.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,0,15071837.0,0.0,0.0,0.0,0.0,6408.0,3586695.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,1,15005876.0,0.0,0.0,0.0,0.0,5784.0,3588872.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,2,15020329.0,0.0,0.0,0.0,0.0,5740.0,3580560.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,0,1094480596.0,0.0,0.0,0.0,0.0,57381661.0,188782506.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,1,1092524075.0,0.0,0.0,0.0,0.0,57373445.0,188809116.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,2,1092474470.0,0.0,0.0,0.0,0.0,57395501.0,188836233.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,0,147504069963.0,0.0,0.0,0.0,0.0,4448167711.0,10412830176.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,1,147540497111.0,0.0,0.0,0.0,0.0,4449175262.0,10413571455.0,0.0
+i64,alloc::collections::binary_heap::BinaryHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,2,147382823098.0,0.0,0.0,0.0,0.0,4450428617.0,10413866047.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1024,bench::workloads::MonotoneConstantSize,10240,0,243300.0,0.0,0.0,0.0,0.0,630.0,3831.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1024,bench::workloads::MonotoneConstantSize,10240,1,244361.0,0.0,0.0,0.0,0.0,104.0,2271.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1024,bench::workloads::MonotoneConstantSize,10240,2,236800.0,0.0,0.0,0.0,0.0,34.0,2171.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",32768,bench::workloads::MonotoneConstantSize,327680,0,14258031.0,0.0,0.0,0.0,0.0,22204.0,2310924.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",32768,bench::workloads::MonotoneConstantSize,327680,1,14294746.0,0.0,0.0,0.0,0.0,22113.0,2343291.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",32768,bench::workloads::MonotoneConstantSize,327680,2,14236769.0,0.0,0.0,0.0,0.0,20820.0,2345023.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,773387005.0,0.0,0.0,0.0,0.0,37595828.0,114723342.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,772448821.0,0.0,0.0,0.0,0.0,37604592.0,114769615.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,773551585.0,0.0,0.0,0.0,0.0,37605239.0,114766306.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,107337022944.0,0.0,0.0,0.0,0.0,2708351092.0,6141387163.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,107562722953.0,0.0,0.0,0.0,0.0,2710204021.0,6143598849.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,107542939543.0,0.0,0.0,0.0,0.0,2710399484.0,6144387541.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1024,bench::workloads::MonotoneConstantSize,10240,0,473540.0,0.0,0.0,0.0,0.0,235.0,4759.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1024,bench::workloads::MonotoneConstantSize,10240,1,477104.0,0.0,0.0,0.0,0.0,385.0,4849.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1024,bench::workloads::MonotoneConstantSize,10240,2,468701.0,0.0,0.0,0.0,0.0,61.0,2995.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",32768,bench::workloads::MonotoneConstantSize,327680,0,26119072.0,0.0,0.0,0.0,0.0,571442.0,3911488.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",32768,bench::workloads::MonotoneConstantSize,327680,1,26191823.0,0.0,0.0,0.0,0.0,571423.0,3876442.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",32768,bench::workloads::MonotoneConstantSize,327680,2,26109377.0,0.0,0.0,0.0,0.0,565709.0,3871449.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,1286406480.0,0.0,0.0,0.0,0.0,135711735.0,404718150.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,1286014915.0,0.0,0.0,0.0,0.0,135639126.0,404435159.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,1285835924.0,0.0,0.0,0.0,0.0,135616542.0,404465057.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,86831800387.0,0.0,0.0,0.0,0.0,7048157658.0,18783921299.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,86827407691.0,0.0,0.0,0.0,0.0,7047799960.0,18782059204.0,0.0
+i64,"dary_heap::DaryHeap<core::cmp::Reverse<i64>, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,86833483968.0,0.0,0.0,0.0,0.0,7048266978.0,18783359272.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1024,bench::workloads::MonotoneConstantSize,10240,0,208246.0,0.0,0.0,0.0,0.0,227.0,2209.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1024,bench::workloads::MonotoneConstantSize,10240,1,208587.0,0.0,0.0,0.0,0.0,66.0,2097.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1024,bench::workloads::MonotoneConstantSize,10240,2,207095.0,0.0,0.0,0.0,0.0,44.0,2161.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",32768,bench::workloads::MonotoneConstantSize,327680,0,11568026.0,0.0,0.0,0.0,0.0,19429.0,1605570.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",32768,bench::workloads::MonotoneConstantSize,327680,1,11598953.0,0.0,0.0,0.0,0.0,22156.0,1596100.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",32768,bench::workloads::MonotoneConstantSize,327680,2,11513393.0,0.0,0.0,0.0,0.0,19327.0,1571752.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,669894891.0,0.0,0.0,0.0,0.0,25545389.0,84577171.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,672135523.0,0.0,0.0,0.0,0.0,25535772.0,84576967.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,672079569.0,0.0,0.0,0.0,0.0,25542873.0,84583469.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,116841270233.0,0.0,0.0,0.0,0.0,2694470109.0,7599702208.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,118172766762.0,0.0,0.0,0.0,0.0,2698644556.0,7588194567.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 4>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,116921012084.0,0.0,0.0,0.0,0.0,2686321430.0,7585874128.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1024,bench::workloads::MonotoneConstantSize,10240,0,740364.0,0.0,0.0,0.0,0.0,6112.0,173688.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1024,bench::workloads::MonotoneConstantSize,10240,1,262689.0,0.0,0.0,0.0,0.0,377.0,5713.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1024,bench::workloads::MonotoneConstantSize,10240,2,260866.0,0.0,0.0,0.0,0.0,321.0,5761.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",32768,bench::workloads::MonotoneConstantSize,327680,0,10891749.0,0.0,0.0,0.0,0.0,7423.0,2319202.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",32768,bench::workloads::MonotoneConstantSize,327680,1,10837776.0,0.0,0.0,0.0,0.0,6458.0,1233216.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",32768,bench::workloads::MonotoneConstantSize,327680,2,10970077.0,0.0,0.0,0.0,0.0,7569.0,2189167.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,770935188.0,0.0,0.0,0.0,0.0,21324488.0,65568051.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,769976462.0,0.0,0.0,0.0,0.0,21298929.0,65564696.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,769877082.0,0.0,0.0,0.0,0.0,21242258.0,65521288.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,99773448398.0,0.0,0.0,0.0,0.0,2775054944.0,7375900084.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,99876740981.0,0.0,0.0,0.0,0.0,2774732738.0,7387789163.0,0.0
+i64,"orx_priority_queue::dary::daryheap::DaryHeap<(), i64, 8>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,99885363463.0,0.0,0.0,0.0,0.0,2776223432.0,7388465443.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",1024,bench::workloads::MonotoneConstantSize,10240,0,1794705.0,0.0,0.0,0.0,0.0,836.0,169222.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",1024,bench::workloads::MonotoneConstantSize,10240,1,1843599.0,0.0,0.0,0.0,0.0,1390.0,170824.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",1024,bench::workloads::MonotoneConstantSize,10240,2,1836458.0,0.0,0.0,0.0,0.0,429.0,161896.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",32768,bench::workloads::MonotoneConstantSize,327680,0,98446805.0,0.0,0.0,0.0,0.0,841868.0,6030272.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",32768,bench::workloads::MonotoneConstantSize,327680,1,98601841.0,0.0,0.0,0.0,0.0,829404.0,6015620.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",32768,bench::workloads::MonotoneConstantSize,327680,2,98444352.0,0.0,0.0,0.0,0.0,831191.0,6025136.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,7858944340.0,0.0,0.0,0.0,0.0,162780873.0,406833991.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,7867125202.0,0.0,0.0,0.0,0.0,163177384.0,407466584.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,7875566360.0,0.0,0.0,0.0,0.0,163055485.0,407388333.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,658737411078.0,0.0,0.0,0.0,0.0,8800468510.0,19223531371.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,658897713737.0,0.0,0.0,0.0,0.0,8806548049.0,19220332712.0,0.0
+i64,"pheap::ph::PairingHeap<(), i64>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,658904323941.0,0.0,0.0,0.0,0.0,8807987424.0,19222811359.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,0,3970589.0,0.0,0.0,0.0,0.0,1865.0,280747.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,1,3985221.0,0.0,0.0,0.0,0.0,822.0,277108.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,1024,bench::workloads::MonotoneConstantSize,10240,2,4065974.0,0.0,0.0,0.0,0.0,776.0,294680.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,0,199546633.0,0.0,0.0,0.0,0.0,4891806.0,20720719.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,1,200032591.0,0.0,0.0,0.0,0.0,5047492.0,21331549.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,32768,bench::workloads::MonotoneConstantSize,327680,2,197185077.0,0.0,0.0,0.0,0.0,4802691.0,19721950.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,0,13470311539.0,0.0,0.0,0.0,0.0,469922772.0,1285113632.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,1,13322482585.0,0.0,0.0,0.0,0.0,460519214.0,1256954677.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,1048576,bench::workloads::MonotoneConstantSize,10485760,2,13127061807.0,0.0,0.0,0.0,0.0,454962024.0,1264703960.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,0,784077517930.0,0.0,0.0,0.0,0.0,27586527361.0,65840296726.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,1,773213522827.0,0.0,0.0,0.0,0.0,27670888708.0,66037305029.0,0.0
+i64,fibonacci_heap::GenericFibonacciHeap<i64>,33554432,bench::workloads::MonotoneConstantSize,335544320,2,776210201708.0,0.0,0.0,0.0,0.0,28356043650.0,67781479414.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,0,631668.0,0.0,0.0,0.0,0.0,720.0,3931.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,1,633822.0,0.0,0.0,0.0,0.0,509.0,3986.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1024,bench::workloads::MonotoneConstantSize,10240,2,629926.0,0.0,0.0,0.0,0.0,290.0,3614.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,0,30396606.0,0.0,0.0,0.0,0.0,7990.0,3951536.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,1,30408855.0,0.0,0.0,0.0,0.0,8196.0,4200799.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,32768,bench::workloads::MonotoneConstantSize,327680,2,30366290.0,0.0,0.0,0.0,0.0,8132.0,4130845.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,0,1844969779.0,0.0,0.0,0.0,0.0,80839784.0,301625825.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,1,1844253041.0,0.0,0.0,0.0,0.0,80847399.0,301376998.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,1048576,bench::workloads::MonotoneConstantSize,10485760,2,1843855447.0,0.0,0.0,0.0,0.0,80827810.0,301108737.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,0,174142946623.0,0.0,0.0,0.0,0.0,7000122376.0,16666605178.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,1,161737713796.0,0.0,0.0,0.0,0.0,6750514535.0,16067268114.0,0.0
+i64,weakheap::WeakHeap<core::cmp::Reverse<i64>>,33554432,bench::workloads::MonotoneConstantSize,335544320,2,160070487256.0,0.0,0.0,0.0,0.0,6708899961.0,15969155957.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",1024,bench::workloads::MonotoneConstantSize,10240,0,458516.0,0.0,0.0,0.0,0.0,891.0,8988.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",1024,bench::workloads::MonotoneConstantSize,10240,1,445817.0,0.0,0.0,0.0,0.0,114.0,5927.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",1024,bench::workloads::MonotoneConstantSize,10240,2,452026.0,0.0,0.0,0.0,0.0,301.0,8423.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",32768,bench::workloads::MonotoneConstantSize,327680,0,15053834.0,0.0,0.0,0.0,0.0,11471.0,804745.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",32768,bench::workloads::MonotoneConstantSize,327680,1,15013072.0,0.0,0.0,0.0,0.0,11241.0,776774.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",32768,bench::workloads::MonotoneConstantSize,327680,2,15050399.0,0.0,0.0,0.0,0.0,12384.0,814869.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",1048576,bench::workloads::MonotoneConstantSize,10485760,0,508661958.0,0.0,0.0,0.0,0.0,406005.0,56239502.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",1048576,bench::workloads::MonotoneConstantSize,10485760,1,513654047.0,0.0,0.0,0.0,0.0,398744.0,55935652.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",1048576,bench::workloads::MonotoneConstantSize,10485760,2,507904798.0,0.0,0.0,0.0,0.0,384042.0,55522201.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",33554432,bench::workloads::MonotoneConstantSize,335544320,0,17175450556.0,0.0,0.0,0.0,0.0,15102207.0,2629692310.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",33554432,bench::workloads::MonotoneConstantSize,335544320,1,17164634816.0,0.0,0.0,0.0,0.0,15087411.0,2609929116.0,0.0
+i64,"radix_heap::RadixHeapMap<core::cmp::Reverse<i64>, ()>",33554432,bench::workloads::MonotoneConstantSize,335544320,2,17285045648.0,0.0,0.0,0.0,0.0,15317214.0,2605506484.0,0.0
