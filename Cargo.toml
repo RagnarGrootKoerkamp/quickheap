@@ -17,6 +17,10 @@ categories = ["algorithms", "data-structures"]
 authors = ["Ragnar Groot Koerkamp", "Marvin Williams", "Johannes Breitling"]
 description = "A SIMD-accelerated priority queue"
 
+[lib]
+name = "quickheap"
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 ensure_simd = "0.1.0"
 rand = "0.10.1"
@@ -27,3 +31,6 @@ default = []
 pivots = []
 rebalancing = []
 time_only = []
+
+# C-ABI bindings (src/c.rs), used by the C++ bindings in cpp/.
+c = []

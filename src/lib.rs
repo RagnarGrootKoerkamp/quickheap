@@ -25,6 +25,10 @@
 //! assert_eq!(q.pop(), None);
 //! ```
 
+#[cfg(feature = "c")]
+#[doc(hidden)]
+pub mod c;
+
 #[doc(hidden)]
 pub mod pivot_strategies;
 
