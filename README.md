@@ -44,6 +44,23 @@ assert_eq!(q.pop(), Some(7));
 assert_eq!(q.pop(), None);
 ```
 
+## C++ bindings
+
+`SimdQuickHeap` can also be used from C++, via a small `extern "C"` layer
+(`src/c.rs`, feature `c`) and a header-only RAII wrapper. See
+[`cpp/README.md`](cpp/README.md) for build instructions and
+[`cpp/quickheap.hpp`](cpp/quickheap.hpp) for the API. Quick example:
+
+```cpp
+#include "quickheap.hpp"
+
+quickheap::Heap<std::uint64_t> q;
+q.push(4);
+q.push(1);
+q.push(7);
+assert(q.pop() == 1);
+```
+
 ## Results
 
 Below you can see the results for 32-bit and 64-bit data when we first push `n`

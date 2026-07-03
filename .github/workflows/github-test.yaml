@@ -36,3 +36,9 @@ jobs:
       # Run all tests in debug and release mode.
       - run: cargo test --package quickheap
       - run: cargo test --package quickheap -r
+      # Run the Rust-side tests for the C-ABI bindings.
+      - run: cargo test --package quickheap --features c
+      # Build the shared library and compile/run the C++ example against it.
+      - run: cargo build --package quickheap --release --features c
+      - run: g++ -std=c++17 -I cpp cpp/example.cpp -L target/release -lquickheap -o quickheap_example
+      - run: LD_LIBRARY_PATH=target/release ./quickheap_example
