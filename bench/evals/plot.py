@@ -9,6 +9,7 @@ import pandas as pd
 import sys
 
 benchname = sys.argv[1]
+use_hatching = "--no-hatch" not in sys.argv[2:]
 
 df = pd.read_csv(f"data/{benchname}.csv")
 
@@ -54,7 +55,6 @@ df["workload"] = (
 )
 
 
-df = df[~df["name"].str.contains("SimdQuickHeap<T, Avx512>")]
 df["name"] = df["name"].str.replace(r"<true>", "", regex=True)
 
 df["type"] = df["name"].str.split("<").str[0]
@@ -181,34 +181,31 @@ if "graph" in benchname:
 
     def filter_graph(name):
         cleaned = re.sub(r"<[^>]*>", "", name)
-        return all or not (cleaned in nanos_filter or name in nanos_filter)
+        return not (cleaned in nanos_filter or name in nanos_filter)
 
     methods = list(
         filter(filter_graph, df["name"].unique())
     )  # already sorted by type/name above
 
-    # hatches = ["", "//", "--", "xx", "++", "\\\\", "oo", ".."]
-    hatches = [""]
-    graph_hatch = {gn: hatches[k % len(hatches)] for k, gn in enumerate(graph_names)}
-    graph_alpha = {
-        gn: (1.0 if k < 5 else 0.5)
-        for k, gn in enumerate(
-            graph_names
-        )  # Change here if graphs are added or removed
-    }
-
-    filtered_graph_names = []
-    for g in graph_names:
-        if not g in graph_instance_filter:
-            filtered_graph_names.append(g)
-
-    graph_names = filtered_graph_names
+    graph_names = [g for g in graph_names if g not in graph_instance_filter]
 
     n_methods = len(methods)
-    bar_width = 0.8 / len(graph_names)
+    bar_width = 0.8 / n_methods
     method_type = {m: df[df["name"] == m]["type"].iloc[0] for m in methods}
     bar_colors = [type_colour.get(method_type[m], "gray") for m in methods]
-    x = np.arange(n_methods)
+
+    # The QuickHeap variants share the black type colour; tell them apart by pattern
+    def hatch_for_name(tp, name):
+        if not use_hatching:
+            return ""
+        if tp == "ScalarQuickHeap":
+            return "xx"
+        if tp == "SimdQuickHeap" and "Avx512" not in name:
+            return "//"
+        return ""
+
+    bar_hatches = [hatch_for_name(method_type[m], m) for m in methods]
+    x = np.arange(len(graph_names))
 
     plt.close("all")
     fig, axs = plt.subplots(
@@ -225,93 +222,49 @@ if "graph" in benchname:
     for ax, workload in zip(axs, workloads):
         wdf = df[df["workload"] == workload]
 
-        for gi, gn in enumerate(graph_names):
-            if gn in graph_instance_filter:
-                continue
-
-            gdf = wdf[wdf["graph_name"] == gn].set_index("name")
+        for mi, method in enumerate(methods):
+            mdf = wdf[wdf["name"] == method].set_index("graph_name")
             heights = [
-                gdf.loc[m, "rel"] if m in gdf.index else float("nan") for m in methods
+                mdf.loc[g, "rel"] if g in mdf.index else float("nan")
+                for g in graph_names
             ]
-            offset = (gi - (len(graph_names) - 1) / 2) * bar_width
+            offset = (mi - (n_methods - 1) / 2) * bar_width
 
             ax.bar(
                 x + offset,
                 heights,
                 bar_width,
-                label=gn,
-                color=bar_colors,
-                hatch=graph_hatch[gn],
-                alpha=graph_alpha[gn],
+                color=bar_colors[mi],
+                hatch=bar_hatches[mi],
                 edgecolor="white",
             )
 
-        ymax = df[df["workload"] == workload]["rel"].max()
         ax.yaxis.set_major_locator(ticker.MultipleLocator(base=50))
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda v, _: f"{v:.3g}"))
         ax.set_title(workload)
         ax.grid(axis="y", which="major", linestyle="-", alpha=0.4)
 
-    short_methods = [rewrite_legend(method) for method in methods]
     axs[-1].set_xticks(x)
-    axs[-1].set_xticklabels(short_methods, rotation=-45, ha="left", fontsize=8)
+    axs[-1].set_xticklabels(graph_names, fontsize=8)
 
-    # Color-coded type labels along x-axis
-    for tick, method in zip(axs[-1].get_xticklabels(), methods):
-        tick.set_color(type_colour.get(method_type[method], "black"))
-
-    # Get legend handles and labels from the last subplot
-    handles, labels = axs[-1].get_legend_handles_labels()
-
-    # Filter to keep only the desired graph types
-    filtered_handles = []
-    filtered_labels = []
-    for handle, label in zip(handles, labels):
-        if label.startswith("rhg"):
-            filtered_labels.append("Random Hyperbolic Graphs: 20, 22, 24")
-            filtered_handles.append(handle)
-        else:
-            filtered_labels.append(f"Road Networks: CAL, CTR, GER, USA")
-            filtered_handles.append(handle)
-
-    # Deduplicate labels (keep first occurrence of each unique label)
-    seen = set()
-    final_handles = []
-    final_labels = []
-    for handle, label in zip(filtered_handles, filtered_labels):
-        if label not in seen:
-            final_handles.append(handle)
-            final_labels.append(label)
-            seen.add(label)
-
-    # Add a single grey proxy for the legend (if you want one grey legend entry)
-    # For example, if you want "Random Hyperbolic Graphs" to be grey in legend only:
-    grey_patch_rn = mpatches.Patch(
-        linewidth=0, color="#333333FF", label="Road Networks: CAL, CTR, GER, USA"
-    )
-    grey_patch_rhg = mpatches.Patch(
-        linewidth=0, color="#33333399", label="Random Hyperbolic Graphs: 20, 22, 24"
-    )
-
-    # Also, keep the existing road‑networks label
-    road_label = "Road Networks: CAL, CTR, GER, USA"
-    road_handle = [h for h, l in zip(final_handles, final_labels) if l == road_label][0]
-
-    # Replace or adjust final_handles/labels as needed
-    # Example: keep existing road handle, add a grey proxy for RHG
-    new_final_handles = [grey_patch_rn, grey_patch_rhg]
-    new_final_labels = [road_label, "Random Hyperbolic Graphs: 20, 22, 24"]
-
-    # fig.legend(handles=new_final_handles, labels=new_final_labels)
-
+    method_handles = [
+        mpatches.Patch(
+            facecolor=bar_colors[mi],
+            hatch=bar_hatches[mi],
+            edgecolor="white",
+            label=rewrite_legend(method),
+        )
+        for mi, method in enumerate(methods)
+    ]
     fig.legend(
-        new_final_handles,
-        new_final_labels,
-        loc="upper right",
-        bbox_to_anchor=(0.93, 0.96),
+        handles=method_handles,
+        loc="center",
+        ncol=4,
+        fontsize=8,
+        bbox_to_anchor=(0.5, -0.020),
     )
 
-    fig.supylabel(r"ns / element")
+    fig.supylabel(r"Run time (ns / N)")
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}.png", bbox_inches="tight")
@@ -389,7 +342,7 @@ elif "comparisons" in benchname:
 
     plt.close("all")
     # fig, ax = plt.subplots(figsize=(max(8, n_workloads * (total + 0.3) * 1.5), 5))
-    fig, ax = plt.subplots(figsize=(21 / 2.54, 5))
+    fig, ax = plt.subplots(figsize=(21 / 2.8, 4))
     x = np.arange(n_workloads)  # one tick per workload group
 
     legend_handles = [
@@ -423,14 +376,30 @@ elif "comparisons" in benchname:
     ax.set_ylim(0, 3.5)
     ax.set_xticklabels(workloads, rotation=0, ha="center", fontsize=8)
 
-    ax.set_ylabel(r"Comparisons ($1 \:/\: (\mathsf{Elems} \cdot \lg n)$)")
+    # Label the two ScalarQuickHeap clusters (BinarySearch / LinearScan) under
+    # each workload group; the workload names move down a line to make room.
+    b_center = np.mean([offsets[mi] for mi, m in enumerate(methods) if "BinarySearch" in m])
+    l_center = np.mean([offsets[mi] for mi, m in enumerate(methods) if "LinearScan" in m])
+    minor_pos = [xi + c for xi in x for c in (b_center, l_center)]
+    minor_labels = ["B", "L"] * n_workloads
+    ax.set_xticks(minor_pos, minor=True)
+    ax.set_xticklabels(minor_labels, minor=True, fontsize=8)
+    ax.tick_params(axis="x", which="minor", length=0)
+    ax.tick_params(axis="x", which="major", pad=14)
+
+    ax.set_ylabel(r"Comparisons ($1 \:/\: (N \cdot \lg n)$)")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
 
-    # Coloured method legend (top-left)
+    # Coloured method legend (top-left); the ScalarQuickHeap variants collapse
+    # into a single entry, their B/L clusters are labelled on the axis
     method_handles = [
         mpatches.Patch(facecolor=bar_colors[mi], label=rewrite_legend(method))
         for mi, method in enumerate(methods)
+        if method_type[method] != "ScalarQuickHeap"
     ]
+    method_handles.append(
+        mpatches.Patch(facecolor="black", edgecolor="white", label="ScalarQuickHeap")
+    )
     legend_methods = ax.legend(
         handles=method_handles, loc="upper left", fontsize=8, ncol=4
     )
@@ -472,14 +441,16 @@ elif "table" in benchname:
         aggfunc="median",
         sort=False,
     )
+    pivot.columns = [f"{val}_{n}" for val, n in pivot.columns]
     print(pivot)
+    pivot.to_csv("table.dat")
 else:
     # Bench Plot
 
     # Take median over repeats, then normalize each metric by n*log2(n)
     metrics = [
         # ("nanos", r"$(\mathsf{ns} \:/\: \#(\mathsf{pop}\circ\mathsf{push})) \:/\: \lg n$"),
-        ("nanos", r"Runtime ($\mathsf{ns} \:/\: (\mathsf{Elems} \cdot \lg n)$)"),
+        ("nanos", r"Run time ($\mathsf{ns} \:/\: (N \cdot \lg n)$)"),
         # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
         # (
         #     "l1_cache_misses",
@@ -535,6 +506,9 @@ else:
             return "--"
         if tp == "ScalarQuickHeap":
             return ":"
+        # Match the graph-plot hatching: Avx512 solid, Avx2 patterned
+        if tp == "SimdQuickHeap":
+            return "-" if "Avx512" in name else "--"
 
         names = all_names_by_type[tp]
         if len(names) >= 2 and names.index(name) == 0:
@@ -566,8 +540,8 @@ else:
             for i, workload in enumerate(workloads):
                 wdf = edf[edf["workload"] == workload]
                 for tp, tgroup in wdf.groupby("type", sort=False):
-                    c = type_colour[tp]
                     for name, ngroup in tgroup.groupby("name", sort=False):
+                        c = type_colour.get(tp, "gray")
                         if benchname == "ablation":
                             if "Avx2" in name:
                                 c = "red"
