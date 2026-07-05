@@ -17,7 +17,7 @@ use crate::SimdQuickHeap;
 /// Defines the opaque type and `extern "C"` functions for one element type.
 ///
 /// `$Elem`: the Rust element type (e.g. `i32`).
-/// `$Opaque`: name of the opaque wrapper struct (e.g. `QuickHeapI32`).
+/// `$Opaque`: name of the opaque handle type alias (e.g. `QuickHeapI32`).
 /// `$new`/`$free`/`$push`/`$pop`/`$len`/`$is_empty`/`$capacity`: exported
 /// function names, following the `quickheap_<ty>_<op>` convention.
 macro_rules! define_heap_c_api {
@@ -33,18 +33,12 @@ macro_rules! define_heap_c_api {
         $capacity:ident
     ) => {
         #[doc = concat!("Opaque `SimdQuickHeap<", stringify!($Elem), ">` handle.")]
-        pub struct $Opaque {
-            heap: SimdQuickHeap<$Elem>,
-            len: usize,
-        }
+        pub type $Opaque = SimdQuickHeap<$Elem>;
 
         #[doc = concat!("Create a new, empty `SimdQuickHeap<", stringify!($Elem), ">`.\n\nMust be freed with [`", stringify!($free), "`].")]
         #[unsafe(no_mangle)]
         pub extern "C" fn $new() -> *mut $Opaque {
-            Box::into_raw(Box::new($Opaque {
-                heap: SimdQuickHeap::<$Elem>::default(),
-                len: 0,
-            }))
+            Box::into_raw(Box::new(SimdQuickHeap::<$Elem>::default()))
         }
 
         #[doc = concat!("Free a heap previously created with [`", stringify!($new), "`].")]
@@ -60,9 +54,8 @@ macro_rules! define_heap_c_api {
         #[unsafe(no_mangle)]
         pub extern "C" fn $push(ptr: *mut $Opaque, value: $Elem) {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
-            let wrapper = unsafe { &mut *ptr };
-            wrapper.heap.push(value);
-            wrapper.len += 1;
+            let heap = unsafe { &mut *ptr };
+            heap.push(value);
         }
 
         #[doc = "Pop the smallest value from the heap into `*out_value`.\n\nReturns `true` and writes the popped value on success, or returns\n`false` (leaving `*out_value` untouched) if the heap is empty."]
@@ -70,10 +63,9 @@ macro_rules! define_heap_c_api {
         pub extern "C" fn $pop(ptr: *mut $Opaque, out_value: *mut $Elem) -> bool {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
             assert!(!out_value.is_null(), "Output pointer must not be null");
-            let wrapper = unsafe { &mut *ptr };
-            match wrapper.heap.pop() {
+            let heap = unsafe { &mut *ptr };
+            match heap.pop() {
                 Some(v) => {
-                    wrapper.len -= 1;
                     unsafe { *out_value = v };
                     true
                 }
@@ -85,21 +77,21 @@ macro_rules! define_heap_c_api {
         #[unsafe(no_mangle)]
         pub extern "C" fn $len(ptr: *const $Opaque) -> usize {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
-            unsafe { &*ptr }.len
+            unsafe { &*ptr }.len()
         }
 
         #[doc = "Return whether the heap is empty."]
         #[unsafe(no_mangle)]
         pub extern "C" fn $is_empty(ptr: *const $Opaque) -> bool {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
-            unsafe { &*ptr }.len == 0
+            unsafe { &*ptr }.is_empty()
         }
 
         #[doc = "Return the total capacity currently allocated over all internal buckets."]
         #[unsafe(no_mangle)]
         pub extern "C" fn $capacity(ptr: *const $Opaque) -> usize {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
-            unsafe { &*ptr }.heap.capacity()
+            unsafe { &*ptr }.capacity()
         }
     };
 }

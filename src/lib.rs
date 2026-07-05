@@ -181,6 +181,16 @@ impl<
         self.buckets.iter().map(|b| b.capacity()).sum()
     }
 
+    /// Return the number of elements currently in the heap.
+    pub fn len(&self) -> usize {
+        self.size
+    }
+
+    /// Return whether the heap contains no elements.
+    pub fn is_empty(&self) -> bool {
+        self.size == 0
+    }
+
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
         // #[cfg(any(feature = "pivots", feature = "rebalancing"))]
