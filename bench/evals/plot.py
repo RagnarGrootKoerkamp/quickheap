@@ -127,7 +127,7 @@ type_colour["SimdQuickHeap"] = "black"
 
 def rewrite_legend(s):
     s = re.sub("<T>", "", s)
-    s = re.sub("DaryHeapOrx<T, 8>", "8-aryHeap", s)
+    s = re.sub("DaryHeapOrx<T, 8>", "Orx-8-aryHeap", s)
     s = re.sub("LinearScan", "L", s)
     s = re.sub("BinarySearch", "B", s)
     s = re.sub("MedianOfM<3>", "", s)
@@ -264,7 +264,7 @@ if "graph" in benchname:
         bbox_to_anchor=(0.5, -0.020),
     )
 
-    fig.supylabel(r"Run time (ns / N)")
+    fig.supylabel(r"Run time (ns / elem)")
     fig.tight_layout()
     fig.savefig(f"plots/{benchname}.pdf", bbox_inches="tight")
     fig.savefig(f"plots/{benchname}.png", bbox_inches="tight")
@@ -378,8 +378,12 @@ elif "comparisons" in benchname:
 
     # Label the two ScalarQuickHeap clusters (BinarySearch / LinearScan) under
     # each workload group; the workload names move down a line to make room.
-    b_center = np.mean([offsets[mi] for mi, m in enumerate(methods) if "BinarySearch" in m])
-    l_center = np.mean([offsets[mi] for mi, m in enumerate(methods) if "LinearScan" in m])
+    b_center = np.mean(
+        [offsets[mi] for mi, m in enumerate(methods) if "BinarySearch" in m]
+    )
+    l_center = np.mean(
+        [offsets[mi] for mi, m in enumerate(methods) if "LinearScan" in m]
+    )
     minor_pos = [xi + c for xi in x for c in (b_center, l_center)]
     minor_labels = ["B", "L"] * n_workloads
     ax.set_xticks(minor_pos, minor=True)
@@ -387,7 +391,7 @@ elif "comparisons" in benchname:
     ax.tick_params(axis="x", which="minor", length=0)
     ax.tick_params(axis="x", which="major", pad=14)
 
-    ax.set_ylabel(r"Comparisons ($1 \:/\: (N \cdot \lg n)$)")
+    ax.set_ylabel(r"Comparisons ($1 \:/\: (\text{elem} \cdot \lg n)$)")
     ax.grid(axis="y", linestyle="-", alpha=0.4)
 
     # Coloured method legend (top-left); the ScalarQuickHeap variants collapse
@@ -450,7 +454,7 @@ else:
     # Take median over repeats, then normalize each metric by n*log2(n)
     metrics = [
         # ("nanos", r"$(\mathsf{ns} \:/\: \#(\mathsf{pop}\circ\mathsf{push})) \:/\: \lg n$"),
-        ("nanos", r"Run time ($\mathsf{ns} \:/\: (N \cdot \lg n)$)"),
+        ("nanos", r"Run time ($\mathsf{ns} \:/\: (\text{elem} \cdot \lg n)$)"),
         # ("branch_misses", r"branch misses / ($\mathsf{push}\circ\mathsf{pop}) / \lg n$"),
         # (
         #     "l1_cache_misses",
