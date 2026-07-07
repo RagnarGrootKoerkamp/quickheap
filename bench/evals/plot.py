@@ -487,6 +487,22 @@ else:
         .reset_index()
     )
 
+    # Compute speedup relative to SimdQuickHeap
+    df_speedup = df[df.n == 2**25].copy()
+    simd_times = (
+        df_speedup[df_speedup["type"] == "SimdQuickHeap"]
+        .groupby(["workload", "elem"])["nanos"]
+        .median()
+    )
+    df_speedup["simd_baseline"] = df_speedup.apply(
+        lambda row: simd_times.get((row["workload"], row["elem"]), np.nan), axis=1
+    )
+    df_speedup["speedup"] = df_speedup["nanos"] / df_speedup["simd_baseline"]
+    competitors = df_speedup[
+        (df_speedup["type"] == "RadixHeap") | (df_speedup["type"] == "S3qHeap")
+    ]
+    print(competitors[["elem", "name", "workload", "type", "nanos", "speedup"]])
+
     df["order"] = pd.Categorical(df["type"], categories=type_order, ordered=True)
     df = df.sort_values(["order", "name"])
     ops = df["ops"] * np.log2(df["n"])
