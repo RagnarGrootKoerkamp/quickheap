@@ -20,7 +20,7 @@ fn main() {
         // VecBucket<i64>,
         Avx2,
         MedianOfM<3>,
-        NoRebalancing<128>,
+        NoRebalancing,
     >>::default();
 
     for _ in 0..1000000 {

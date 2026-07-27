@@ -28,6 +28,10 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         self.data[block].get(in_block)
     }
 
+    fn capacity(&self) -> usize {
+        self.data.capacity() * K
+    }
+
     fn push(&mut self, elem: T) {
         let mut data_len = self.data.len();
         if self.data[data_len - 1].full() {

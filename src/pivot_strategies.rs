@@ -6,9 +6,6 @@ pub trait PivotStrategy {
 }
 
 fn get_m_median<T: Elem>(layer: &Vec<T>, mut m: usize) -> (T, usize) {
-    #[cfg(feature = "pivots")]
-    print!("{},", m);
-
     if m % 2 == 0 {
         m += 1;
     }
@@ -30,9 +27,6 @@ fn get_m_median<T: Elem>(layer: &Vec<T>, mut m: usize) -> (T, usize) {
 }
 
 fn get_m_median_bucket<T: Elem, B: buckets::Bucket<T>>(layer: &B, mut m: usize) -> (T, usize) {
-    #[cfg(feature = "pivots")]
-    print!("{},", m);
-
     if m % 2 == 0 {
         m += 1;
     }
@@ -55,8 +49,6 @@ fn get_m_median_bucket<T: Elem, B: buckets::Bucket<T>>(layer: &B, mut m: usize) 
 
 fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
     assert!(M % 2 == 1, "M must be odd");
-    #[cfg(feature = "pivots")]
-    print!("{},", M);
     let n = layer.len();
     let k: usize = M / 2;
 

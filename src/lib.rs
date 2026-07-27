@@ -119,7 +119,7 @@ pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
     VecBucket<T>,
     Simd,
     pivot_strategies::MedianOfM<3>,
-    NoRebalancing<128>,
+    NoRebalancing,
     16,
     true,
 >;

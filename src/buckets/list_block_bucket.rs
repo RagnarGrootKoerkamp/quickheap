@@ -38,6 +38,10 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
         self.total_size == 0
     }
 
+    fn capacity(&self) -> usize {
+        self.data.len() * K
+    }
+
     fn push(&mut self, elem: T) {
         if self.total_size % K == 0 {
             let mut b = Block::<T, K>::default();

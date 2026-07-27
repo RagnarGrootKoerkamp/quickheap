@@ -163,6 +163,7 @@ pub trait Bucket<T> {
     fn pop(&mut self) -> Option<T>;
     fn sort_decreasing(&mut self);
     fn insert_index(&self, elem: T) -> usize;
+    fn capacity(&self) -> usize;
     fn clear(&mut self);
     fn override_elem(&mut self, pos: usize, elem: T);
     unsafe fn set_len(&mut self, n: usize);
@@ -254,7 +255,7 @@ mod tests {
             vec_bucket::VecBucket<i32>,
             Avx2,
             MedianOfM<3>,
-            NoRebalancing<128>,
+            NoRebalancing,
         >::default();
 
         for i in 0..10000 {
@@ -274,7 +275,7 @@ mod tests {
             vec_block_bucket::VecBlockBucket<i32, 128>,
             Avx2,
             MedianOfM<3>,
-            NoRebalancing<128>,
+            NoRebalancing,
         >::default();
 
         for i in 0..10000 {
@@ -285,25 +286,25 @@ mod tests {
             let r = h.pop().unwrap();
             assert!(r == i);
         }
+    }
 
-        #[test]
-        fn test_partition_list_block_bucket() {
-            let mut h = ConfigurableSimdQuickHeap::<
-                i32,
-                list_block_bucket::ListBlockBucket<i32, 128>,
-                Avx2,
-                MedianOfM<3>,
-                NoRebalancing<128>,
-            >::default();
+    #[test]
+    fn test_partition_list_block_bucket() {
+        let mut h = ConfigurableSimdQuickHeap::<
+            i32,
+            list_block_bucket::ListBlockBucket<i32, 128>,
+            Avx2,
+            MedianOfM<3>,
+            NoRebalancing,
+        >::default();
 
-            for i in 0..10000 {
-                h.push(i);
-            }
+        for i in 0..10000 {
+            h.push(i);
+        }
 
-            for i in 0..10000 {
-                let r = h.pop().unwrap();
-                assert!(r == i);
-            }
+        for i in 0..10000 {
+            let r = h.pop().unwrap();
+            assert!(r == i);
         }
     }
 
@@ -314,7 +315,7 @@ mod tests {
             vec_block_bucket::VecBlockBucket<u64, 128>,
             Avx2,
             MedianOfM<3>,
-            NoRebalancing<128>,
+            NoRebalancing,
         >::default();
 
         let mut rng = fastrand::Rng::new();
@@ -337,7 +338,7 @@ mod tests {
             list_block_bucket::ListBlockBucket<u64, 128>,
             Avx2,
             MedianOfM<3>,
-            NoRebalancing<128>,
+            NoRebalancing,
         >::default();
 
         let mut rng = fastrand::Rng::new();
@@ -360,7 +361,7 @@ mod tests {
             list_block_bucket::ListBlockBucket<u64, 128>,
             Avx2,
             MedianOfM<3>,
-            NoRebalancing<128>,
+            NoRebalancing,
         >::default();
 
         h.push(1);
@@ -379,7 +380,7 @@ mod tests {
             list_block_bucket::ListBlockBucket<u64, 128>,
             Avx2,
             MedianOfM<3>,
-            NoRebalancing<128>,
+            NoRebalancing,
             4,
             true,
         >::default();

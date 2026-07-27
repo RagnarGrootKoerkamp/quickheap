@@ -31,6 +31,10 @@ impl<T: Copy + Default + Ord + Debug> Bucket<T> for VecBucket<T> {
         self.buff.reserve(self.data.capacity());
     }
 
+    fn capacity(&self) -> usize {
+        self.data.capacity()
+    }
+
     fn len(&self) -> usize {
         self.data.len()
     }
