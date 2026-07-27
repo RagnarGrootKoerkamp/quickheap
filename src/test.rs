@@ -1,8 +1,12 @@
 use std::cmp::Reverse;
 
 use crate::{
-    ConfigurableSimdQuickHeap, SimdElem, pivot_strategies::MedianOfM,
-    rebalancing_strategies::PivotForgetting,
+    ConfigurableSimdQuickHeap, SimdElem,
+    buckets::{
+        list_block_bucket::ListBlockBucket, vec_block_bucket::VecBlockBucket, vec_bucket::VecBucket,
+    },
+    pivot_strategies::MedianOfM,
+    rebalancing_strategies::{NaiveLogRebalancing, NoRebalancing, PivotForgetting},
 };
 
 /// Element-type capabilities needed by the generators.
@@ -112,14 +116,19 @@ impl<T: GenElem> Generator<T> for MostlyMinGen {
 
 fn heapsort_with_gen<T, S, G>()
 where
-    T: GenElem,
+    T: GenElem + Default,
     S: SimdElem<T>,
     G: Generator<T>,
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        let mut q =
-            <ConfigurableSimdQuickHeap<T, S, MedianOfM<3>, PivotForgetting<2, 128>>>::default();
+        let mut q = <ConfigurableSimdQuickHeap<
+            T,
+            ListBlockBucket<T, 128>,
+            S,
+            MedianOfM<3>,
+            PivotForgetting<2, 128>,
+        >>::default();
         for _ in 0..n {
             q.push(g.get());
         }
@@ -137,14 +146,19 @@ where
 
 fn wiggle_with_gen<T, S, G>()
 where
-    T: GenElem,
+    T: GenElem + Default,
     S: SimdElem<T>,
     G: Generator<T>,
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        let mut q1 =
-            <ConfigurableSimdQuickHeap<T, S, MedianOfM<3>, PivotForgetting<2, 128>>>::default();
+        let mut q1 = <ConfigurableSimdQuickHeap<
+            T,
+            ListBlockBucket<T, 128>,
+            S,
+            MedianOfM<3>,
+            PivotForgetting<2, 128>,
+        >>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
         // (push pop push) xn

@@ -36,3 +36,13 @@ plot:
     cd bench/evals && ./plot.py graphs
     cd bench/evals && ./plot.py ablation
     cd bench/evals && ./plot.py table
+
+plot-nanos:
+    cd bench/evals && ./plot.py nanos
+    cd bench/evals && ./plot.py nanos all
+
+record-perf name:
+    samply record --save-only --unstable-presymbolicate -o ./perf/{{name}}.json.gz ./target/profiling/perf_test
+
+build-perf:
+    RUSTFLAGS="-C target-cpu=native -C inline-threshold=0" cargo build --profile profiling --bin perf_test
