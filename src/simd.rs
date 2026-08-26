@@ -75,6 +75,7 @@ pub trait SimdElem<T>: 'static {
     );
 }
 
+/// Classify the element t against the decreasing list of pivots.
 #[inline(always)]
 pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> usize {
     // Baseline:
@@ -334,7 +335,9 @@ macro_rules! impl_simd_elem_64 {
                     );
                     *v_idx += large.count_ones() as usize;
 
+                    // FIXME: Can we avoid the 2nd permutevar? By prepending the entire register to a vec growing in the other direction?
                     // To keep small lanes (keep_pattern = small): index = small ^ 0xF = large.
+                    // Or else a masked write.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[large as usize]);
                     _mm256_storeu_si256(
                         w.as_mut_ptr().add(*w_idx) as *mut __m256i,
