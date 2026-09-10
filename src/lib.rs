@@ -49,6 +49,7 @@ use std::marker::PhantomData;
 /// Tag to use with [`ConfigurableSimdQuickHeap`] to use AVX-512 if it is available.
 #[cfg(not(target_feature = "avx512f"))]
 pub type Simd = Avx2;
+
 #[cfg(target_feature = "avx512f")]
 pub type Simd = Avx512;
 
@@ -63,6 +64,32 @@ impl<T: Copy + Ord> Elem for T {}
 pub use simd::SimdElem;
 
 use crate::{buckets::vec_bucket::VecBucket, rebalancing_strategies::NoRebalancing};
+
+use std::ops::Add;
+pub trait One {
+    fn one() -> Self;
+}
+
+impl One for i32 {
+    fn one() -> Self {
+        1
+    }
+}
+impl One for i64 {
+    fn one() -> Self {
+        1
+    }
+}
+impl One for u32 {
+    fn one() -> Self {
+        1
+    }
+}
+impl One for u64 {
+    fn one() -> Self {
+        1
+    }
+}
 
 pub mod buckets;
 
@@ -97,6 +124,7 @@ pub struct ConfigurableSimdQuickHeap<
     ///
     /// This can be longer than `layer` to reuse allocations.
     buckets: Vec<B>,
+    equal_buckets: Vec<bool>,
 
     size: usize,
     #[allow(dead_code)]
@@ -126,7 +154,7 @@ pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
-    T: Elem,
+    T: Elem + Default + Add<Output = T> + One,
     B: buckets::Bucket<T>,
     S: simd::SimdElem<T>,
     P: pivot_strategies::PivotStrategy,
@@ -139,6 +167,7 @@ impl<
         Self {
             pivots: Vec::with_capacity(128),
             buckets: (0..128).map(|_| B::default()).collect(),
+            equal_buckets: (0..128).map(|_| false).collect(),
             size: 0,
             rebal_iteration: 0,
             _p: PhantomData,
@@ -149,7 +178,7 @@ impl<
 }
 
 impl<
-    T: Elem + Debug,
+    T: Elem + Debug + Default + Add<Output = T> + One,
     B: buckets::Bucket<T>,
     S: simd::SimdElem<T>,
     R: rebalancing_strategies::RebalancingStrategy<T>,
@@ -205,6 +234,32 @@ impl<
         if layer == 0 && self.buckets[0].is_empty() {
             return None;
         }
+
+        #[cfg(feature = "equal_buckets")]
+        {
+            if self.equal_buckets[layer] {
+                assert!(self.buckets[layer].len() > 0);
+                let elem = self.buckets[layer].pop();
+
+                // Update the active layer.
+                if self.buckets[layer].is_empty() && self.pivots.len() > 0 {
+                    self.equal_buckets[self.pivots.len()] = false;
+                    self.pivots.pop();
+
+                    // Sort the new final layer decreasing if it's already small.
+                    if !self.equal_buckets[self.pivots.len()]
+                        && SORT
+                        && self.buckets[self.pivots.len()].len() <= N
+                    {
+                        let layer = &mut self.buckets[self.pivots.len()];
+                        layer.sort_decreasing();
+                    }
+                }
+
+                return elem;
+            }
+        }
+
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].len() > N {
             while self.buckets[self.pivots.len()].len() > N {
@@ -230,7 +285,10 @@ impl<
             self.pivots.pop();
 
             // Sort the new final layer decreasing if it's already small.
-            if SORT && self.buckets[self.pivots.len()].len() <= N {
+            if !self.equal_buckets[self.pivots.len()]
+                && SORT
+                && self.buckets[self.pivots.len()].len() <= N
+            {
                 let layer = &mut self.buckets[self.pivots.len()];
                 layer.sort_decreasing();
             }
@@ -242,12 +300,32 @@ impl<
 
     #[inline(never)]
     fn partition(&mut self) {
-        // Reserve space for an additional L layers when needed.
         let layer = self.pivots.len();
+
+        debug_assert!(!self.equal_buckets[layer]);
+
+        #[cfg(feature = "equal_buckets")]
+        {
+            if layer_len > 1000 {
+                use crate::buckets::equal_buckets::EqualBucketSamplingTest;
+                use crate::buckets::equal_buckets::EqualBucketTest;
+
+                let (test, elem) =
+                    EqualBucketSamplingTest::<8>::check::<T, B>(&self.buckets[layer]);
+
+                if test {
+                    self.equal_partition(elem);
+                    return;
+                }
+            }
+        }
+
+        // Reserve space for an additional L layers when needed.
         if layer + 2 * S::L >= self.pivots.capacity() {
             self.pivots.reserve(S::L);
         }
         if layer + 1 == self.buckets.len() {
+            self.equal_buckets.push(false);
             self.buckets.push(B::default());
         }
         // Alias the current layer (to be split) and the next layer.
@@ -302,6 +380,7 @@ impl<
                 );
             }
         }
+
         if n2 < n {
             let threshold = if pivot_pos >= n2 {
                 S::splat(S::wrapping_add_one(pivot))
@@ -346,6 +425,110 @@ impl<
             }
             self.rebal_iteration = 0;
             R::on_pop(self.size, &mut self.pivots, &mut self.buckets);
+        }
+    }
+
+    #[inline(never)]
+    fn equal_partition(&mut self, pivot: T) {
+        let layer = self.pivots.len();
+
+        // Reserve space for an additional L layers when needed.
+        if layer + 2 * S::L >= self.pivots.capacity() {
+            self.pivots.reserve(S::L);
+        }
+
+        if layer + 1 == self.buckets.len() {
+            self.buckets.push(B::default());
+            self.buckets.push(B::default());
+            self.equal_buckets.push(false);
+            self.equal_buckets.push(false);
+        }
+
+        // Alias the current layer (to be split) and the next layers.
+        let [cur_layer, equal_layer, next_layer] = &mut self.buckets[layer..=layer + 2] else {
+            unreachable!()
+        };
+        let n = cur_layer.len();
+
+        self.pivots.push(pivot + T::one());
+        self.pivots.push(pivot);
+
+        // Reserve space in the next layers,
+        // and make sure the current layer can hold a spare SIMD register.
+        cur_layer.reserve(S::L);
+        equal_layer.clear();
+        equal_layer.reserve(n + S::L);
+        next_layer.clear();
+        next_layer.reserve(n + S::L);
+
+        unsafe { cur_layer.set_len(n + S::L) };
+        unsafe { equal_layer.set_len(n + S::L) };
+        unsafe { next_layer.set_len(n + S::L) };
+
+        let mut cur_len = 0;
+        let mut equal_len = 0;
+        let mut next_len = 0;
+
+        let n2 = n.next_multiple_of(S::L).saturating_sub(S::L);
+
+        // Partition a list into three (smaller, equal, greater) using SIMD.
+        let threshold = S::splat(pivot);
+
+        for i in (0..n2).step_by(S::L) {
+            unsafe {
+                S::partition_equal_bucket(
+                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L).as_slice()),
+                    S::splat(S::from_usize(S::L)),
+                    threshold,
+                    cur_layer,
+                    &mut cur_len,
+                    equal_layer,
+                    &mut equal_len,
+                    next_layer,
+                    &mut next_len,
+                );
+            }
+        }
+
+        if n2 < n {
+            unsafe {
+                S::partition_equal_bucket(
+                    S::simd_from_slice(cur_layer.get_unchecked(n2, S::L).as_slice()),
+                    S::splat(S::from_usize(n - n2)),
+                    threshold,
+                    cur_layer,
+                    &mut cur_len,
+                    equal_layer,
+                    &mut equal_len,
+                    next_layer,
+                    &mut next_len,
+                );
+            }
+        }
+
+        cur_layer.flush(cur_len);
+        equal_layer.flush(equal_len);
+        next_layer.flush(next_len);
+
+        debug_assert!(equal_len > 0);
+
+        unsafe {
+            cur_layer.set_len(cur_len);
+            equal_layer.set_len(equal_len);
+            next_layer.set_len(next_len);
+        }
+
+        self.equal_buckets[layer + 1] = true;
+
+        // If we extracted all elements to the next layer
+        // because the equal element was the largest one
+        if cur_len == 0 {
+            assert!(false);
+            std::mem::swap(cur_layer, equal_layer);
+            std::mem::swap(cur_layer, next_layer);
+            self.pivots.swap(layer + 1, layer + 2);
+            self.equal_buckets.swap(layer + 1, layer + 2);
+            self.pivots.pop().unwrap();
         }
     }
 }

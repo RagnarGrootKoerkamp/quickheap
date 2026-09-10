@@ -1,7 +1,8 @@
 use std::cmp::Reverse;
+use std::ops::Add;
 
 use crate::{
-    ConfigurableSimdQuickHeap, SimdElem,
+    ConfigurableSimdQuickHeap, One, SimdElem,
     buckets::{
         list_block_bucket::ListBlockBucket, vec_block_bucket::VecBlockBucket, vec_bucket::VecBucket,
     },
@@ -116,7 +117,7 @@ impl<T: GenElem> Generator<T> for MostlyMinGen {
 
 fn heapsort_with_gen<T, S, G>()
 where
-    T: GenElem + Default,
+    T: GenElem + Default + Add<Output = T> + One,
     S: SimdElem<T>,
     G: Generator<T>,
 {
@@ -146,7 +147,7 @@ where
 
 fn wiggle_with_gen<T, S, G>()
 where
-    T: GenElem + Default,
+    T: GenElem + Default + Add<Output = T> + One,
     S: SimdElem<T>,
     G: Generator<T>,
 {

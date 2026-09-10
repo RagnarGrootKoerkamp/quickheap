@@ -35,7 +35,7 @@ wide = "1.2.0"
 [features]
 default = []
 rebalancing = []
-time_only = []
+equal_buckets = []
 
 # C-ABI bindings (src/c.rs), used by the C++ bindings in cpp/.
 c = []

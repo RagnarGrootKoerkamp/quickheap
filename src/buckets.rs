@@ -4,6 +4,8 @@ pub mod list_block_bucket;
 pub mod vec_block_bucket;
 pub mod vec_bucket;
 
+pub mod equal_buckets;
+
 #[derive(Clone, Copy)]
 // #[repr(align(32))]
 pub struct Block<T, const K: usize> {
