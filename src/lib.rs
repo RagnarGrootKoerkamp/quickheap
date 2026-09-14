@@ -204,12 +204,13 @@ impl<
 
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
-        #[cfg(feature = "rebalancing")] // TODO: Is this the right position here?
-        R::on_push(self.size, &mut self.pivots, &mut self.buckets);
-
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
         let layer = &mut self.buckets[target_layer];
         layer.reserve(S::L + 1);
+
+        #[cfg(feature = "rebalancing")]
+        R::on_push(target_layer, &mut self.pivots, &mut self.buckets);
+
         if SORT && target_layer == self.pivots.len() && layer.len() < N {
             // Count the number of larger elements in the prefix and insert the new element after them.
             let pos = layer.insert_index(t);

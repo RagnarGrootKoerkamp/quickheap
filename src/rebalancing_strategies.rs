@@ -1,7 +1,9 @@
+// TODO: Rewrite all rebalancing strategies to use buckets
+
 pub trait RebalancingStrategy<T> {
     const MAX_REBAL_ITERATIONS: usize;
     fn on_pop(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
-    fn on_push(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
+    fn on_push(layer: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
 }
 
 pub struct NoRebalancing;
@@ -66,4 +68,80 @@ impl<T: Copy, const F: usize, const IT: usize> RebalancingStrategy<T> for PivotF
     }
 
     fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+}
+
+// pub struct RandomizedRebalancing {}
+// impl<T> RebalancingStrategy<T> for RandomizedRebalancing {
+//     const MAX_REBAL_ITERATIONS: usize = 128;
+
+//     fn on_pop(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {}
+
+//     fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+// }
+
+pub struct LazyRandomizedRebalancing {}
+impl<T> RebalancingStrategy<T> for LazyRandomizedRebalancing {
+    const MAX_REBAL_ITERATIONS: usize = 128;
+
+    fn on_pop(_: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {}
+
+    fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+}
+
+pub struct ExponentialUpperBoundRebalancing {}
+impl<T: Copy> RebalancingStrategy<T> for ExponentialUpperBoundRebalancing {
+    const MAX_REBAL_ITERATIONS: usize = 1;
+    fn on_pop(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+
+    fn on_push(layer: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
+        // Exponential upper bound of layer
+        let total_layers = buckets.len();
+        let max_layer_size = 3 * 2 ^ (total_layers - layer);
+        let layer_size = buckets[layer].len();
+
+        if layer_size < max_layer_size {
+            // Layer is small enough, no rebalancing necessary
+            return;
+        }
+
+        // If it is already the last layer, insert a new one
+        if layer == 0 {
+            buckets.insert(0, vec![]);
+        }
+
+        // TODO: Handle pivots correctly
+        // - Track minimum of each bucket, s.t. when pushing a whole bucket, we can do pivot - 1
+
+        // TODO: Correct to layer - 1 (smallest layer on top)
+
+        // TODO: Create new bucket if necessary
+
+        let mut push_bucket = Vec::<T>::new();
+        std::mem::swap(&mut push_bucket, &mut buckets[layer]);
+
+        ExponentialUpperBoundRebalancing::push_layer(layer + 1, push_bucket, pivots, buckets);
+    }
+}
+
+impl ExponentialUpperBoundRebalancing {
+    fn push_layer<T: Copy>(
+        layer: usize,
+        bucket_to_push: Vec<T>,
+        pivots: &mut Vec<T>,
+        buckets: &mut Vec<Vec<T>>,
+    ) {
+        // If next layer is small enough to be pushed
+        if buckets[layer].len() < 2 ^ layer {
+            buckets[layer].extend(bucket_to_push);
+            // Update minimum
+            return;
+        }
+
+        let mut cur_bucket = bucket_to_push;
+        std::mem::swap(&mut cur_bucket, &mut buckets[layer]);
+
+        ExponentialUpperBoundRebalancing::push_layer(layer - 1, cur_bucket, pivots, buckets);
+
+        // TODO: Correctly do the pivots
+    }
 }
