@@ -63,12 +63,12 @@ pub trait SimdElem<T>: 'static {
         w_idx: &mut usize,
     );
 
-    unsafe fn partition_fast_bucket<B: buckets::Bucket<T>, const EQUAL_DOWN: bool>(
+    unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
         vals: Self::Simd,
         threshold: Self::Simd,
-        v: &mut B,
+        v: *mut T,
         v_idx: &mut usize,
-        w: &mut B,
+        w: *mut T,
         w_idx: &mut usize,
     );
 
@@ -85,25 +85,25 @@ pub trait SimdElem<T>: 'static {
         w_idx: &mut usize,
     );
 
-    unsafe fn partition_slow_bucket<B: buckets::Bucket<T>>(
+    unsafe fn partition_slow_bucket(
         vals: Self::Simd,
         len: Self::Simd,
         threshold: Self::Simd,
-        v: &mut B,
+        v: *mut T,
         v_idx: &mut usize,
-        w: &mut B,
+        w: *mut T,
         w_idx: &mut usize,
     );
 
-    unsafe fn partition_equal_bucket<B: buckets::Bucket<T>>(
+    unsafe fn partition_equal_bucket(
         vals: Self::Simd,
         len: Self::Simd,
         threshold: Self::Simd,
-        v: &mut B,
+        v: *mut T,
         v_idx: &mut usize,
-        e: &mut B,
+        e: *mut T,
         e_idx: &mut usize,
-        w: &mut B,
+        w: *mut T,
         w_idx: &mut usize,
     );
 }
@@ -298,12 +298,12 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast_bucket<B: buckets::Bucket<$t>, const EQUAL_DOWN: bool>(
+            unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
                 vals: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -322,7 +322,7 @@ macro_rules! impl_simd_elem_32 {
                     // Write large (>= threshold) to v: exclude small lanes.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF32[small as usize]);
                     _mm256_storeu_si256(
-                        v.write_buffer().add(*v_idx) as *mut __m256i,
+                        v.add(*v_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *v_idx += large.count_ones() as usize;
@@ -330,7 +330,7 @@ macro_rules! impl_simd_elem_32 {
                     // Write small (< threshold) to w: exclude large lanes.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF32[large as usize]);
                     _mm256_storeu_si256(
-                        w.write_buffer().add(*w_idx) as *mut __m256i,
+                        w.add(*w_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *w_idx += small.count_ones() as usize;
@@ -379,13 +379,13 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow_bucket<B: buckets::Bucket<$t>>(
+            unsafe fn partition_slow_bucket(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -405,14 +405,14 @@ macro_rules! impl_simd_elem_32 {
                     // Exclude mask = complement of keep mask.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!large) as usize]);
                     _mm256_storeu_si256(
-                        v.write_buffer().add(*v_idx) as *mut __m256i,
+                        v.add(*v_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *v_idx += large.count_ones() as usize;
 
                     let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!small) as usize]);
                     _mm256_storeu_si256(
-                        w.write_buffer().add(*w_idx) as *mut __m256i,
+                        w.add(*w_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *w_idx += small.count_ones() as usize;
@@ -420,15 +420,15 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            unsafe fn partition_equal_bucket<B: buckets::Bucket<$t>>(
+            unsafe fn partition_equal_bucket(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                e: &mut B,
+                e: *mut $t,
                 e_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -451,21 +451,21 @@ macro_rules! impl_simd_elem_32 {
                     // Exclude mask = complement of keep mask.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!large) as usize]);
                     _mm256_storeu_si256(
-                        v.write_buffer().add(*v_idx) as *mut __m256i,
+                        v.add(*v_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *v_idx += large.count_ones() as usize;
 
                     let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!equal) as usize]);
                     _mm256_storeu_si256(
-                        e.write_buffer().add(*e_idx) as *mut __m256i,
+                        e.add(*e_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *e_idx += equal.count_ones() as usize;
 
                     let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!small) as usize]);
                     _mm256_storeu_si256(
-                        w.write_buffer().add(*w_idx) as *mut __m256i,
+                        w.add(*w_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *w_idx += small.count_ones() as usize;
@@ -556,12 +556,12 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast_bucket<B: buckets::Bucket<$t>, const EQUAL_DOWN: bool>(
+            unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
                 vals: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -581,7 +581,7 @@ macro_rules! impl_simd_elem_64 {
                     // To keep large lanes (keep_pattern = large): index = large ^ 0xF = small.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[small as usize]);
                     _mm256_storeu_si256(
-                        v.write_buffer().add(*v_idx) as *mut __m256i,
+                        v.add(*v_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *v_idx += large.count_ones() as usize;
@@ -589,7 +589,7 @@ macro_rules! impl_simd_elem_64 {
                     // To keep small lanes (keep_pattern = small): index = small ^ 0xF = large.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[large as usize]);
                     _mm256_storeu_si256(
-                        w.write_buffer().add(*w_idx) as *mut __m256i,
+                        w.add(*w_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *w_idx += small.count_ones() as usize;
@@ -640,13 +640,13 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow_bucket<B: buckets::Bucket<$t>>(
+            unsafe fn partition_slow_bucket(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -667,7 +667,7 @@ macro_rules! impl_simd_elem_64 {
                     // To keep large lanes: index = large ^ 0xF.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[(large ^ 0xF) as usize]);
                     _mm256_storeu_si256(
-                        v.write_buffer().add(*v_idx) as *mut __m256i,
+                        v.add(*v_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *v_idx += large.count_ones() as usize;
@@ -675,7 +675,7 @@ macro_rules! impl_simd_elem_64 {
                     // To keep small lanes: index = small ^ 0xF.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[(small ^ 0xF) as usize]);
                     _mm256_storeu_si256(
-                        w.write_buffer().add(*w_idx) as *mut __m256i,
+                        w.add(*w_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *w_idx += small.count_ones() as usize;
@@ -683,15 +683,15 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            unsafe fn partition_equal_bucket<B: buckets::Bucket<$t>>(
+            unsafe fn partition_equal_bucket(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                e: &mut B,
+                e: *mut $t,
                 e_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -722,7 +722,7 @@ macro_rules! impl_simd_elem_64 {
                     // To keep large lanes: index = large ^ 0xF.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[(large ^ 0xF) as usize]);
                     _mm256_storeu_si256(
-                        v.write_buffer().add(*v_idx) as *mut __m256i,
+                        v.add(*v_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *v_idx += large.count_ones() as usize;
@@ -730,7 +730,7 @@ macro_rules! impl_simd_elem_64 {
                     // To keep equal lanes: index = equal ^ 0xF.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[(equal ^ 0xF) as usize]);
                     _mm256_storeu_si256(
-                        e.write_buffer().add(*e_idx) as *mut __m256i,
+                        e.add(*e_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *e_idx += equal.count_ones() as usize;
@@ -739,7 +739,7 @@ macro_rules! impl_simd_elem_64 {
                     // To keep small lanes: index = small ^ 0xF.
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[(small ^ 0xF) as usize]);
                     _mm256_storeu_si256(
-                        w.write_buffer().add(*w_idx) as *mut __m256i,
+                        w.add(*w_idx) as *mut __m256i,
                         _mm256_permutevar8x32_epi32(vals, key),
                     );
                     *w_idx += small.count_ones() as usize;
@@ -834,12 +834,12 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast_bucket<B: buckets::Bucket<$t>, const EQUAL_DOWN: bool>(
+            unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
                 vals: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -856,25 +856,17 @@ macro_rules! impl_simd_elem_32_avx512 {
 
                     if CS {
                         let cv = _mm512_maskz_compress_epi32(large, vals);
-                        _mm512_storeu_si512(v.write_buffer().add(*v_idx) as *mut __m512i, cv);
+                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
                         let cw = _mm512_maskz_compress_epi32(small, vals);
-                        _mm512_storeu_si512(w.write_buffer().add(*w_idx) as *mut __m512i, cw);
+                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
-                        _mm512_mask_compressstoreu_epi32(
-                            v.write_buffer().add(*v_idx) as *mut i32,
-                            large,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi32(v.add(*v_idx) as *mut i32, large, vals);
                         *v_idx += large.count_ones() as usize;
 
-                        _mm512_mask_compressstoreu_epi32(
-                            w.write_buffer().add(*w_idx) as *mut i32,
-                            small,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi32(w.add(*w_idx) as *mut i32, small, vals);
                         *w_idx += small.count_ones() as usize;
                     }
                 }
@@ -928,13 +920,13 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow_bucket<B: buckets::Bucket<$t>>(
+            unsafe fn partition_slow_bucket(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -950,40 +942,32 @@ macro_rules! impl_simd_elem_32_avx512 {
 
                     if CS {
                         let cv = _mm512_maskz_compress_epi32(large, vals);
-                        _mm512_storeu_si512(v.write_buffer().add(*v_idx) as *mut __m512i, cv);
+                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
                         let cw = _mm512_maskz_compress_epi32(small, vals);
-                        _mm512_storeu_si512(w.write_buffer().add(*w_idx) as *mut __m512i, cw);
+                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
-                        _mm512_mask_compressstoreu_epi32(
-                            v.write_buffer().add(*v_idx) as *mut i32,
-                            large,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi32(v.add(*v_idx) as *mut i32, large, vals);
                         *v_idx += large.count_ones() as usize;
 
-                        _mm512_mask_compressstoreu_epi32(
-                            w.write_buffer().add(*w_idx) as *mut i32,
-                            small,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi32(w.add(*w_idx) as *mut i32, small, vals);
                         *w_idx += small.count_ones() as usize;
                     }
                 }
             }
 
             #[inline(always)]
-            unsafe fn partition_equal_bucket<B: buckets::Bucket<$t>>(
+            unsafe fn partition_equal_bucket(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                e: &mut B,
+                e: *mut $t,
                 e_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -1001,36 +985,24 @@ macro_rules! impl_simd_elem_32_avx512 {
 
                     if CS {
                         let cv = _mm512_maskz_compress_epi32(large, vals);
-                        _mm512_storeu_si512(v.write_buffer().add(*v_idx) as *mut __m512i, cv);
+                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
                         let ce = _mm512_maskz_compress_epi32(equal, vals);
-                        _mm512_storeu_si512(e.write_buffer().add(*e_idx) as *mut __m512i, ce);
+                        _mm512_storeu_si512(e.add(*e_idx) as *mut __m512i, ce);
                         *e_idx += equal.count_ones() as usize;
 
                         let cw = _mm512_maskz_compress_epi32(small, vals);
-                        _mm512_storeu_si512(w.write_buffer().add(*w_idx) as *mut __m512i, cw);
+                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
-                        _mm512_mask_compressstoreu_epi32(
-                            v.write_buffer().add(*v_idx) as *mut i32,
-                            large,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi32(v.add(*v_idx) as *mut i32, large, vals);
                         *v_idx += large.count_ones() as usize;
 
-                        _mm512_mask_compressstoreu_epi32(
-                            e.write_buffer().add(*e_idx) as *mut i32,
-                            equal,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi32(e.add(*e_idx) as *mut i32, equal, vals);
                         *e_idx += equal.count_ones() as usize;
 
-                        _mm512_mask_compressstoreu_epi32(
-                            w.write_buffer().add(*w_idx) as *mut i32,
-                            small,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi32(w.add(*w_idx) as *mut i32, small, vals);
                         *w_idx += small.count_ones() as usize;
                     }
                 }
@@ -1124,12 +1096,12 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast_bucket<B: buckets::Bucket<$t>, const EQUAL_DOWN: bool>(
+            unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
                 vals: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -1146,25 +1118,17 @@ macro_rules! impl_simd_elem_64_avx512 {
 
                     if CS {
                         let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.write_buffer().add(*v_idx) as *mut __m512i, cv);
+                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
                         let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.write_buffer().add(*w_idx) as *mut __m512i, cw);
+                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
-                        _mm512_mask_compressstoreu_epi64(
-                            v.write_buffer().add(*v_idx) as *mut i64,
-                            large,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi64(v.add(*v_idx) as *mut i64, large, vals);
                         *v_idx += large.count_ones() as usize;
 
-                        _mm512_mask_compressstoreu_epi64(
-                            w.write_buffer().add(*w_idx) as *mut i64,
-                            small,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi64(w.add(*w_idx) as *mut i64, small, vals);
                         *w_idx += small.count_ones() as usize;
                     }
                 }
@@ -1218,13 +1182,13 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow_bucket<B: buckets::Bucket<$t>>(
+            unsafe fn partition_slow_bucket(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -1240,40 +1204,32 @@ macro_rules! impl_simd_elem_64_avx512 {
 
                     if CS {
                         let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.write_buffer().add(*v_idx) as *mut __m512i, cv);
+                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
                         let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.write_buffer().add(*w_idx) as *mut __m512i, cw);
+                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
-                        _mm512_mask_compressstoreu_epi64(
-                            v.write_buffer().add(*v_idx) as *mut i64,
-                            large,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi64(v.add(*v_idx) as *mut i64, large, vals);
                         *v_idx += large.count_ones() as usize;
 
-                        _mm512_mask_compressstoreu_epi64(
-                            w.write_buffer().add(*w_idx) as *mut i64,
-                            small,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi64(w.add(*w_idx) as *mut i64, small, vals);
                         *w_idx += small.count_ones() as usize;
                     }
                 }
             }
 
             #[inline(always)]
-            unsafe fn partition_equal_bucket<B: buckets::Bucket<$t>>(
+            unsafe fn partition_equal_bucket(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
-                v: &mut B,
+                v: *mut $t,
                 v_idx: &mut usize,
-                e: &mut B,
+                e: *mut $t,
                 e_idx: &mut usize,
-                w: &mut B,
+                w: *mut $t,
                 w_idx: &mut usize,
             ) {
                 unsafe {
@@ -1291,36 +1247,24 @@ macro_rules! impl_simd_elem_64_avx512 {
 
                     if CS {
                         let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.write_buffer().add(*v_idx) as *mut __m512i, cv);
+                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
                         *v_idx += large.count_ones() as usize;
 
                         let ce = _mm512_maskz_compress_epi64(equal, vals);
-                        _mm512_storeu_si512(e.write_buffer().add(*e_idx) as *mut __m512i, ce);
+                        _mm512_storeu_si512(e.add(*e_idx) as *mut __m512i, ce);
                         *e_idx += equal.count_ones() as usize;
 
                         let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.write_buffer().add(*w_idx) as *mut __m512i, cw);
+                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
                         *w_idx += small.count_ones() as usize;
                     } else {
-                        _mm512_mask_compressstoreu_epi64(
-                            v.write_buffer().add(*v_idx) as *mut i64,
-                            large,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi64(v.add(*v_idx) as *mut i64, large, vals);
                         *v_idx += large.count_ones() as usize;
 
-                        _mm512_mask_compressstoreu_epi64(
-                            e.write_buffer().add(*e_idx) as *mut i64,
-                            equal,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi64(e.add(*e_idx) as *mut i64, equal, vals);
                         *e_idx += equal.count_ones() as usize;
 
-                        _mm512_mask_compressstoreu_epi64(
-                            w.write_buffer().add(*w_idx) as *mut i64,
-                            small,
-                            vals,
-                        );
+                        _mm512_mask_compressstoreu_epi64(w.add(*w_idx) as *mut i64, small, vals);
                         *w_idx += small.count_ones() as usize;
                     }
                 }

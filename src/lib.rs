@@ -26,6 +26,7 @@
 //! ```
 
 #![feature(linked_list_cursors)]
+// #![feature(generic_const_exprs)]
 
 #[cfg(feature = "c")]
 #[doc(hidden)]
@@ -65,29 +66,50 @@ pub use simd::SimdElem;
 
 use crate::{buckets::vec_bucket::VecBucket, rebalancing_strategies::NoRebalancing};
 
-use std::ops::Add;
-pub trait One {
+use std::ops::Sub;
+
+pub trait EqualBucketConstraints {
     fn one() -> Self;
+    fn minimum() -> Self;
 }
 
-impl One for i32 {
+impl EqualBucketConstraints for i32 {
     fn one() -> Self {
         1
     }
+
+    fn minimum() -> Self {
+        i32::MIN
+    }
 }
-impl One for i64 {
+
+impl EqualBucketConstraints for i64 {
     fn one() -> Self {
         1
     }
+
+    fn minimum() -> Self {
+        i64::MIN
+    }
 }
-impl One for u32 {
+
+impl EqualBucketConstraints for u32 {
     fn one() -> Self {
         1
     }
+
+    fn minimum() -> Self {
+        0
+    }
 }
-impl One for u64 {
+
+impl EqualBucketConstraints for u64 {
     fn one() -> Self {
         1
+    }
+
+    fn minimum() -> Self {
+        0
     }
 }
 
@@ -108,6 +130,7 @@ pub struct ConfigurableSimdQuickHeap<
     R: rebalancing_strategies::RebalancingStrategy<T> = rebalancing_strategies::NoRebalancing,
     const N: usize = 16,
     const SORT: bool = true,
+    const EQUAL: bool = false,
 > {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
@@ -150,18 +173,20 @@ pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
     NoRebalancing,
     16,
     true,
+    false,
 >;
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
-    T: Elem + Default + Add<Output = T> + One,
+    T: Elem + Default + Sub<Output = T> + EqualBucketConstraints,
     B: buckets::Bucket<T>,
     S: simd::SimdElem<T>,
     P: pivot_strategies::PivotStrategy,
     R: rebalancing_strategies::RebalancingStrategy<T>,
     const N: usize,
     const SORT: bool,
-> Default for ConfigurableSimdQuickHeap<T, B, S, P, R, N, SORT>
+    const EQUAL: bool,
+> Default for ConfigurableSimdQuickHeap<T, B, S, P, R, N, SORT, EQUAL>
 {
     fn default() -> Self {
         Self {
@@ -178,15 +203,51 @@ impl<
 }
 
 impl<
-    T: Elem + Debug + Default + Add<Output = T> + One,
+    T: Elem + Debug + Default + Sub<Output = T> + EqualBucketConstraints,
     B: buckets::Bucket<T>,
     S: simd::SimdElem<T>,
     R: rebalancing_strategies::RebalancingStrategy<T>,
     P: pivot_strategies::PivotStrategy,
     const N: usize,
     const SORT: bool,
-> ConfigurableSimdQuickHeap<T, B, S, P, R, N, SORT>
+    const EQUAL: bool,
+> ConfigurableSimdQuickHeap<T, B, S, P, R, N, SORT, EQUAL>
 {
+    /// Initializes the heap from a given list of layers
+    pub fn from_vecs(layers: Vec<Vec<T>>) -> Self {
+        let mut size: usize = 0;
+        let mut buckets = vec![];
+        let num_buckets = layers.len();
+        let mut pivots: Vec<T> = vec![];
+
+        for layer in &layers {
+            assert!(layer.len() > 0);
+            let mut b = B::default();
+            let max = layer.iter().min().unwrap();
+
+            for e in layer {
+                b.push(*e);
+                size += 1;
+            }
+
+            buckets.push(b);
+            pivots.push(*max);
+        }
+
+        pivots.pop();
+
+        Self {
+            pivots,
+            buckets,
+            equal_buckets: (0..num_buckets).map(|_| false).collect(),
+            size: size,
+            rebal_iteration: 0,
+            _p: PhantomData,
+            _r: PhantomData,
+            _backend: PhantomData,
+        }
+    }
+
     /// Return the total capacity over all buckets.
     pub fn capacity(&self) -> usize {
         self.buckets.iter().map(|b| b.capacity()).sum()
@@ -203,6 +264,7 @@ impl<
     }
 
     /// Push `t` onto the heap.
+    //#[inline(never)] // TODO: Temporary for profiling
     pub fn push(&mut self, t: T) {
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
         let layer = &mut self.buckets[target_layer];
@@ -210,6 +272,10 @@ impl<
 
         #[cfg(feature = "rebalancing")]
         R::on_push(target_layer, &mut self.pivots, &mut self.buckets);
+
+        if target_layer == self.pivots.len() {
+            self.equal_buckets[target_layer] = false;
+        }
 
         if SORT && target_layer == self.pivots.len() && layer.len() < N {
             // Count the number of larger elements in the prefix and insert the new element after them.
@@ -236,17 +302,19 @@ impl<
             return None;
         }
 
-        if layer == 0
-
         if EQUAL {
             if self.equal_buckets[layer] {
-                assert!(self.buckets[layer].len() > 0);
+                debug_assert!(self.buckets[layer].assert_all_equal());
+                debug_assert!(self.buckets[layer].len() > 0);
+
                 let elem = self.buckets[layer].pop();
 
                 // Update the active layer.
                 if self.buckets[layer].is_empty() && self.pivots.len() > 0 {
                     self.equal_buckets[self.pivots.len()] = false;
                     self.pivots.pop();
+
+                    self.clear_equals();
 
                     // Sort the new final layer decreasing if it's already small.
                     if !self.equal_buckets[self.pivots.len()]
@@ -264,7 +332,9 @@ impl<
 
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].len() > N {
-            while self.buckets[self.pivots.len()].len() > N {
+            while !self.equal_buckets[self.pivots.len()]
+                && self.buckets[self.pivots.len()].len() > N
+            {
                 self.partition();
             }
             if SORT {
@@ -286,6 +356,8 @@ impl<
         if layer.is_empty() && self.pivots.len() > 0 {
             self.pivots.pop();
 
+            self.clear_equals();
+
             // Sort the new final layer decreasing if it's already small.
             if !self.equal_buckets[self.pivots.len()]
                 && SORT
@@ -300,27 +372,40 @@ impl<
         Some(min)
     }
 
+    #[inline(always)]
+    fn clear_equals(&mut self) {
+        if self.pivots.len() <= 1 {
+            self.equal_buckets[0] = false;
+            self.equal_buckets[1] = false;
+        }
+    }
+
     #[inline(never)]
     fn partition(&mut self) {
         let layer = self.pivots.len();
+        let layer_len = self.buckets[layer].len();
 
-        debug_assert!(!self.equal_buckets[layer]);
+        if self.equal_buckets[layer] {
+            return;
+        }
 
-        #[cfg(feature = "equal_buckets")]
-        {
-            if layer_len > 1000 {
+        if EQUAL {
+            if layer_len > (self.size / 10) {
+                // TODO: Vary this constant
                 use crate::buckets::equal_buckets::EqualBucketSamplingTest;
                 use crate::buckets::equal_buckets::EqualBucketTest;
 
                 let (test, elem) =
                     EqualBucketSamplingTest::<8>::check::<T, B>(&self.buckets[layer]);
 
-                if test {
+                if test && elem != T::minimum() {
                     self.equal_partition(elem);
                     return;
                 }
             }
         }
+
+        debug_assert!(!self.equal_buckets[layer]);
 
         // Reserve space for an additional L layers when needed.
         if layer + 2 * S::L >= self.pivots.capacity() {
@@ -357,14 +442,18 @@ impl<
         let mut next_len = 0;
         let half = (pivot_pos + 1).min(n2).next_multiple_of(S::L);
         let threshold = S::splat(pivot);
+
+        let cur_layer_ptr = cur_layer.write_buffer();
+        let next_layer_ptr = next_layer.write_buffer();
+
         for i in (0..half).step_by(S::L) {
             unsafe {
-                S::partition_fast_bucket::<B, true>(
-                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L).as_slice()),
+                S::partition_fast_bucket::<true>(
+                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
                     threshold,
-                    cur_layer,
+                    cur_layer_ptr,
                     &mut cur_len,
-                    next_layer,
+                    next_layer_ptr,
                     &mut next_len,
                 );
             }
@@ -372,12 +461,12 @@ impl<
 
         for i in (half..n2).step_by(S::L) {
             unsafe {
-                S::partition_fast_bucket::<B, false>(
-                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L).as_slice()),
+                S::partition_fast_bucket::<false>(
+                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
                     threshold,
-                    cur_layer,
+                    cur_layer_ptr,
                     &mut cur_len,
-                    next_layer,
+                    next_layer_ptr,
                     &mut next_len,
                 );
             }
@@ -391,12 +480,12 @@ impl<
             };
             unsafe {
                 S::partition_slow_bucket(
-                    S::simd_from_slice(cur_layer.get_unchecked(n2, S::L).as_slice()),
+                    S::simd_from_slice(cur_layer.get_unchecked(n2, n - n2)), // TODO: Maybe only works with S::L
                     S::splat(S::from_usize(n - n2)),
                     threshold,
-                    cur_layer,
+                    cur_layer_ptr,
                     &mut cur_len,
-                    next_layer,
+                    next_layer_ptr,
                     &mut next_len,
                 );
             }
@@ -418,6 +507,7 @@ impl<
         if cur_len == 0 {
             std::mem::swap(cur_layer, next_layer);
             self.pivots.pop().unwrap();
+            self.clear_equals();
         }
 
         #[cfg(feature = "rebalancing")]
@@ -432,6 +522,7 @@ impl<
 
     #[inline(never)]
     fn equal_partition(&mut self, pivot: T) {
+        debug_assert!(pivot != T::minimum());
         let layer = self.pivots.len();
 
         // Reserve space for an additional L layers when needed.
@@ -439,7 +530,7 @@ impl<
             self.pivots.reserve(S::L);
         }
 
-        if layer + 1 == self.buckets.len() {
+        if layer + 1 >= self.buckets.len() {
             self.buckets.push(B::default());
             self.buckets.push(B::default());
             self.equal_buckets.push(false);
@@ -452,8 +543,8 @@ impl<
         };
         let n = cur_layer.len();
 
-        self.pivots.push(pivot + T::one());
         self.pivots.push(pivot);
+        self.pivots.push(pivot - T::one());
 
         // Reserve space in the next layers,
         // and make sure the current layer can hold a spare SIMD register.
@@ -476,17 +567,21 @@ impl<
         // Partition a list into three (smaller, equal, greater) using SIMD.
         let threshold = S::splat(pivot);
 
+        let cur_layer_ptr = cur_layer.write_buffer();
+        let equal_layer_ptr = equal_layer.write_buffer();
+        let next_layer_ptr = next_layer.write_buffer();
+
         for i in (0..n2).step_by(S::L) {
             unsafe {
                 S::partition_equal_bucket(
-                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L).as_slice()),
+                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
                     S::splat(S::from_usize(S::L)),
                     threshold,
-                    cur_layer,
+                    cur_layer_ptr,
                     &mut cur_len,
-                    equal_layer,
+                    equal_layer_ptr,
                     &mut equal_len,
-                    next_layer,
+                    next_layer_ptr,
                     &mut next_len,
                 );
             }
@@ -495,14 +590,14 @@ impl<
         if n2 < n {
             unsafe {
                 S::partition_equal_bucket(
-                    S::simd_from_slice(cur_layer.get_unchecked(n2, S::L).as_slice()),
+                    S::simd_from_slice(cur_layer.get_unchecked(n2, S::L)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
-                    cur_layer,
+                    cur_layer_ptr,
                     &mut cur_len,
-                    equal_layer,
+                    equal_layer_ptr,
                     &mut equal_len,
-                    next_layer,
+                    next_layer_ptr,
                     &mut next_len,
                 );
             }
@@ -520,17 +615,44 @@ impl<
             next_layer.set_len(next_len);
         }
 
+        debug_assert!(equal_layer.assert_all_equal());
+
         self.equal_buckets[layer + 1] = true;
 
         // If we extracted all elements to the next layer
         // because the equal element was the largest one
         if cur_len == 0 {
-            assert!(false);
             std::mem::swap(cur_layer, equal_layer);
             std::mem::swap(cur_layer, next_layer);
+            self.pivots.swap(layer, layer + 1);
             self.pivots.swap(layer + 1, layer + 2);
+            self.equal_buckets.swap(layer, layer + 1);
             self.equal_buckets.swap(layer + 1, layer + 2);
             self.pivots.pop().unwrap();
+            self.clear_equals();
+            self.equal_buckets[self.pivots.len()] = false;
         }
+
+        if next_len == 0 {
+            self.equal_buckets[layer + 1] = false;
+            self.pivots.pop().unwrap();
+            self.clear_equals();
+        }
+    }
+
+    pub fn introspect(&self) {
+        println!("#buckets: {} #elements: {}", self.buckets.len(), self.size);
+
+        println!("Pivots: {:?}", self.pivots);
+
+        for i in 0..self.pivots.len() {
+            println!(
+                "Size: {}, Pivot: {:?}",
+                self.buckets[i].len(),
+                self.pivots[i]
+            );
+        }
+
+        println!("Size: {}", self.buckets[self.pivots.len()].len());
     }
 }
