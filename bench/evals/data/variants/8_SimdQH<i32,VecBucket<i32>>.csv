@@ -1,0 +1,17 @@
+workload,n,nanoseconds,cache_misses
+MonotoneConstantSize,32768,28.2,0.0
+MonotoneConstantSize,65536,28.8,0.0
+MonotoneConstantSize,131072,29.2,0.0
+MonotoneConstantSize,262144,30.3,0.1
+MonotoneConstantSize,524288,30.0,0.1
+MonotoneConstantSize,1048576,31.3,0.1
+MonotoneConstantSize,2097152,31.7,0.2
+MonotoneConstantSize,4194304,32.3,0.3
+RandomConstantSize,32768,22.7,0.0
+RandomConstantSize,65536,22.0,0.0
+RandomConstantSize,131072,22.2,0.0
+RandomConstantSize,262144,22.9,0.0
+RandomConstantSize,524288,22.2,0.1
+RandomConstantSize,1048576,23.5,0.1
+RandomConstantSize,2097152,23.2,0.1
+RandomConstantSize,4194304,23.1,0.1
