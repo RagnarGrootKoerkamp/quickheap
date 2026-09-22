@@ -21,10 +21,12 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
         }
     }
 
+    #[inline]
     fn empty(&self) -> bool {
         self.size == 0
     }
 
+    #[inline]
     fn from_slice(slice: &[T]) -> Self {
         let mut data = [T::default(); K];
         let size;
@@ -42,20 +44,33 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
         Self { data, size }
     }
 
+    #[inline]
+    fn as_slice(&self, from: usize, len: usize) -> &[T] {
+        assert!(from + len <= K);
+
+        unsafe {
+            &self.data.get_unchecked(from..from + len) // [from..from + len]
+        }
+    }
+
+    #[inline]
     fn as_mut_ptr(&mut self) -> *mut T {
         self.data.as_mut_ptr()
     }
 
+    #[inline]
     fn as_ptr(&self) -> *const T {
         self.data.as_ptr()
     }
 
+    #[inline]
     fn push(&mut self, elem: T) {
         assert!(self.size < K);
         self.data[self.size] = elem;
         self.size += 1;
     }
 
+    #[inline]
     fn insert(&mut self, elem: T, pos: usize) {
         assert!(self.size < K);
 
@@ -73,6 +88,7 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
         }
     }
 
+    #[inline]
     fn insert_index(&self, elem: T) -> usize {
         let mut idx = 0;
 
@@ -85,10 +101,12 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
         idx
     }
 
+    #[inline]
     fn to_vec(&self) -> Vec<T> {
         self.data[0..self.size].to_vec()
     }
 
+    #[inline]
     fn insert_with_overflow(&mut self, elem: T, pos: usize) -> T {
         assert!(pos < K);
         assert!(self.size == K);
@@ -109,6 +127,7 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
         r
     }
 
+    #[inline]
     fn remove(&mut self, i: usize) -> T {
         assert!(i < K);
         assert!(self.size > 0);
@@ -120,24 +139,25 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
         elem
     }
 
+    #[inline]
     fn get(&self, i: usize) -> T {
-        if i >= self.size {
-            println!("PROBLEM {} {}", i, self.size);
-        }
         assert!(self.size <= K);
         assert!(i < self.size);
         self.data[i]
     }
 
+    #[inline]
     fn get_unchecked(&self, i: usize) -> T {
         assert!(self.size <= K);
         self.data[i]
     }
 
+    #[inline]
     fn size(&self) -> usize {
         self.size
     }
 
+    #[inline]
     fn full(&self) -> bool {
         self.size >= K
     }
@@ -147,12 +167,13 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
         println!("{:?}", &data[..self.size]);
     }
 
+    #[inline]
     fn override_elem(&mut self, pos: usize, val: T) {
         self.data[pos] = val;
     }
 }
 
-pub trait Bucket<T> {
+pub trait Bucket<T: PartialEq> {
     fn default() -> Self;
     fn push(&mut self, elem: T);
     fn len(&self) -> usize;
@@ -169,11 +190,26 @@ pub trait Bucket<T> {
     fn clear(&mut self);
     fn override_elem(&mut self, pos: usize, elem: T);
     unsafe fn set_len(&mut self, n: usize);
-    unsafe fn get_unchecked(&self, from: usize, len: usize) -> Vec<T>;
+    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T];
     fn write_buffer(&mut self) -> *mut T;
     fn flush(&mut self, idx: usize);
     fn print(&self);
     fn get_unchecked_single(&self, idx: usize) -> T;
+
+    fn assert_all_equal(&self) -> bool {
+        if self.len() == 0 {
+            return true;
+        }
+
+        let elem = self.get(0);
+
+        for i in 1..self.len() {
+            if self.get(i) != elem {
+                return false;
+            }
+        }
+        return true;
+    }
 }
 
 #[cfg(test)]
@@ -385,6 +421,7 @@ mod tests {
             NoRebalancing,
             4,
             true,
+            false,
         >::default();
 
         h.push(14);

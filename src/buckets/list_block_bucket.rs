@@ -20,28 +20,34 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
         }
     }
 
+    #[inline]
     fn len(&self) -> usize {
         self.total_size
     }
 
+    #[inline]
     fn write_buffer(&mut self) -> *mut T {
         self.buff.as_mut_ptr()
     }
 
+    #[inline]
     fn clear(&mut self) {
         self.data.clear();
         self.total_size = 0;
         self.buff.clear();
     }
 
+    #[inline]
     fn is_empty(&self) -> bool {
         self.total_size == 0
     }
 
+    #[inline]
     fn capacity(&self) -> usize {
         self.data.len() * K
     }
 
+    #[inline]
     fn push(&mut self, elem: T) {
         if self.total_size % K == 0 {
             let mut b = Block::<T, K>::default();
@@ -58,11 +64,12 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
             .back_mut()
             .expect("List has no blocks but size > 0");
 
-        assert!(block.size() < K);
+        debug_assert!(block.size() < K);
         block.push(elem);
         self.total_size += 1;
     }
 
+    #[inline]
     fn pop(&mut self) -> Option<T> {
         if self.total_size == 0 {
             return None;
@@ -85,15 +92,16 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
         Some(r)
     }
 
+    #[inline]
     fn get(&self, i: usize) -> T {
-        assert!(i < self.total_size);
+        debug_assert!(i < self.total_size);
 
         let block_idx = i / K;
-        assert!(block_idx < self.idx_map.len());
+        debug_assert!(block_idx < self.idx_map.len());
         let block_ptr = self.idx_map[block_idx];
         unsafe {
-            let block = block_ptr.read();
-            assert!(!block.empty());
+            let block = block_ptr.as_ref();
+            debug_assert!(!block.empty());
             block.get(i % K)
         }
     }
@@ -136,10 +144,10 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
     }
 
     fn insert(&mut self, pos: usize, elem: T) {
-        assert!(pos <= self.total_size);
+        debug_assert!(pos <= self.total_size);
 
         if self.total_size == 0 {
-            assert!(self.data.is_empty());
+            debug_assert!(self.data.is_empty());
             let mut b = Block::<T, K>::default();
             b.push(elem);
             self.total_size += 1;
@@ -196,19 +204,24 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
         (result, remainder)
     }
 
+    #[inline]
     fn get_unchecked_single(&self, pos: usize) -> T {
         let block_idx = pos / K;
         assert!(false);
-        unsafe { self.idx_map[block_idx].read().get_unchecked(pos % K) }
+        unsafe { self.idx_map[block_idx].as_ref().get_unchecked(pos % K) }
     }
 
+    #[inline]
     fn override_elem(&mut self, pos: usize, elem: T) {
         let block_idx = pos / K;
         unsafe {
-            self.idx_map[block_idx].read().override_elem(pos % K, elem);
+            self.idx_map[block_idx]
+                .as_mut()
+                .override_elem(pos % K, elem);
         }
     }
 
+    #[inline]
     fn insert_index(&self, elem: T) -> usize {
         let mut idx = 0;
         for block in self.data.iter() {
@@ -218,6 +231,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
         idx
     }
 
+    #[inline]
     fn remove(&mut self, i: usize) -> T {
         assert!(i < self.total_size);
         let need_swap = (i / K) != (self.total_size / K);
@@ -281,35 +295,14 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
         // no op
     }
 
-    unsafe fn get_unchecked(&self, from: usize, len: usize) -> Vec<T> {
-        let mut r = Vec::<T>::with_capacity(len);
-        let mut dst = r.as_mut_ptr();
-        let first_block_idx = from / K;
-        let mut idx = from % K;
-        let mut elems_left = len;
-        for i in first_block_idx..self.data.len() {
-            unsafe {
-                let block = self.idx_map[i].read();
-                let take = elems_left.min(K - idx);
-                let src = block.as_ptr().add(idx);
-                std::ptr::copy_nonoverlapping(src, dst, take);
-
-                dst = dst.add(take);
-
-                elems_left -= take;
-                idx = 0;
-
-                if elems_left == 0 {
-                    break;
-                }
-            }
-        }
+    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T] {
+        debug_assert!(len < K); // TODO: Currently only blocks that are larger than the number of SIMD Lanes are allowed
 
         unsafe {
-            r.set_len(len);
+            let block = self.idx_map[from / K].as_ref();
+            let start = from % K;
+            block.as_slice(start, len)
         }
-
-        r
     }
 
     fn sort_decreasing(&mut self) {

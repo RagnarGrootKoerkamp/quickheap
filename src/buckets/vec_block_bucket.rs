@@ -5,6 +5,7 @@ pub struct VecBlockBucket<T, const K: usize> {
     data: Vec<Block<T, K>>,
     total_size: usize,
     buff: Vec<T>,
+    temp: Vec<T>,
 }
 
 impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBucket<T, K> {
@@ -13,26 +14,35 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
             data: Vec::with_capacity(128),
             total_size: 0,
             buff: Vec::with_capacity(128),
+            temp: vec![],
         }
     }
 
+    #[inline]
     fn clear(&mut self) {
         self.total_size = 0;
         self.buff.clear();
         self.data.clear();
     }
 
+    #[inline]
     fn get(&self, i: usize) -> T {
         let block = i / K;
         let in_block = i % K;
         self.data[block].get(in_block)
     }
 
+    #[inline]
     fn capacity(&self) -> usize {
         self.data.capacity() * K
     }
 
+    #[inline]
     fn push(&mut self, elem: T) {
+        if self.data.is_empty() {
+            self.data.push(Block::default())
+        }
+
         let mut data_len = self.data.len();
         if self.data[data_len - 1].full() {
             // Last block is already full
@@ -44,10 +54,12 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         self.data[data_len - 1].push(elem);
     }
 
+    #[inline]
     fn len(&self) -> usize {
         self.total_size
     }
 
+    #[inline]
     fn pop(&mut self) -> Option<T> {
         let total_size = self.total_size;
         if total_size == 0 {
@@ -64,26 +76,31 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         Some(r)
     }
 
+    #[inline]
     fn write_buffer(&mut self) -> *mut T {
         self.buff.as_mut_ptr()
     }
 
+    #[inline]
     fn print(&self) {
         for block in &self.data {
             block.print();
         }
     }
 
+    #[inline]
     fn is_empty(&self) -> bool {
         self.total_size == 0
     }
 
+    #[inline]
     fn reserve(&mut self, n: usize) {
         self.data.reserve((n + K - 1) / K);
         let max = self.data.capacity() * K;
         self.buff.reserve(max);
     }
 
+    #[inline]
     fn remove(&mut self, i: usize) -> T {
         let block = i / K;
         let in_block = i % K;
@@ -114,6 +131,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         r
     }
 
+    #[inline]
     fn flush(&mut self, idx: usize) {
         unsafe {
             self.buff.set_len(idx);
@@ -138,10 +156,12 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         }
     }
 
+    #[inline]
     fn override_elem(&mut self, pos: usize, elem: T) {
         self.data[pos / K].override_elem(pos % K, elem);
     }
 
+    #[inline]
     fn as_chunks<const S: usize>(&self) -> (Vec<[T; S]>, Vec<T>) {
         let mut idx = 0;
         let mut result: Vec<[T; S]> = vec![];
@@ -158,6 +178,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         (result, remainder)
     }
 
+    #[inline]
     fn sort_decreasing(&mut self) {
         // Flatten to vec
         let mut data = vec![];
@@ -173,14 +194,53 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         }
     }
 
+    #[inline]
     unsafe fn set_len(&mut self, n: usize) {
         unsafe {
             self.data.set_len((n + K - 1) / K);
         }
     }
 
-    unsafe fn get_unchecked(&self, from: usize, len: usize) -> Vec<T> {
+    #[inline]
+    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T] {
+        assert!(len < K); // TODO: Currently only blocks that are larger than the number of SIMD Lanes are allowed
+
+        let block = &self.data[from / K];
+        let start = from % K;
+
+        assert!((from % K) + len <= K);
+
+        block.as_slice(start, len)
+
+        /*
+        if start + len <= block.size() {
+            out[..len].copy_from_slice(block.as_slice(start, len));
+            return;
+        }
+
+        // Else we need two blocks..
+        let elems_block_1 = block.size() - start;
+
+        let s1 = block.as_slice(start, elems_block_1);
+        out[..elems_block_1].copy_from_slice(s1);
+
+        let next_block_idx = (from / K) + 1;
+        if self.data.len() <= next_block_idx {
+            return;
+        }
+
+        assert!(false);
+
+        let next_block = &self.data[next_block_idx];
+        let elems_block_2 = len - elems_block_1;
+        let s2 = next_block.as_slice(0, elems_block_2);
+        out[elems_block_1..].copy_from_slice(s2);
+
+         */
+
+        /*
         let mut result: Vec<T> = vec![];
+
         let mut idx = from;
 
         while idx < from + len {
@@ -189,8 +249,10 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         }
 
         result
+         */
     }
 
+    #[inline]
     fn get_unchecked_single(&self, idx: usize) -> T {
         let block = idx / K;
         let in_block = idx % K;
