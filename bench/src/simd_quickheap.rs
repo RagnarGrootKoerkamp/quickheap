@@ -1,13 +1,19 @@
 use crate::{Heap, impls::NoHeap, workloads};
 
 impl<
-    T: quickheap::Elem + workloads::Elem,
+    T: quickheap::Elem
+        + workloads::Elem
+        + std::ops::Sub<Output = T>
+        + Default
+        + quickheap::EqualBucketConstraints,
+    B: quickheap::buckets::Bucket<T>,
     S: quickheap::SimdElem<T>,
     P: quickheap::pivot_strategies::PivotStrategy,
     R: quickheap::rebalancing_strategies::RebalancingStrategy<T>,
     const N: usize,
     const SORT: bool,
-> Heap<T> for quickheap::ConfigurableSimdQuickHeap<T, S, P, R, N, SORT>
+    const EQUAL: bool,
+> Heap<T> for quickheap::ConfigurableSimdQuickHeap<T, B, S, P, R, N, SORT, EQUAL>
 {
     type CountedType = workloads::CountComparisons<T>;
     type CountedHeap = NoHeap;

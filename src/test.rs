@@ -1,8 +1,8 @@
 use std::cmp::Reverse;
-use std::ops::Add;
+use std::ops::Sub;
 
 use crate::{
-    ConfigurableSimdQuickHeap, One, SimdElem,
+    ConfigurableSimdQuickHeap, EqualBucketConstraints, SimdElem,
     buckets::{
         list_block_bucket::ListBlockBucket, vec_block_bucket::VecBlockBucket, vec_bucket::VecBucket,
     },
@@ -115,9 +115,9 @@ impl<T: GenElem> Generator<T> for MostlyMinGen {
     }
 }
 
-fn heapsort_with_gen<T, S, G>()
+fn heapsort_with_gen<T, S, G, const L: usize>()
 where
-    T: GenElem + Default + Add<Output = T> + One,
+    T: GenElem + Default + Sub<Output = T> + EqualBucketConstraints,
     S: SimdElem<T>,
     G: Generator<T>,
 {
@@ -125,10 +125,15 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         let mut q = <ConfigurableSimdQuickHeap<
             T,
-            ListBlockBucket<T, 128>,
+            VecBucket<T>,
+            // VecBlockBucket<T, 128>,
+            // ListBlockBucket<T, 128>,
             S,
             MedianOfM<3>,
             PivotForgetting<2, 128>,
+            16,
+            true,
+            true,
         >>::default();
         for _ in 0..n {
             q.push(g.get());
@@ -145,9 +150,9 @@ where
     }
 }
 
-fn wiggle_with_gen<T, S, G>()
+fn wiggle_with_gen<T, S, G, const L: usize>()
 where
-    T: GenElem + Default + Add<Output = T> + One,
+    T: GenElem + Default + Sub<Output = T> + EqualBucketConstraints,
     S: SimdElem<T>,
     G: Generator<T>,
 {
@@ -155,10 +160,15 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         let mut q1 = <ConfigurableSimdQuickHeap<
             T,
-            ListBlockBucket<T, 128>,
+            VecBucket<T>,
+            // VecBlockBucket<T, 128>,
+            // ListBlockBucket<T, 128>,
             S,
             MedianOfM<3>,
             PivotForgetting<2, 128>,
+            16,
+            true,
+            true,
         >>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
@@ -202,31 +212,49 @@ where
 
 #[rustfmt::skip]
 macro_rules! all_tests {
-    ($elem:ty, $simd:ty) => {
-        #[test] fn heapsort_random()      { heapsort_with_gen::<$elem, $simd, RandomGen>(); }
-        #[test] fn heapsort_increasing()  { heapsort_with_gen::<$elem, $simd, IncreasingGen<$elem>>(); }
-        #[test] fn heapsort_decreasing()  { heapsort_with_gen::<$elem, $simd, DecreasingGen<$elem>>(); }
-        #[test] fn heapsort_mostly_max()  { heapsort_with_gen::<$elem, $simd, MostlyMaxGen>(); }
-        #[test] fn heapsort_mostly_min()  { heapsort_with_gen::<$elem, $simd, MostlyMinGen>(); }
+    ($elem:ty, $simd:ty, $l:expr) => {
+        #[test] fn heapsort_random()      { heapsort_with_gen::<$elem, $simd, RandomGen, $l>(); }
+        #[test] fn heapsort_increasing()  { heapsort_with_gen::<$elem, $simd, IncreasingGen<$elem>, $l>(); }
+        #[test] fn heapsort_decreasing()  { heapsort_with_gen::<$elem, $simd, DecreasingGen<$elem>, $l>(); }
+        #[test] fn heapsort_mostly_max()  { heapsort_with_gen::<$elem, $simd, MostlyMaxGen, $l>(); }
+        #[test] fn heapsort_mostly_min()  { heapsort_with_gen::<$elem, $simd, MostlyMinGen, $l>(); }
 
-        #[test] fn wiggle_random()        { wiggle_with_gen::<$elem, $simd, RandomGen>(); }
-        #[test] fn wiggle_increasing()    { wiggle_with_gen::<$elem, $simd, IncreasingGen<$elem>>(); }
-        #[test] fn wiggle_decreasing()    { wiggle_with_gen::<$elem, $simd, DecreasingGen<$elem>>(); }
-        #[test] fn wiggle_mostly_max()    { wiggle_with_gen::<$elem, $simd, MostlyMaxGen>(); }
-        #[test] fn wiggle_mostly_min()    { wiggle_with_gen::<$elem, $simd, MostlyMinGen>(); }
+        #[test] fn wiggle_random()        { wiggle_with_gen::<$elem, $simd, RandomGen, $l>(); }
+        #[test] fn wiggle_increasing()    { wiggle_with_gen::<$elem, $simd, IncreasingGen<$elem>, $l>(); }
+        #[test] fn wiggle_decreasing()    { wiggle_with_gen::<$elem, $simd, DecreasingGen<$elem>, $l>(); }
+        #[test] fn wiggle_mostly_max()    { wiggle_with_gen::<$elem, $simd, MostlyMaxGen, $l>(); }
+        #[test] fn wiggle_mostly_min()    { wiggle_with_gen::<$elem, $simd, MostlyMinGen, $l>(); }
     };
 }
 
 #[rustfmt::skip]
 mod u64 {
-    mod avx2   { use super::super::*; all_tests!(u64, crate::Avx2); }
+    mod avx2   { use super::super::*; all_tests!(u64, crate::Avx2, 4); }
     #[cfg(target_feature = "avx512f")]
-    mod avx512 { use super::super::*; all_tests!(u64, crate::Avx512); }
+    mod avx512 { use super::super::*; all_tests!(u64, crate::Avx512, 8); }
 }
 
 #[rustfmt::skip]
 mod i64 {
-    mod avx2   { use super::super::*; all_tests!(i64, crate::Avx2); }
+    mod avx2   { use super::super::*; all_tests!(i64, crate::Avx2, 4); }
     #[cfg(target_feature = "avx512f")]
-    mod avx512 { use super::super::*; all_tests!(i64, crate::Avx512); }
+    mod avx512 { use super::super::*; all_tests!(i64, crate::Avx512, 8); }
+}
+
+#[test]
+fn test_initialization_from_layer_and_introspection() {
+    let layer_1: Vec<i32> = vec![6, 7, 8];
+    let layer_2: Vec<i32> = vec![4, 5];
+    let layer_3: Vec<i32> = vec![1, 2];
+
+    let layers = vec![layer_1, layer_2, layer_3];
+
+    let mut h = ConfigurableSimdQuickHeap::<i32, VecBucket<i32>>::from_vecs(layers);
+
+    h.push(10);
+    h.push(12);
+    h.push(5);
+    h.push(0);
+
+    h.introspect();
 }

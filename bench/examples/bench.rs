@@ -5,6 +5,8 @@ use clap::Parser;
 #[cfg(feature = "avx512")]
 use quickheap::Avx512;
 use quickheap::ConfigurableSimdQuickHeap;
+#[cfg(feature = "avx2")]
+use quickheap::buckets::vec_bucket::VecBucket;
 use quickheap::pivot_strategies::{MedianOfM, RandomPivot};
 #[cfg(feature = "avx2")]
 use quickheap::{Avx2, SimdElem};
@@ -321,10 +323,12 @@ fn bench_table() {
 
     // SIMD QUICKHEAP
     #[cfg(feature = "avx2")]
-    bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>>>();
+    bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx2, MedianOfM<3>>>();
 
     #[cfg(feature = "avx512")]
-    bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>>>();
+    bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx512<true>, MedianOfM<3>>>();
+
+    return;
 
     // QUICKHEAP
     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
@@ -418,16 +422,16 @@ where
 {
     #[cfg(feature = "avx2")]
     {
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, RandomPivot>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<5>>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx2, RandomPivot>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx2, MedianOfM<3>>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx2, MedianOfM<5>>>();
     }
 
     #[cfg(feature = "avx512")]
     {
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, RandomPivot>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<5>>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx512<true>, RandomPivot>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx512<true>, MedianOfM<3>>>();
+        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx512<true>, MedianOfM<5>>>();
     }
 }
 

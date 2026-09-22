@@ -54,6 +54,8 @@ mod test {
     #[cfg(feature = "avx512")]
     use crate::simd::Avx512;
     #[cfg(feature = "avx2")]
+    use quickheap::buckets::vec_bucket::VecBucket;
+    #[cfg(feature = "avx2")]
     use quickheap::pivot_strategies::{MedianOfM, RandomPivot};
 
     use crate::scalar_quickheap::{ScalarQuickHeap, Search};
@@ -125,11 +127,13 @@ mod test {
             Base,
             ConfigurableSimdQuickHeap<
                 T,
+                VecBucket<T>,
                 Avx2,
                 MedianOfM<3>,
                 rebalancing_strategies::NoRebalancing,
                 8,
                 true,
+                false,
             >,
         >::run(n);
         #[cfg(feature = "avx2")]
@@ -138,11 +142,13 @@ mod test {
             Base,
             ConfigurableSimdQuickHeap<
                 T,
+                VecBucket<T>,
                 Avx2,
                 RandomPivot,
                 rebalancing_strategies::NoRebalancing,
                 16,
                 true,
+                false,
             >,
         >::run(n);
         #[cfg(feature = "avx512")]
