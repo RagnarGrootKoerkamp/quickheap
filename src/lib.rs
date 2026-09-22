@@ -236,8 +236,9 @@ impl<
             return None;
         }
 
-        #[cfg(feature = "equal_buckets")]
-        {
+        if layer == 0
+
+        if EQUAL {
             if self.equal_buckets[layer] {
                 assert!(self.buckets[layer].len() > 0);
                 let elem = self.buckets[layer].pop();
