@@ -239,7 +239,8 @@ impl Workload for MonotoneConstantSize {
         let stride = T::stride();
         let mut rng = fastrand::Rng::new();
         let mut l = 0;
-        for _ in 0..n {
+        for _ in 0..(n + 50) {
+            // TODO: Think of better solution
             h.push(T::try_from(l + rng.u64(0..stride)));
             l = h.pop().unwrap().get();
             h.push(T::try_from(l + rng.u64(0..stride)));
@@ -269,7 +270,8 @@ impl Workload for RandomConstantSize {
         let mut h = H::default();
         let stride = T::stride();
         let mut rng = fastrand::Rng::new();
-        for _ in 0..n {
+        for _ in 0..(n + 50) {
+            // TODO: Think of better solution
             h.push(T::try_from(rng.u64(0..stride)));
             h.pop().unwrap().get();
             h.push(T::try_from(rng.u64(0..stride)));

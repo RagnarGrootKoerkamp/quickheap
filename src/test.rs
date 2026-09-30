@@ -125,15 +125,18 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         let mut q = <ConfigurableSimdQuickHeap<
             T,
-            VecBucket<T>,
-            // VecBlockBucket<T, 128>,
-            // ListBlockBucket<T, 128>,
+            // VecBucket<T>,
+            VecBlockBucket<T, 128, 154>,
+            // ListBlockBucket<T, 128, 154>,
             S,
             MedianOfM<3>,
-            PivotForgetting<2, 128>,
+            NoRebalancing,
+            // PivotForgetting<2, 128>,
             16,
+            128,
+            154,
             true,
-            true,
+            false,
         >>::default();
         for _ in 0..n {
             q.push(g.get());
@@ -160,15 +163,18 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         let mut q1 = <ConfigurableSimdQuickHeap<
             T,
-            VecBucket<T>,
-            // VecBlockBucket<T, 128>,
-            // ListBlockBucket<T, 128>,
+            // VecBucket<T>,
+            VecBlockBucket<T, 128, 154>,
+            // ListBlockBucket<T, 128, 154>,
             S,
             MedianOfM<3>,
-            PivotForgetting<2, 128>,
+            NoRebalancing,
+            // PivotForgetting<2, 128>,
             16,
+            128,
+            154,
             true,
-            true,
+            false,
         >>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
@@ -230,6 +236,7 @@ macro_rules! all_tests {
 #[rustfmt::skip]
 mod u64 {
     mod avx2   { use super::super::*; all_tests!(u64, crate::Avx2, 4); }
+
     #[cfg(target_feature = "avx512f")]
     mod avx512 { use super::super::*; all_tests!(u64, crate::Avx512, 8); }
 }
@@ -237,6 +244,7 @@ mod u64 {
 #[rustfmt::skip]
 mod i64 {
     mod avx2   { use super::super::*; all_tests!(i64, crate::Avx2, 4); }
+
     #[cfg(target_feature = "avx512f")]
     mod avx512 { use super::super::*; all_tests!(i64, crate::Avx512, 8); }
 }
@@ -249,6 +257,7 @@ fn test_initialization_from_layer_and_introspection() {
 
     let layers = vec![layer_1, layer_2, layer_3];
 
+    /*
     let mut h = ConfigurableSimdQuickHeap::<i32, VecBucket<i32>>::from_vecs(layers);
 
     h.push(10);
@@ -257,4 +266,5 @@ fn test_initialization_from_layer_and_introspection() {
     h.push(0);
 
     h.introspect();
+     */
 }

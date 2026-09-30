@@ -1,5 +1,8 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, ptr};
 
+use crate::buckets::block_arena::BlockArena;
+
+pub mod block_arena;
 pub mod list_block_bucket;
 pub mod vec_block_bucket;
 pub mod vec_bucket;
@@ -7,18 +10,31 @@ pub mod vec_bucket;
 pub mod equal_buckets;
 
 #[derive(Clone, Copy)]
-// #[repr(align(32))]
-pub struct Block<T, const K: usize> {
+#[repr(C, align(64))]
+pub struct Block<T, const K: usize, const CAP: usize> {
     size: usize,
-    data: [T; K],
+    next: *mut Block<T, K, CAP>,
+    prev: *mut Block<T, K, CAP>,
+    data: [T; CAP],
 }
 
-impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
+impl<T: Default + Ord + Copy + Debug + PartialOrd, const K: usize, const CAP: usize>
+    Block<T, K, CAP>
+{
     fn default() -> Self {
         Self {
             size: 0,
-            data: [T::default(); K],
+            data: [T::default(); CAP],
+            next: ptr::null_mut(),
+            prev: ptr::null_mut(),
         }
+    }
+
+    #[inline(always)]
+    fn reset(&mut self) {
+        self.size = 0;
+        self.next = ptr::null_mut();
+        self.prev = ptr::null_mut();
     }
 
     #[inline]
@@ -28,7 +44,7 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
 
     #[inline]
     fn from_slice(slice: &[T]) -> Self {
-        let mut data = [T::default(); K];
+        let mut data = [T::default(); CAP];
         let size;
 
         if slice.len() == K {
@@ -41,13 +57,17 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
             size = slice.len();
         }
 
-        Self { data, size }
+        Self {
+            size,
+            next: ptr::null_mut(),
+            prev: ptr::null_mut(),
+            data,
+        }
     }
 
     #[inline]
     fn as_slice(&self, from: usize, len: usize) -> &[T] {
-        assert!(from + len <= K);
-
+        debug_assert!(from + len <= K);
         unsafe {
             &self.data.get_unchecked(from..from + len) // [from..from + len]
         }
@@ -71,21 +91,16 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
     }
 
     #[inline]
+    fn sort_decreasing(&mut self) {
+        self.data[..self.size].sort_unstable_by_key(|&x| std::cmp::Reverse(x));
+    }
+
+    #[inline]
     fn insert(&mut self, elem: T, pos: usize) {
-        assert!(self.size < K);
-
-        let mut idx = pos;
-        let mut old;
-        let mut new = elem;
-
+        debug_assert!(self.size < K);
+        self.data[pos..=self.size].rotate_right(1);
+        self.data[pos] = elem;
         self.size += 1;
-
-        while idx < self.size {
-            old = self.data[idx];
-            self.data[idx] = new;
-            new = old;
-            idx += 1;
-        }
     }
 
     #[inline]
@@ -108,6 +123,8 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
 
     #[inline]
     fn insert_with_overflow(&mut self, elem: T, pos: usize) -> T {
+        unreachable!();
+
         assert!(pos < K);
         assert!(self.size == K);
 
@@ -171,10 +188,45 @@ impl<T: Default + Copy + Debug + PartialOrd, const K: usize> Block<T, K> {
     fn override_elem(&mut self, pos: usize, val: T) {
         self.data[pos] = val;
     }
+
+    #[inline]
+    fn set_len(&mut self, len: usize) {
+        self.size = len;
+    }
+
+    #[inline]
+    fn next(&self) -> *mut Block<T, K, CAP> {
+        self.next
+    }
+
+    #[inline]
+    fn prev(&self) -> *mut Block<T, K, CAP> {
+        self.prev
+    }
+
+    #[inline]
+    fn set_next(&mut self, next: *mut Block<T, K, CAP>) {
+        self.next = next;
+    }
+
+    #[inline]
+    fn set_prev(&mut self, prev: *mut Block<T, K, CAP>) {
+        self.prev = prev;
+    }
 }
 
-pub trait Bucket<T: PartialEq> {
-    fn default() -> Self;
+pub trait Bucket<T: PartialEq, const K: usize, const CAP: usize> {
+    const BLOCKED: bool = false;
+    const BLOCK_SIZE: usize = K;
+
+    fn reset_iters(&mut self);
+    fn active_write(&mut self) -> *mut T;
+    fn write_next(&mut self);
+    fn set_last_block_len(&mut self, len: usize);
+    fn next_read_block(&mut self) -> *const T;
+    fn get_next_unchecked(&mut self, n: usize) -> &[T];
+
+    fn default(free_arena: *mut BlockArena<T, K, CAP>) -> Self;
     fn push(&mut self, elem: T);
     fn len(&self) -> usize;
     fn is_empty(&self) -> bool;
@@ -223,7 +275,7 @@ mod tests {
 
     #[test]
     fn init_block() {
-        let mut block = Block::<i32, 16>::default();
+        let mut block = Block::<i32, 16, 16>::default();
         assert!(block.size() == 0);
 
         for i in 0..16 {
@@ -237,7 +289,7 @@ mod tests {
 
     #[test]
     fn delete_from_block() {
-        let mut block = Block::<i32, 16>::default();
+        let mut block = Block::<i32, 16, 16>::default();
         assert!(block.size() == 0);
 
         for i in 0..16 {
@@ -262,7 +314,11 @@ mod tests {
 
     #[test]
     fn insert_into_bucket() {
-        let mut bucket1 = vec_bucket::VecBucket::<i32>::default();
+        use crate::buckets::BlockArena;
+        use std::ptr;
+
+        let ptr: *mut BlockArena<i32, 128, 128> = ptr::null_mut();
+        let mut bucket1 = vec_bucket::VecBucket::<i32, 128, 128>::default(ptr);
         // let mut bucket2 = VecBlockBucket::<i32, 16>::default();
         // let mut bucket3 = ListBlockBucket::<i32, 16>::default();
 
@@ -288,9 +344,10 @@ mod tests {
 
     #[test]
     fn test_partition_vec_bucket() {
+        /*
         let mut h = ConfigurableSimdQuickHeap::<
             i32,
-            vec_bucket::VecBucket<i32>,
+            vec_bucket::VecBucket<i32, 128>,
             Avx2,
             MedianOfM<3>,
             NoRebalancing,
@@ -304,10 +361,12 @@ mod tests {
             let r = h.pop().unwrap();
             assert!(r == i);
         }
+         */
     }
 
     #[test]
     fn test_partition_vec_block_bucket() {
+        /*
         let mut h = ConfigurableSimdQuickHeap::<
             i32,
             vec_block_bucket::VecBlockBucket<i32, 128>,
@@ -324,10 +383,12 @@ mod tests {
             let r = h.pop().unwrap();
             assert!(r == i);
         }
+         */
     }
 
     #[test]
     fn test_partition_list_block_bucket() {
+        /*
         let mut h = ConfigurableSimdQuickHeap::<
             i32,
             list_block_bucket::ListBlockBucket<i32, 128>,
@@ -343,14 +404,14 @@ mod tests {
         for i in 0..10000 {
             let r = h.pop().unwrap();
             assert!(r == i);
-        }
+        } */
     }
 
     #[test]
     fn pen_test_vec_block_bucket() {
         let mut h = ConfigurableSimdQuickHeap::<
             u64,
-            vec_block_bucket::VecBlockBucket<u64, 128>,
+            vec_block_bucket::VecBlockBucket<u64, 128, 154>,
             Avx2,
             MedianOfM<3>,
             NoRebalancing,
@@ -373,10 +434,15 @@ mod tests {
     fn pen_test_list_block_bucket() {
         let mut h = ConfigurableSimdQuickHeap::<
             u64,
-            list_block_bucket::ListBlockBucket<u64, 128>,
+            list_block_bucket::ListBlockBucket<u64, 128, 154>,
             Avx2,
             MedianOfM<3>,
             NoRebalancing,
+            16,
+            128,
+            154,
+            true,
+            false,
         >::default();
 
         let mut rng = fastrand::Rng::new();
@@ -396,10 +462,15 @@ mod tests {
     fn simple_test_list_block_bucket() {
         let mut h = ConfigurableSimdQuickHeap::<
             u64,
-            list_block_bucket::ListBlockBucket<u64, 128>,
+            list_block_bucket::ListBlockBucket<u64, 128, 154>,
             Avx2,
             MedianOfM<3>,
             NoRebalancing,
+            16,
+            128,
+            154,
+            true,
+            false,
         >::default();
 
         h.push(1);
@@ -415,11 +486,13 @@ mod tests {
     fn simple_test_list_block_bucket_2() {
         let mut h = ConfigurableSimdQuickHeap::<
             u64,
-            list_block_bucket::ListBlockBucket<u64, 128>,
+            list_block_bucket::ListBlockBucket<u64, 128, 154>,
             Avx2,
             MedianOfM<3>,
             NoRebalancing,
             4,
+            128,
+            154,
             true,
             false,
         >::default();

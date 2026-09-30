@@ -1,35 +1,112 @@
-use crate::buckets::{Block, Bucket};
+use crate::buckets::{Block, Bucket, block_arena::BlockArena};
 use std::fmt::Debug;
 
-pub struct VecBlockBucket<T, const K: usize> {
-    data: Vec<Block<T, K>>,
+pub struct VecBlockBucket<T, const K: usize, const CAP: usize> {
+    data: Vec<*mut Block<T, K, CAP>>,
     total_size: usize,
-    buff: Vec<T>,
-    temp: Vec<T>,
+
+    write_idx: usize,
+    read_idx: usize,
+    read_block_idx: usize,
+    free_arena: *mut BlockArena<T, K, CAP>,
 }
 
-impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBucket<T, K> {
-    fn default() -> Self {
-        Self {
-            data: Vec::with_capacity(128),
-            total_size: 0,
-            buff: Vec::with_capacity(128),
-            temp: vec![],
+impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> VecBlockBucket<T, K, CAP> {
+    fn push_block(&mut self) {
+        unsafe {
+            self.data.push((*self.free_arena).alloc());
         }
+    }
+}
+
+impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
+    for VecBlockBucket<T, K, CAP>
+{
+    fn default(free_arena: *mut BlockArena<T, K, CAP>) -> Self {
+        Self {
+            data: vec![Box::into_raw(Box::new(Block::default()))],
+            total_size: 0,
+            write_idx: 0,
+            read_idx: 0,
+            read_block_idx: 0,
+            free_arena,
+        }
+    }
+
+    const BLOCK_SIZE: usize = K;
+    const BLOCKED: bool = true;
+
+    #[inline]
+    fn reset_iters(&mut self) {
+        self.total_size = 0;
+        self.write_idx = 0;
+        self.read_idx = 0;
+        self.read_block_idx = 0;
+    }
+
+    #[inline]
+    fn active_write(&mut self) -> *mut T {
+        if self.data.len() == self.write_idx {
+            self.push_block();
+        }
+
+        let block = self.data[self.write_idx];
+        unsafe { (*block).as_mut_ptr() }
+    }
+
+    #[inline(always)]
+    fn next_read_block(&mut self) -> *const T {
+        let b = self.data[self.read_idx];
+        self.read_idx += 1;
+        unsafe { (*b).as_ptr() }
+    }
+
+    #[inline(always)]
+    fn get_next_unchecked(&mut self, n: usize) -> &[T] {
+        let block = self.data[self.read_idx];
+        unsafe {
+            debug_assert!(self.read_block_idx + n <= K);
+            let c = (*block).as_slice(self.read_block_idx, n);
+            self.read_block_idx += n;
+
+            if self.read_block_idx == K {
+                self.read_block_idx = 0;
+                self.read_idx += 1;
+            }
+            c
+        }
+    }
+
+    #[inline(always)]
+    fn write_next(&mut self) {
+        self.total_size += K;
+        unsafe {
+            (*self.data[self.write_idx]).set_len(K);
+        }
+        self.write_idx += 1;
     }
 
     #[inline]
     fn clear(&mut self) {
         self.total_size = 0;
-        self.buff.clear();
-        self.data.clear();
+        self.reset_iters();
+
+        for b in self.data.drain(..self.data.len()) {
+            unsafe {
+                (*b).reset();
+                (*self.free_arena).free(b);
+            }
+        }
+
+        debug_assert!(self.data.len() == 0);
     }
 
     #[inline]
     fn get(&self, i: usize) -> T {
+        debug_assert!(i < self.total_size);
         let block = i / K;
         let in_block = i % K;
-        self.data[block].get(in_block)
+        unsafe { (*self.data[block]).get(in_block) }
     }
 
     #[inline]
@@ -40,18 +117,20 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
     #[inline]
     fn push(&mut self, elem: T) {
         if self.data.is_empty() {
-            self.data.push(Block::default())
+            self.push_block();
         }
 
         let mut data_len = self.data.len();
-        if self.data[data_len - 1].full() {
-            // Last block is already full
-            self.data.push(Block::default());
-            data_len += 1
+        unsafe {
+            if (*self.data[self.data.len() - 1]).full() {
+                // Last block is already full
+                self.push_block();
+                // self.data.push(Box::into_raw(Box::new(Block::default())));
+                data_len += 1
+            }
+            self.total_size += 1;
+            (*self.data[data_len - 1]).push(elem);
         }
-
-        self.total_size += 1;
-        self.data[data_len - 1].push(elem);
     }
 
     #[inline]
@@ -67,24 +146,34 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         }
 
         let data_len = self.data.len();
-        let r = self.data[data_len - 1].remove((total_size % K) - 1);
-        if self.total_size % K == 0 {
-            self.data.pop();
-        }
-        self.total_size -= 1;
+        unsafe {
+            let idx = (total_size - 1) % K;
+            let r = (*self.data[data_len - 1]).remove(idx);
+            self.total_size -= 1;
 
-        Some(r)
+            if self.total_size % K == 0 {
+                let b = self.data.pop().unwrap();
+                (*b).reset();
+                (*self.free_arena).free(b);
+            }
+
+            Some(r)
+        }
     }
 
     #[inline]
     fn write_buffer(&mut self) -> *mut T {
-        self.buff.as_mut_ptr()
+        unimplemented!();
+        // self.buff.as_mut_ptr()
     }
 
     #[inline]
     fn print(&self) {
+        println!("# blocks: {}", self.data.len());
         for block in &self.data {
-            block.print();
+            unsafe {
+                (**block).print();
+            }
         }
     }
 
@@ -95,13 +184,14 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
 
     #[inline]
     fn reserve(&mut self, n: usize) {
-        self.data.reserve((n + K - 1) / K);
-        let max = self.data.capacity() * K;
-        self.buff.reserve(max);
+        unreachable!();
     }
 
     #[inline]
     fn remove(&mut self, i: usize) -> T {
+        unimplemented!();
+
+        /*
         let block = i / K;
         let in_block = i % K;
 
@@ -129,40 +219,26 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
         }
 
         r
+         */
     }
 
     #[inline]
-    fn flush(&mut self, idx: usize) {
-        unsafe {
-            self.buff.set_len(idx);
-        }
-
-        self.data.clear();
-        self.total_size = 0;
-
-        let mut elements_left: &[T] = self.buff.as_slice();
-        while elements_left.len() > K {
-            let (slice, rest) = elements_left.split_at(K);
-            let block = Block::from_slice(slice);
-            self.data.push(block);
-            elements_left = rest;
-            self.total_size += K;
-        }
-
-        if elements_left.len() > 0 {
-            let last_block = Block::<T, K>::from_slice(elements_left);
-            self.total_size += last_block.size();
-            self.data.push(last_block);
-        }
+    fn flush(&mut self, _: usize) {
+        unreachable!();
     }
 
     #[inline]
     fn override_elem(&mut self, pos: usize, elem: T) {
-        self.data[pos / K].override_elem(pos % K, elem);
+        unsafe {
+            (*self.data[pos / K]).override_elem(pos % K, elem);
+        }
     }
 
     #[inline]
     fn as_chunks<const S: usize>(&self) -> (Vec<[T; S]>, Vec<T>) {
+        unimplemented!();
+
+        /*
         let mut idx = 0;
         let mut result: Vec<[T; S]> = vec![];
         let mut curr_array = [T::default(); S];
@@ -176,131 +252,81 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for VecBlockBuck
 
         let remainder = curr_array[..self.total_size % K].to_vec();
         (result, remainder)
+         */
     }
 
     #[inline]
     fn sort_decreasing(&mut self) {
-        // Flatten to vec
-        let mut data = vec![];
-        for i in 0..self.total_size {
-            data.push(self.get(i));
-        }
-
-        data.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
-
-        // TODO: Do something faster..
-        for i in 0..self.total_size {
-            self.override_elem(i, data[i]);
-        }
-    }
-
-    #[inline]
-    unsafe fn set_len(&mut self, n: usize) {
+        debug_assert!(self.total_size <= K);
         unsafe {
-            self.data.set_len((n + K - 1) / K);
+            (*self.data[0]).sort_decreasing();
         }
     }
 
     #[inline]
-    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T] {
-        assert!(len < K); // TODO: Currently only blocks that are larger than the number of SIMD Lanes are allowed
+    unsafe fn set_len(&mut self, _: usize) {
+        unreachable!();
+    }
 
-        let block = &self.data[from / K];
-        let start = from % K;
+    #[inline]
+    unsafe fn get_unchecked(&self, _: usize, _: usize) -> &[T] {
+        unreachable!();
+    }
 
-        assert!((from % K) + len <= K);
+    #[inline]
+    fn set_last_block_len(&mut self, len: usize) {
+        assert!(self.data.len() > 0);
 
-        block.as_slice(start, len)
-
-        /*
-        if start + len <= block.size() {
-            out[..len].copy_from_slice(block.as_slice(start, len));
-            return;
+        unsafe {
+            for b in self.data.drain(self.write_idx + 1..) {
+                (*b).reset();
+                (*self.free_arena).free(b);
+            }
+            (*self.data[self.write_idx]).set_len(len);
+            self.total_size += len;
         }
-
-        // Else we need two blocks..
-        let elems_block_1 = block.size() - start;
-
-        let s1 = block.as_slice(start, elems_block_1);
-        out[..elems_block_1].copy_from_slice(s1);
-
-        let next_block_idx = (from / K) + 1;
-        if self.data.len() <= next_block_idx {
-            return;
-        }
-
-        assert!(false);
-
-        let next_block = &self.data[next_block_idx];
-        let elems_block_2 = len - elems_block_1;
-        let s2 = next_block.as_slice(0, elems_block_2);
-        out[elems_block_1..].copy_from_slice(s2);
-
-         */
-
-        /*
-        let mut result: Vec<T> = vec![];
-
-        let mut idx = from;
-
-        while idx < from + len {
-            result.push(self.get_unchecked_single(idx));
-            idx += 1;
-        }
-
-        result
-         */
     }
 
     #[inline]
     fn get_unchecked_single(&self, idx: usize) -> T {
+        unimplemented!();
+
+        /*
         let block = idx / K;
         let in_block = idx % K;
 
         self.data[block].get_unchecked(in_block)
+         */
     }
 
     fn insert(&mut self, pos: usize, elem: T) {
-        let block = pos / K;
-        let mut elem_to_insert = elem;
-        let mut curr_block = block;
-        let mut curr_pos = pos;
+        debug_assert!(self.total_size < K);
 
-        if self.data.len() == 0 {
-            let mut b = Block::<T, K>::default();
-            b.push(elem);
-            self.data.push(b);
-            self.total_size += 1;
+        if self.data.is_empty() {
+            self.push_block();
+            self.push(elem);
             return;
         }
 
-        if self.total_size % K == (K - 1) {
-            self.data.push(Block::<T, K>::default());
+        unsafe {
+            (*self.data[0]).insert(elem, pos);
+            self.total_size += 1;
         }
-
-        while curr_block < self.data.len() - 1 {
-            elem_to_insert =
-                self.data[curr_block].insert_with_overflow(elem_to_insert, curr_pos % K);
-            curr_block += 1;
-            curr_pos = (curr_block / K) * K;
-        }
-
-        self.total_size += 1;
-        self.data[curr_block].insert(elem, curr_pos % K);
     }
 
     fn insert_index(&self, elem: T) -> usize {
-        let mut idx = 0;
+        debug_assert!(self.total_size < K);
 
-        for i in 0..self.total_size {
-            let block = i / K;
-            let in_block = i % K;
-
-            if self.data[block].get(in_block) > elem {
-                idx += 1;
-            }
+        if self.total_size == 0 {
+            return 0;
         }
 
-        idx
+        // unsafe { S::insert_index((*(*self.head).block()).as_slice(0, self.total_size), elem) }
+
+        unsafe {
+            (*self.data[0])
+                .as_slice(0, self.total_size)
+                .partition_point(|&x| x > elem)
+        }
     }
 }

@@ -1,22 +1,112 @@
-use crate::buckets::{Block, Bucket};
-use std::{collections::LinkedList, fmt::Debug, ptr::NonNull};
+use crate::buckets::{Block, Bucket, block_arena::BlockArena};
+use std::{fmt::Debug, ptr};
 
-pub struct ListBlockBucket<T, const K: usize> {
-    data: LinkedList<Block<T, K>>,
-    should_cap: usize,
+pub struct ListBlockBucket<T: Default + Copy + Debug + PartialOrd, const K: usize, const CAP: usize>
+{
+    head: *mut Block<T, K, CAP>,
+    tail: *mut Block<T, K, CAP>,
+
     total_size: usize,
-    buff: Vec<T>,
-    idx_map: Vec<NonNull<Block<T, K>>>,
+    current_write: *mut Block<T, K, CAP>,
+    current_read: *mut Block<T, K, CAP>,
+
+    current_read_idx: usize,
+
+    free_arena: *mut BlockArena<T, K, CAP>,
 }
 
-impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBucket<T, K> {
-    fn default() -> Self {
+impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> ListBlockBucket<T, K, CAP> {
+    fn push_new_block(&mut self) {
+        unsafe {
+            let block_ptr = (*self.free_arena).alloc();
+
+            if self.total_size == 0 {
+                self.tail = block_ptr;
+                self.head = block_ptr;
+                self.current_write = self.head;
+                self.current_read = self.head;
+            } else {
+                (*block_ptr).set_prev(self.tail);
+                (*self.tail).set_next(block_ptr);
+                self.tail = (*self.tail).next();
+            }
+        }
+    }
+}
+
+impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
+    for ListBlockBucket<T, K, CAP>
+{
+    const BLOCK_SIZE: usize = K;
+    const BLOCKED: bool = true;
+
+    fn default(free_arena: *mut BlockArena<T, K, CAP>) -> Self {
         Self {
-            data: LinkedList::from([]),
-            should_cap: 0,
+            head: ptr::null_mut(),
+            tail: ptr::null_mut(),
             total_size: 0,
-            buff: vec![],
-            idx_map: vec![],
+
+            current_read: Default::default(),
+            current_write: Default::default(),
+            current_read_idx: 0,
+            free_arena,
+        }
+    }
+
+    #[inline]
+    fn reset_iters(&mut self) {
+        self.total_size = 0;
+        self.current_read = self.head;
+        self.current_write = self.head;
+        self.current_read_idx = 0;
+    }
+
+    #[inline]
+    fn active_write(&mut self) -> *mut T {
+        if self.head.is_null() {
+            // Empty list
+            self.push_new_block();
+        }
+
+        unsafe { (*self.current_write).as_mut_ptr() }
+    }
+
+    #[inline]
+    fn next_read_block(&mut self) -> *const T {
+        unsafe {
+            let node = self.current_read;
+            self.current_read = (*node).next();
+            (*node).as_ptr()
+        }
+    }
+
+    #[inline]
+    fn write_next(&mut self) {
+        self.total_size += K;
+        unsafe {
+            (*self.current_write).set_len(K);
+
+            if ((*self.current_write).next()).is_null() {
+                self.push_new_block();
+            }
+
+            self.current_write = (*self.current_write).next()
+        }
+    }
+
+    #[inline]
+    fn get_next_unchecked(&mut self, n: usize) -> &[T] {
+        debug_assert!(!self.current_read.is_null());
+        unsafe {
+            let c = (*self.current_read).as_slice(self.current_read_idx, n);
+            self.current_read_idx += n;
+
+            if self.current_read_idx == K {
+                self.current_read = (*self.current_read).next();
+                self.current_read_idx = 0;
+            }
+
+            c
         }
     }
 
@@ -27,14 +117,28 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
 
     #[inline]
     fn write_buffer(&mut self) -> *mut T {
-        self.buff.as_mut_ptr()
+        unreachable!();
     }
 
     #[inline]
     fn clear(&mut self) {
-        self.data.clear();
+        let mut curr = self.head;
+        unsafe {
+            while !curr.is_null() {
+                let node = curr;
+                curr = (*curr).next();
+                (*node).reset();
+                (*self.free_arena).free(node);
+            }
+        }
+
+        self.current_read = Default::default();
+        self.current_write = Default::default();
+
+        self.head = ptr::null_mut();
+        self.tail = ptr::null_mut();
         self.total_size = 0;
-        self.buff.clear();
+        self.current_read_idx = 0;
     }
 
     #[inline]
@@ -44,28 +148,19 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
 
     #[inline]
     fn capacity(&self) -> usize {
-        self.data.len() * K
+        let mut blocks = self.total_size as f64 / K as f64;
+        blocks = blocks.ceil();
+        blocks as usize * K
     }
 
     #[inline]
     fn push(&mut self, elem: T) {
         if self.total_size % K == 0 {
-            let mut b = Block::<T, K>::default();
-            b.push(elem);
-            self.data.push_back(b);
-            let ptr = NonNull::from(self.data.back_mut().unwrap());
-            self.idx_map.push(ptr);
-            self.total_size += 1;
-            return;
+            self.push_new_block();
         }
-
-        let block = self
-            .data
-            .back_mut()
-            .expect("List has no blocks but size > 0");
-
-        debug_assert!(block.size() < K);
-        block.push(elem);
+        unsafe {
+            (*self.tail).push(elem);
+        }
         self.total_size += 1;
     }
 
@@ -75,120 +170,87 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
             return None;
         }
 
-        let back = self
-            .data
-            .back_mut()
-            .expect("List has no blocks but size > 0.");
-
         let last_idx = (self.total_size - 1) % K;
-        let r = back.remove(last_idx);
-        self.total_size -= 1;
+        unsafe {
+            let r = (*self.tail).remove(last_idx);
+            self.total_size -= 1;
+            if (*self.tail).empty() {
+                let free_node = self.tail;
+                self.tail = (*free_node).prev();
 
-        if back.empty() {
-            self.idx_map.pop();
-            self.data.pop_back();
+                if !self.tail.is_null() {
+                    (*self.tail).set_next(ptr::null_mut());
+                }
+
+                (*free_node).reset();
+                (*self.free_arena).free(free_node);
+            }
+
+            if self.total_size == 0 {
+                self.head = ptr::null_mut();
+            }
+
+            Some(r)
         }
-
-        Some(r)
     }
 
     #[inline]
     fn get(&self, i: usize) -> T {
         debug_assert!(i < self.total_size);
+        let mut curr_pos = i;
+        let mut curr = self.head;
 
-        let block_idx = i / K;
-        debug_assert!(block_idx < self.idx_map.len());
-        let block_ptr = self.idx_map[block_idx];
+        while curr_pos >= K {
+            unsafe {
+                debug_assert!(!curr.is_null());
+                curr = (*curr).next();
+            }
+            curr_pos -= K;
+        }
+
+        debug_assert!(i % K == curr_pos);
+
         unsafe {
-            let block = block_ptr.as_ref();
-            debug_assert!(!block.empty());
-            block.get(i % K)
+            debug_assert!(!curr.is_null());
+            (*curr).get(curr_pos)
         }
     }
 
-    fn flush(&mut self, idx: usize) {
-        unsafe {
-            self.buff.set_len(idx);
-        }
-
-        self.idx_map.clear();
-        self.data.clear();
-        self.total_size = 0;
-
-        let mut elements_left: &[T] = self.buff.as_slice();
-        while elements_left.len() > K {
-            let (slice, rest) = elements_left.split_at(K);
-            let block = Block::from_slice(slice);
-            self.data.push_back(block);
-            let ptr = NonNull::from(self.data.back_mut().unwrap());
-            self.idx_map.push(ptr);
-            elements_left = rest;
-            self.total_size += K;
-        }
-
-        if elements_left.len() > 0 {
-            let last_block = Block::<T, K>::from_slice(elements_left);
-            self.total_size += last_block.size();
-            self.data.push_back(last_block);
-            let last_block_list = self.data.back_mut().unwrap();
-            let ptr = NonNull::from(last_block_list);
-            self.idx_map.push(ptr);
-        }
+    fn flush(&mut self, _: usize) {
+        unreachable!();
     }
 
     fn print(&self) {
         print!("Size: {} ", self.total_size);
-        for x in self.data.iter() {
-            x.print();
+
+        let mut curr = self.head;
+        while !curr.is_null() {
+            unsafe {
+                (*curr).print();
+                curr = (*curr).next();
+            }
         }
     }
 
+    #[inline]
     fn insert(&mut self, pos: usize, elem: T) {
-        debug_assert!(pos <= self.total_size);
+        debug_assert!(self.total_size < K); // Only insert to the smallest block (at most N elements, N <= K)
 
         if self.total_size == 0 {
-            debug_assert!(self.data.is_empty());
-            let mut b = Block::<T, K>::default();
-            b.push(elem);
-            self.total_size += 1;
-            self.data.push_back(b);
-            let ptr = NonNull::from(self.data.back_mut().unwrap());
-            self.idx_map.push(ptr);
+            debug_assert!(pos == 0);
+            self.push(elem);
             return;
         }
 
-        self.total_size += 1;
-        let mut overflow: Option<T>;
-        let first_block_idx = pos / K;
-
         unsafe {
-            let first_block = self.idx_map[first_block_idx].as_mut();
-            if !first_block.full() {
-                first_block.insert(elem, pos % K);
-                return;
-            } else {
-                overflow = Some(first_block.insert_with_overflow(elem, pos % K));
-            }
-        }
-
-        for i in (first_block_idx + 1)..self.data.len() {
-            unsafe {
-                let block = self.idx_map[i].as_mut();
-
-                if let Some(t) = overflow {
-                    if !block.full() {
-                        block.insert(t, 0);
-                        return;
-                    } else {
-                        overflow = Some(block.insert_with_overflow(t, 0));
-                        continue;
-                    }
-                }
-            }
+            (*self.head).insert(elem, pos);
+            self.total_size += 1;
         }
     }
 
     fn as_chunks<const S: usize>(&self) -> (Vec<[T; S]>, Vec<T>) {
+        unimplemented!();
+
         let mut idx = 0;
         let mut result: Vec<[T; S]> = vec![];
         let mut curr_array = [T::default(); S];
@@ -206,33 +268,51 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
 
     #[inline]
     fn get_unchecked_single(&self, pos: usize) -> T {
+        unimplemented!();
+
+        /*
         let block_idx = pos / K;
         assert!(false);
         unsafe { self.idx_map[block_idx].as_ref().get_unchecked(pos % K) }
+         */
     }
 
     #[inline]
     fn override_elem(&mut self, pos: usize, elem: T) {
+        unimplemented!();
+
+        /*
         let block_idx = pos / K;
         unsafe {
             self.idx_map[block_idx]
                 .as_mut()
                 .override_elem(pos % K, elem);
         }
+         */
     }
 
     #[inline]
     fn insert_index(&self, elem: T) -> usize {
-        let mut idx = 0;
-        for block in self.data.iter() {
-            idx += block.insert_index(elem);
+        debug_assert!(self.total_size < K); // Only insert to the smallest block (at most N elements, N <= K)
+
+        if self.total_size == 0 {
+            return 0;
         }
 
-        idx
+        // unsafe { S::insert_index((*(*self.head).block()).as_slice(0, self.total_size), elem) }
+
+        unsafe {
+            (*self.head)
+                .as_slice(0, self.total_size)
+                .partition_point(|&x| x > elem)
+        }
     }
 
     #[inline]
     fn remove(&mut self, i: usize) -> T {
+        unimplemented!();
+
+        /*
         assert!(i < self.total_size);
         let need_swap = (i / K) != (self.total_size / K);
         let last_elem = if need_swap {
@@ -277,54 +357,48 @@ impl<T: Copy + Default + Ord + Debug, const K: usize> Bucket<T> for ListBlockBuc
 
         assert!(false);
         T::default()
+         */
     }
 
     fn reserve(&mut self, n: usize) {
-        let free_cap = self.should_cap - self.total_size;
-        let diff = free_cap as i64 - n as i64;
-
-        if diff < 0 {
-            let pos_diff = -1 * diff;
-            self.should_cap += pos_diff as usize;
-        }
-
-        self.buff.reserve(self.should_cap);
+        unreachable!();
     }
 
     unsafe fn set_len(&mut self, _: usize) {
-        // no op
+        unreachable!();
     }
 
     unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T] {
         debug_assert!(len < K); // TODO: Currently only blocks that are larger than the number of SIMD Lanes are allowed
+        unreachable!();
+    }
 
+    fn set_last_block_len(&mut self, len: usize) {
+        assert!(!self.current_write.is_null());
+        self.total_size += len;
         unsafe {
-            let block = self.idx_map[from / K].as_ref();
-            let start = from % K;
-            block.as_slice(start, len)
+            (*self.current_write).set_len(len);
+            self.tail = self.current_write;
+
+            let mut after_write = (*self.current_write).next();
+            (*self.current_write).set_next(ptr::null_mut());
+
+            let mut curr;
+            while !after_write.is_null() {
+                curr = after_write;
+                after_write = (*after_write).next();
+
+                (*curr).reset();
+                (*self.free_arena).free(curr);
+            }
         }
     }
 
+    #[inline]
     fn sort_decreasing(&mut self) {
-        // Flatten the data to vector
-        let mut data = vec![];
-
-        for block in self.data.iter() {
-            data.append(&mut block.to_vec());
-        }
-
-        data.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
-
-        let src = data.as_ptr();
-        let mut pos = 0;
-
-        for block in self.data.iter_mut() {
-            let take = block.size().min(data.len() - pos);
-            let dst = block.as_mut_ptr();
-            unsafe {
-                std::ptr::copy_nonoverlapping(src.add(pos), dst, take);
-            }
-            pos += take;
+        debug_assert!(self.total_size <= K);
+        unsafe {
+            (*self.head).sort_decreasing();
         }
     }
 }

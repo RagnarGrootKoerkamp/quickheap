@@ -1,12 +1,14 @@
 use crate::buckets::Bucket;
 
-pub trait EqualBucketTest {
-    fn check<T: Copy + Ord + Default, B: Bucket<T>>(bucket: &B) -> (bool, T);
+pub trait EqualBucketTest<const S: usize, const K: usize, const CAP: usize> {
+    fn check<T: Copy + Ord + Default, B: Bucket<T, K, CAP>>(bucket: &B) -> (bool, T);
 }
 
-pub struct EqualBucketSamplingTest<const K: usize> {}
-impl<const K: usize> EqualBucketTest for EqualBucketSamplingTest<K> {
-    fn check<T: Copy + Ord + Default, B: Bucket<T>>(bucket: &B) -> (bool, T) {
+pub struct EqualBucketSamplingTest<const S: usize, const K: usize> {}
+impl<const S: usize, const K: usize, const CAP: usize> EqualBucketTest<S, K, CAP>
+    for EqualBucketSamplingTest<S, K>
+{
+    fn check<T: Copy + Ord + Default, B: Bucket<T, K, CAP>>(bucket: &B) -> (bool, T) {
         let positions: Vec<usize> = (0..K)
             .map(|_| rand::random_range(0..bucket.len()))
             .collect();
@@ -49,14 +51,17 @@ impl<const K: usize> EqualBucketTest for EqualBucketSamplingTest<K> {
 #[cfg(test)]
 mod tests {
     use crate::buckets::{
-        Bucket,
+        BlockArena, Bucket,
         equal_buckets::{EqualBucketSamplingTest, EqualBucketTest},
         vec_bucket::VecBucket,
     };
 
+    use std::ptr;
+
     #[test]
     fn test_equal_sampling() {
-        let mut b = VecBucket::<u64>::default();
+        let ptr: *mut BlockArena<u64, 8, 8> = ptr::null_mut();
+        let mut b = VecBucket::<u64, 8, 8>::default(ptr);
 
         for i in 0..32 {
             b.push(i);
@@ -68,7 +73,8 @@ mod tests {
 
         b.print();
 
-        let (test, elem) = EqualBucketSamplingTest::<8>::check::<u64, VecBucket<u64>>(&b);
+        let (test, elem) =
+            EqualBucketSamplingTest::<128, 8>::check::<u64, VecBucket<u64, 8, 8>>(&b);
 
         assert!(!test || elem == 3);
     }

@@ -1,17 +1,39 @@
-use crate::buckets::Bucket;
+use crate::buckets::{Bucket, block_arena::BlockArena};
 use std::fmt::Debug;
 
-pub struct VecBucket<T> {
+pub struct VecBucket<T, const K: usize, const CAP: usize> {
     data: Vec<T>,
     buff: Vec<T>,
 }
 
-impl<T: Copy + Default + Ord + Debug> Bucket<T> for VecBucket<T> {
-    fn default() -> Self {
+impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
+    for VecBucket<T, K, CAP>
+{
+    fn default(_: *mut BlockArena<T, K, CAP>) -> Self {
         Self {
             data: Vec::with_capacity(128),
             buff: Vec::with_capacity(128),
         }
+    }
+
+    fn active_write(&mut self) -> *mut T {
+        unreachable!();
+    }
+
+    fn get_next_unchecked(&mut self, n: usize) -> &[T] {
+        unreachable!();
+    }
+
+    fn reset_iters(&mut self) {
+        unreachable!();
+    }
+
+    fn write_next(&mut self) {
+        unreachable!();
+    }
+
+    fn next_read_block(&mut self) -> *const T {
+        unreachable!();
     }
 
     #[inline]
@@ -116,6 +138,8 @@ impl<T: Copy + Default + Ord + Debug> Bucket<T> for VecBucket<T> {
         std::mem::swap(&mut self.data, &mut self.buff);
         self.buff.clear();
     }
+
+    fn set_last_block_len(&mut self, len: usize) {}
 
     #[inline]
     fn print(&self) {

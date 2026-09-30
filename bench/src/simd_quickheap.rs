@@ -6,14 +6,16 @@ impl<
         + std::ops::Sub<Output = T>
         + Default
         + quickheap::EqualBucketConstraints,
-    B: quickheap::buckets::Bucket<T>,
+    B: quickheap::buckets::Bucket<T, K, CAP>,
     S: quickheap::SimdElem<T>,
     P: quickheap::pivot_strategies::PivotStrategy,
     R: quickheap::rebalancing_strategies::RebalancingStrategy<T>,
     const N: usize,
+    const K: usize,
+    const CAP: usize,
     const SORT: bool,
     const EQUAL: bool,
-> Heap<T> for quickheap::ConfigurableSimdQuickHeap<T, B, S, P, R, N, SORT, EQUAL>
+> Heap<T> for quickheap::ConfigurableSimdQuickHeap<T, B, S, P, R, N, K, CAP, SORT, EQUAL>
 {
     type CountedType = workloads::CountComparisons<T>;
     type CountedHeap = NoHeap;

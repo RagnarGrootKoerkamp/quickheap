@@ -25,8 +25,7 @@
 //! assert_eq!(q.pop(), None);
 //! ```
 
-#![feature(linked_list_cursors)]
-// #![feature(generic_const_exprs)]
+#![feature(portable_simd)]
 
 #[cfg(feature = "c")]
 #[doc(hidden)]
@@ -38,7 +37,7 @@ pub mod pivot_strategies;
 #[doc(hidden)]
 pub mod rebalancing_strategies;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, ptr};
 
 mod simd;
 #[cfg(test)]
@@ -64,7 +63,10 @@ impl<T: Copy + Ord> Elem for T {}
 /// For now, this means you can only use `u32`, `i32`, `u64`, and `i64`.
 pub use simd::SimdElem;
 
-use crate::{buckets::vec_bucket::VecBucket, rebalancing_strategies::NoRebalancing};
+use crate::{
+    buckets::{Block, Bucket, block_arena::BlockArena, vec_bucket::VecBucket},
+    rebalancing_strategies::NoRebalancing,
+};
 
 use std::ops::Sub;
 
@@ -113,6 +115,24 @@ impl EqualBucketConstraints for u64 {
     }
 }
 
+#[cold]
+#[inline(never)]
+unsafe fn spill<T: Copy + PartialEq, B: Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
+    bucket: &mut B,
+    ptr: &mut *mut T,
+    len: usize,
+) -> usize {
+    let over = len - K; // < L, lives in the slack region
+    let old = *ptr;
+    bucket.write_next();
+    *ptr = bucket.active_write();
+    unsafe {
+        ptr::copy_nonoverlapping(old.add(K), *ptr, over);
+    }
+
+    over
+}
+
 pub mod buckets;
 
 /// The full SimdQuickHeap implementation, with all configuration parameters.
@@ -124,11 +144,13 @@ pub mod buckets;
 /// - `SORT`: whether to keep the bottom layer sorted. Default `true`.
 pub struct ConfigurableSimdQuickHeap<
     T: Elem,
-    B: buckets::Bucket<T>,
+    B: buckets::Bucket<T, K, CAP>,
     S: simd::SimdElem<T> = Simd,
     P: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
     R: rebalancing_strategies::RebalancingStrategy<T> = rebalancing_strategies::NoRebalancing,
     const N: usize = 16,
+    const K: usize = 128,
+    const CAP: usize = 154,
     const SORT: bool = true,
     const EQUAL: bool = false,
 > {
@@ -148,6 +170,7 @@ pub struct ConfigurableSimdQuickHeap<
     /// This can be longer than `layer` to reuse allocations.
     buckets: Vec<B>,
     equal_buckets: Vec<bool>,
+    free_arena: *mut BlockArena<T, K, CAP>,
 
     size: usize,
     #[allow(dead_code)]
@@ -167,11 +190,13 @@ pub struct ConfigurableSimdQuickHeap<
 /// Uses AVX-512 instructions when available at compile time.
 pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
     T,
-    VecBucket<T>,
+    VecBucket<T, 128, 128>,
     Simd,
     pivot_strategies::MedianOfM<3>,
     NoRebalancing,
     16,
+    128,
+    128,
     true,
     false,
 >;
@@ -179,22 +204,26 @@ pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
     T: Elem + Default + Sub<Output = T> + EqualBucketConstraints,
-    B: buckets::Bucket<T>,
+    B: buckets::Bucket<T, K, CAP>,
     S: simd::SimdElem<T>,
     P: pivot_strategies::PivotStrategy,
     R: rebalancing_strategies::RebalancingStrategy<T>,
     const N: usize,
+    const K: usize,
+    const CAP: usize,
     const SORT: bool,
     const EQUAL: bool,
-> Default for ConfigurableSimdQuickHeap<T, B, S, P, R, N, SORT, EQUAL>
+> Default for ConfigurableSimdQuickHeap<T, B, S, P, R, N, K, CAP, SORT, EQUAL>
 {
     fn default() -> Self {
+        let free_arena = Box::into_raw(Box::from(BlockArena::<T, K, CAP>::new()));
         Self {
             pivots: Vec::with_capacity(128),
-            buckets: (0..128).map(|_| B::default()).collect(),
+            buckets: (0..128).map(|_| B::default(free_arena)).collect(),
             equal_buckets: (0..128).map(|_| false).collect(),
             size: 0,
             rebal_iteration: 0,
+            free_arena,
             _p: PhantomData,
             _r: PhantomData,
             _backend: PhantomData,
@@ -204,14 +233,16 @@ impl<
 
 impl<
     T: Elem + Debug + Default + Sub<Output = T> + EqualBucketConstraints,
-    B: buckets::Bucket<T>,
+    B: buckets::Bucket<T, K, CAP>,
     S: simd::SimdElem<T>,
     R: rebalancing_strategies::RebalancingStrategy<T>,
     P: pivot_strategies::PivotStrategy,
     const N: usize,
+    const K: usize,
+    const CAP: usize,
     const SORT: bool,
     const EQUAL: bool,
-> ConfigurableSimdQuickHeap<T, B, S, P, R, N, SORT, EQUAL>
+> ConfigurableSimdQuickHeap<T, B, S, P, R, N, K, CAP, SORT, EQUAL>
 {
     /// Initializes the heap from a given list of layers
     pub fn from_vecs(layers: Vec<Vec<T>>) -> Self {
@@ -220,9 +251,11 @@ impl<
         let num_buckets = layers.len();
         let mut pivots: Vec<T> = vec![];
 
+        let free_arena = Box::into_raw(Box::from(BlockArena::<T, K, CAP>::new()));
+
         for layer in &layers {
             assert!(layer.len() > 0);
-            let mut b = B::default();
+            let mut b = B::default(free_arena);
             let max = layer.iter().min().unwrap();
 
             for e in layer {
@@ -242,6 +275,7 @@ impl<
             equal_buckets: (0..num_buckets).map(|_| false).collect(),
             size: size,
             rebal_iteration: 0,
+            free_arena,
             _p: PhantomData,
             _r: PhantomData,
             _backend: PhantomData,
@@ -268,7 +302,10 @@ impl<
     pub fn push(&mut self, t: T) {
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
         let layer = &mut self.buckets[target_layer];
-        layer.reserve(S::L + 1);
+
+        if !B::BLOCKED {
+            layer.reserve(S::L + 1);
+        }
 
         #[cfg(feature = "rebalancing")]
         R::on_push(target_layer, &mut self.pivots, &mut self.buckets);
@@ -335,7 +372,11 @@ impl<
             while !self.equal_buckets[self.pivots.len()]
                 && self.buckets[self.pivots.len()].len() > N
             {
-                self.partition();
+                if B::BLOCKED {
+                    self.partition_blocks();
+                } else {
+                    self.partition();
+                }
             }
             if SORT {
                 // Sort final layer decreasing.
@@ -346,9 +387,10 @@ impl<
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.pivots.len()];
         let min = if SORT {
+            debug_assert!(!layer.is_empty());
             layer.pop().unwrap()
         } else {
-            let min_pos = simd::position_min_bucket::<T, S, B>(layer);
+            let min_pos = simd::position_min_bucket::<T, S, B, K, CAP>(layer);
             layer.remove(min_pos)
         };
 
@@ -381,6 +423,141 @@ impl<
     }
 
     #[inline(never)]
+    fn partition_blocks(&mut self) {
+        let layer = self.pivots.len();
+
+        // Reserve space for an additional L layers when needed.
+        if layer + 2 * S::L >= self.pivots.capacity() {
+            self.pivots.reserve(S::L);
+        }
+
+        if layer + 1 == self.buckets.len() {
+            self.equal_buckets.push(false);
+            self.buckets.push(B::default(self.free_arena));
+        }
+
+        // Alias the current layer (to be split) and the next layer.
+        let [cur_layer, next_layer] = &mut self.buckets[layer..=layer + 1] else {
+            unreachable!()
+        };
+        let n = cur_layer.len();
+
+        // Sample a pivot using the pivot strategy
+        let (pivot, _) = P::pick_bucket(cur_layer);
+
+        self.pivots.push(pivot);
+
+        // Clear the next layer
+        next_layer.clear();
+        cur_layer.reset_iters();
+
+        let n2 = n.next_multiple_of(S::L).saturating_sub(S::L);
+
+        // Partition a list into two using SIMD.
+        let threshold = S::splat(pivot);
+
+        let mut cur_write_ptr = cur_layer.active_write();
+        let mut next_write_ptr = next_layer.active_write();
+        let mut cur_len = 0;
+        let mut next_len = 0;
+
+        let full_blocks = n / K;
+
+        for _ in 0..full_blocks {
+            let src = cur_layer.next_read_block();
+
+            // prefetch the following source block (list/vec: peek next pointer)
+            // unsafe { _mm_prefetch(next_src as *const i8, _MM_HINT_T0) };
+
+            let mut i = 0;
+            while i < K {
+                unsafe {
+                    let v = S::simd_from_ptr(src.add(i));
+                    S::partition_block_fast(
+                        v,
+                        threshold,
+                        cur_write_ptr,
+                        &mut cur_len,
+                        next_write_ptr,
+                        &mut next_len,
+                    );
+                    if cur_len > K {
+                        cur_len = spill(cur_layer, &mut cur_write_ptr, cur_len);
+                    }
+                    if next_len > K {
+                        next_len = spill(next_layer, &mut next_write_ptr, next_len);
+                    }
+                }
+                i += S::L;
+            }
+        }
+
+        let n_rem = n - full_blocks * K;
+
+        if n_rem > 0 {
+            let n2r = n_rem.next_multiple_of(S::L).saturating_sub(S::L);
+            for _ in (0..n2r).step_by(S::L) {
+                unsafe {
+                    S::partition_block_fast(
+                        S::simd_from_slice(cur_layer.get_next_unchecked(S::L)),
+                        threshold,
+                        cur_write_ptr,
+                        &mut cur_len,
+                        next_write_ptr,
+                        &mut next_len,
+                    );
+
+                    if cur_len > K {
+                        cur_len = spill(cur_layer, &mut cur_write_ptr, cur_len);
+                    }
+
+                    if next_len > K {
+                        next_len = spill(next_layer, &mut next_write_ptr, next_len);
+                    }
+                }
+            }
+
+            if n2r < n_rem {
+                unsafe {
+                    S::partition_block_slow(
+                        S::simd_from_slice(cur_layer.get_next_unchecked(n_rem - n2r)),
+                        S::splat(S::from_usize(n - n2)),
+                        threshold,
+                        cur_write_ptr,
+                        &mut cur_len,
+                        next_write_ptr,
+                        &mut next_len,
+                    );
+
+                    if cur_len > K {
+                        cur_len = spill(cur_layer, &mut cur_write_ptr, cur_len);
+                    }
+
+                    if next_len > K {
+                        next_len = spill(next_layer, &mut next_write_ptr, next_len);
+                    }
+                }
+            }
+        }
+
+        cur_layer.set_last_block_len(cur_len);
+        next_layer.set_last_block_len(next_len);
+
+        // If all elements ended up in the current layer
+        if next_layer.len() == 0 {
+            self.pivots.pop().unwrap();
+        }
+
+        // If we extracted all elements to the next layer
+        // because the pivot was the largest one,
+        // undo and try again.
+        if cur_layer.len() == 0 {
+            std::mem::swap(cur_layer, next_layer);
+            self.pivots.pop().unwrap();
+        }
+    }
+
+    #[inline(never)]
     fn partition(&mut self) {
         let layer = self.pivots.len();
         let layer_len = self.buckets[layer].len();
@@ -396,7 +573,7 @@ impl<
                 use crate::buckets::equal_buckets::EqualBucketTest;
 
                 let (test, elem) =
-                    EqualBucketSamplingTest::<8>::check::<T, B>(&self.buckets[layer]);
+                    EqualBucketSamplingTest::<8, K>::check::<T, B>(&self.buckets[layer]);
 
                 if test && elem != T::minimum() {
                     self.equal_partition(elem);
@@ -413,7 +590,7 @@ impl<
         }
         if layer + 1 == self.buckets.len() {
             self.equal_buckets.push(false);
-            self.buckets.push(B::default());
+            self.buckets.push(B::default(self.free_arena));
         }
         // Alias the current layer (to be split) and the next layer.
         let [cur_layer, next_layer] = &mut self.buckets[layer..=layer + 1] else {
@@ -480,7 +657,7 @@ impl<
             };
             unsafe {
                 S::partition_slow_bucket(
-                    S::simd_from_slice(cur_layer.get_unchecked(n2, n - n2)), // TODO: Maybe only works with S::L
+                    S::simd_from_slice(cur_layer.get_unchecked(n2, n - n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
                     cur_layer_ptr,
@@ -531,8 +708,8 @@ impl<
         }
 
         if layer + 1 >= self.buckets.len() {
-            self.buckets.push(B::default());
-            self.buckets.push(B::default());
+            self.buckets.push(B::default(self.free_arena));
+            self.buckets.push(B::default(self.free_arena));
             self.equal_buckets.push(false);
             self.equal_buckets.push(false);
         }
