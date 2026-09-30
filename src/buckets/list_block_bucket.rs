@@ -53,12 +53,99 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         }
     }
 
+    fn concat(&mut self, other: Self) {
+        debug_assert!(!self.tail.is_null());
+        debug_assert!(!other.head.is_null());
+
+        let last_block_self = self.tail;
+        let last_block_other = other.tail;
+
+        unsafe {
+            assert!(!(*last_block_self).empty());
+            assert!(!(*last_block_other).empty());
+        }
+
+        unsafe {
+            if (*last_block_self).full() {
+                self.tail = other.tail;
+                (*last_block_self).set_next(other.head);
+                (*other.head).set_prev(last_block_self);
+                self.total_size += other.total_size;
+                return;
+            }
+
+            let prev_self = (*self.tail).prev();
+            if (*last_block_other).full() {
+                if !prev_self.is_null() {
+                    (*prev_self).set_next(other.head);
+                } else {
+                    self.head = other.head;
+                }
+
+                (*last_block_self).set_prev(last_block_other);
+                (*last_block_other).set_next(last_block_self);
+                (*other.head).set_prev(prev_self);
+
+                self.total_size += other.total_size;
+                return;
+            }
+
+            // Invariant: Both blocks are not full cnt_self and cnt_other are not 0
+            let cnt_self = self.total_size % K;
+            let cnt_other = other.total_size % K;
+
+            debug_assert!(cnt_self > 0);
+            debug_assert!(cnt_other > 0);
+
+            if cnt_self + cnt_other <= K {
+                // Merge in one block (last of other)
+                let src = (*last_block_self).as_ptr();
+                let dst = (*last_block_other).as_mut_ptr().add(cnt_other);
+                std::ptr::copy_nonoverlapping(src, dst, cnt_self);
+
+                if !prev_self.is_null() {
+                    (*prev_self).set_next(other.head);
+                } else {
+                    self.head = other.head;
+                }
+
+                (*other.head).set_prev(prev_self);
+                self.tail = other.tail;
+                debug_assert!(cnt_self + cnt_other > 0);
+                (*self.tail).set_len(cnt_self + cnt_other);
+                (*self.free_arena).free(last_block_self);
+            } else {
+                // Keep both blocks and only fill up first block
+                let copy_elems = K - cnt_self;
+
+                let src = (*last_block_other).as_ptr().add(cnt_other - copy_elems);
+                let dst = (*last_block_self).as_mut_ptr().add(cnt_self);
+
+                std::ptr::copy_nonoverlapping(src, dst, copy_elems);
+                (*last_block_self).set_len(K);
+                (*last_block_other).set_len(cnt_other - copy_elems);
+
+                assert!(copy_elems > 0);
+                assert!(cnt_other > copy_elems);
+                assert!(cnt_other - copy_elems > 0);
+
+                (*last_block_self).set_next(other.head);
+                (*other.head).set_prev(self.tail);
+                self.tail = other.tail;
+            }
+
+            self.total_size += other.total_size;
+        }
+    }
+
     #[inline]
     fn reset_iters(&mut self) {
-        self.total_size = 0;
+        debug_assert!(self.total_size != 0);
+        debug_assert!(!self.head.is_null());
         self.current_read = self.head;
         self.current_write = self.head;
         self.current_read_idx = 0;
+        self.total_size = 0;
     }
 
     #[inline]
@@ -75,6 +162,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     fn next_read_block(&mut self) -> *const T {
         unsafe {
             let node = self.current_read;
+            assert!(!node.is_null());
             self.current_read = (*node).next();
             (*node).as_ptr()
         }
@@ -127,7 +215,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
             while !curr.is_null() {
                 let node = curr;
                 curr = (*curr).next();
-                (*node).reset();
                 (*self.free_arena).free(node);
             }
         }
@@ -182,7 +269,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
                     (*self.tail).set_next(ptr::null_mut());
                 }
 
-                (*free_node).reset();
                 (*self.free_arena).free(free_node);
             }
 

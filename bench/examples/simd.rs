@@ -7,8 +7,8 @@ use bench::{
 };
 
 use bench::workloads::{
-    Elem, HeapSort, MonotoneConstantSize, MonotoneWiggle, RandomConstantSize, RandomWiggle,
-    Workload,
+    Elem, HeapSort, MonotoneConstantSize, MonotoneWiggle, MostlyPushDecreasing, RandomConstantSize,
+    RandomWiggle, Workload,
 };
 
 use quickheap::Avx2;
@@ -20,6 +20,7 @@ use quickheap::pivot_strategies::MedianOfM;
 use quickheap::pivot_strategies::RandomPivot;
 use quickheap::pivot_strategies::TablePivot;
 use quickheap::rebalancing_strategies::NoRebalancing;
+use quickheap::rebalancing_strategies::PivotForgetting;
 
 use std::any::type_name;
 use std::fs::File;
@@ -55,14 +56,15 @@ fn run_variant<T: Elem, H: Heap<T>>(pc: &mut PerfCounter, idx: &mut usize) {
 
     let mut writer = BufWriter::with_capacity(1 << 15, file);
 
-    let result_hs = run_variant_with_workload::<T, H, HeapSort>(pc);
+    // let result_hs = run_variant_with_workload::<T, H, HeapSort>(pc);
+    let result_bad = run_variant_with_workload::<T, H, MostlyPushDecreasing>(pc);
     // let result_rw = run_variant_with_workload::<T, H, RandomWiggle>(pc);
     // let result_rc = run_variant_with_workload::<T, H, RandomConstantSize>(pc);
     // let result_mw = run_variant_with_workload::<T, H, MonotoneWiggle>(pc);
     let result_mc = run_variant_with_workload::<T, H, MonotoneConstantSize>(pc);
 
     // let r = [times_hs, times_rw, times_rc, times_mw, times_mc];
-    let r = [result_hs, result_mc];
+    let r = [result_mc, result_bad];
 
     writer
         .write_all("workload,n,nanoseconds,cache_misses\n".as_bytes())
@@ -89,7 +91,6 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>(
     // TODO: Bigger n
     let ns: Vec<u64> = (15..=22).step_by(1).map(|i| (2u64).pow(i)).collect();
     // let ns: Vec<u64> = (10..=25).step_by(5).map(|i| (2u64).pow(i)).collect();
-    // let ns: Vec<u64> = vec![2 << 15, 2 << 20, 2 << 23];
 
     const REPEATS: usize = 3;
     let mut times: [f64; REPEATS] = [0f64; REPEATS];
@@ -163,6 +164,7 @@ fn main() {
         >,
     >(&mut pc, &mut cnt); */
 
+    /*
     cnt += 1;
 
     run_variant::<
@@ -181,8 +183,9 @@ fn main() {
         >,
     >(&mut pc, &mut cnt);
 
-    cnt += 1;
+    cnt += 1; */
 
+    /*
     // Different Buckets
     run_variant::<
         i64, // Elem Type
@@ -219,6 +222,7 @@ fn main() {
     >(&mut pc, &mut cnt);
 
     cnt += 1;
+     */
 
     run_variant::<
         i64, // Elem Type
@@ -238,6 +242,61 @@ fn main() {
 
     cnt += 1;
 
+    run_variant::<
+        i64, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i64,                            // Elem Type
+            ListBlockBucket<i64, 128, 154>, // Bucket
+            Avx512,                         // Simd
+            MedianOfM<3>,                   // Pivot Strategy
+            NoRebalancing,                  // Rebalancing Strategy
+            16,                             // Size smallest bucket
+            128,                            // Bucket Size
+            154,                            // Bucket Cap
+            true,                           // Last layer sorted
+            false,                          // Use equal buckets
+        >,
+    >(&mut pc, &mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i64, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i64,                      // Elem Type
+            VecBucket<i64, 128, 128>, // Bucket
+            Avx512,                   // Simd
+            MedianOfM<3>,             // Pivot Strategy
+            PivotForgetting<2, 2048>, // Rebalancing Strategy
+            16,                       // Size smallest bucket
+            128,                      // Bucket Size
+            128,                      // Bucket Cap
+            true,                     // Last layer sorted
+            false,                    // Use equal buckets
+        >,
+    >(&mut pc, &mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i64, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i64,                            // Elem Type
+            ListBlockBucket<i64, 128, 154>, // Bucket
+            Avx512,                         // Simd
+            MedianOfM<3>,                   // Pivot Strategy
+            PivotForgetting<2, 2048>,       // Rebalancing Strategy
+            16,                             // Size smallest bucket
+            128,                            // Bucket Size
+            154,                            // Bucket Cap
+            true,                           // Last layer sorted
+            false,                          // Use equal buckets
+        >,
+    >(&mut pc, &mut cnt);
+
+    cnt += 1;
+
+    /*
     // Different Buckets
     run_variant::<
         i64, // Elem Type
@@ -272,6 +331,7 @@ fn main() {
             false,                          // Use equal buckets
         >,
     >(&mut pc, &mut cnt);
+     */
 
     /*
 

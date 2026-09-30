@@ -147,7 +147,7 @@ pub struct ConfigurableSimdQuickHeap<
     B: buckets::Bucket<T, K, CAP>,
     S: simd::SimdElem<T> = Simd,
     P: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
-    R: rebalancing_strategies::RebalancingStrategy<T> = rebalancing_strategies::NoRebalancing,
+    R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP> = rebalancing_strategies::NoRebalancing,
     const N: usize = 16,
     const K: usize = 128,
     const CAP: usize = 154,
@@ -207,7 +207,7 @@ impl<
     B: buckets::Bucket<T, K, CAP>,
     S: simd::SimdElem<T>,
     P: pivot_strategies::PivotStrategy,
-    R: rebalancing_strategies::RebalancingStrategy<T>,
+    R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
     const N: usize,
     const K: usize,
     const CAP: usize,
@@ -235,7 +235,7 @@ impl<
     T: Elem + Debug + Default + Sub<Output = T> + EqualBucketConstraints,
     B: buckets::Bucket<T, K, CAP>,
     S: simd::SimdElem<T>,
-    R: rebalancing_strategies::RebalancingStrategy<T>,
+    R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
     P: pivot_strategies::PivotStrategy,
     const N: usize,
     const K: usize,
@@ -307,8 +307,8 @@ impl<
             layer.reserve(S::L + 1);
         }
 
-        #[cfg(feature = "rebalancing")]
-        R::on_push(target_layer, &mut self.pivots, &mut self.buckets);
+        // #[cfg(feature = "rebalancing")]
+        // R::on_push(target_layer, &mut self.pivots, &mut self.buckets);
 
         if target_layer == self.pivots.len() {
             self.equal_buckets[target_layer] = false;
@@ -411,6 +411,16 @@ impl<
         }
 
         self.size -= 1;
+
+        #[cfg(feature = "rebalancing")]
+        {
+            if self.rebal_iteration < R::MAX_REBAL_ITERATIONS {
+                return Some(min);
+            }
+            self.rebal_iteration = 0;
+            R::on_pop(self.size, &mut self.pivots, &mut self.buckets);
+        }
+
         Some(min)
     }
 
@@ -685,15 +695,6 @@ impl<
             std::mem::swap(cur_layer, next_layer);
             self.pivots.pop().unwrap();
             self.clear_equals();
-        }
-
-        #[cfg(feature = "rebalancing")]
-        {
-            if self.rebal_iteration < R::MAX_REBAL_ITERATIONS {
-                return;
-            }
-            self.rebal_iteration = 0;
-            R::on_pop(self.size, &mut self.pivots, &mut self.buckets);
         }
     }
 

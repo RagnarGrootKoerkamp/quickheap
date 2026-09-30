@@ -425,3 +425,43 @@ impl<const K: usize> Workload for WorstCaseDescending<K> {
         }
     }
 }
+
+pub struct MostlyPushDecreasing {}
+impl Workload for MostlyPushDecreasing {
+    const NORMALIZATION: u64 = 10;
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
+        let mut h = H::default();
+        // let stride = T::stride();
+        let stride = 2 << 15;
+        let mut rng = fastrand::Rng::new();
+        let mut values = std::iter::repeat_with(|| rng.u64(0..stride))
+            .take(10 * n as usize)
+            .collect::<Vec<_>>();
+
+        values.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
+        let mut values_it = values.into_iter();
+
+        move || {
+            for _ in 0..n {
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.pop().unwrap();
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.pop().unwrap();
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.push(T::try_from(values_it.next().unwrap()));
+                h.pop().unwrap();
+            }
+
+            for _ in 0..(7 * n) {
+                h.pop().unwrap().get();
+            }
+            black_box(h)
+        }
+    }
+}

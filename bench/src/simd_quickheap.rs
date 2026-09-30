@@ -9,7 +9,7 @@ impl<
     B: quickheap::buckets::Bucket<T, K, CAP>,
     S: quickheap::SimdElem<T>,
     P: quickheap::pivot_strategies::PivotStrategy,
-    R: quickheap::rebalancing_strategies::RebalancingStrategy<T>,
+    R: quickheap::rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
     const N: usize,
     const K: usize,
     const CAP: usize,

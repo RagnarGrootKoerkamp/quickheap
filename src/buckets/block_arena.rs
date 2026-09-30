@@ -1,4 +1,7 @@
-use std::alloc::{Layout, alloc_zeroed, dealloc};
+use std::{
+    alloc::{Layout, alloc_zeroed, dealloc},
+    ptr,
+};
 
 use crate::buckets::Block;
 
@@ -28,7 +31,11 @@ impl<T, const K: usize, const CAP: usize> BlockArena<T, K, CAP> {
 
     #[inline]
     pub fn free(&mut self, b: *mut Block<T, K, CAP>) {
-        unsafe { (*b).size = 0 };
+        unsafe {
+            (*b).size = 0;
+            (*b).next = ptr::null_mut();
+            (*b).prev = ptr::null_mut()
+        };
         self.free.push(b);
     }
 

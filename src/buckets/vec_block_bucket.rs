@@ -36,6 +36,62 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     const BLOCK_SIZE: usize = K;
     const BLOCKED: bool = true;
 
+    fn concat(&mut self, other: Self) {
+        debug_assert!(!self.data.is_empty());
+        debug_assert!(!other.data.is_empty());
+
+        let last_idx_self = self.data.len() - 1;
+        let last_idx_other = other.data.len() - 1;
+
+        let last_block_self = self.data[last_idx_self];
+        let last_block_other = other.data[last_idx_other];
+
+        unsafe {
+            if (*last_block_self).full() {
+                self.data.extend(other.data);
+                self.total_size += other.total_size;
+                return;
+            }
+
+            if (*last_block_other).full() {
+                self.data.extend(other.data);
+                let new_last_idx = self.data.len() - 1;
+                self.data.swap(last_idx_self, new_last_idx);
+                self.total_size += other.total_size;
+                return;
+            }
+
+            // Invariant: Both blocks are not full cnt_self and cnt_other are not 0
+            let cnt_self = self.total_size % K;
+            let cnt_other = other.total_size % K;
+
+            if cnt_self + cnt_other <= K {
+                // Merge in one block (last of other)
+                let src = (*last_block_self).as_ptr();
+                let dst = (*last_block_other).as_mut_ptr().add(cnt_other);
+                std::ptr::copy_nonoverlapping(src, dst, cnt_self);
+                self.data.pop();
+                self.data.extend(other.data);
+                (*last_block_other).set_len(cnt_self + cnt_other);
+                (*self.free_arena).free(last_block_self);
+            } else {
+                // Keep both blocks and only fill up first block
+                let copy_elems = K - cnt_self;
+
+                let src = (*last_block_other).as_ptr().add(cnt_other - copy_elems);
+                let dst = (*last_block_self).as_mut_ptr().add(cnt_self);
+
+                std::ptr::copy_nonoverlapping(src, dst, copy_elems);
+                (*last_block_self).set_len(K);
+                (*last_block_other).set_len(cnt_other - copy_elems);
+
+                self.data.extend(other.data);
+            }
+
+            self.total_size += other.total_size;
+        }
+    }
+
     #[inline]
     fn reset_iters(&mut self) {
         self.total_size = 0;
@@ -93,7 +149,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
         for b in self.data.drain(..self.data.len()) {
             unsafe {
-                (*b).reset();
                 (*self.free_arena).free(b);
             }
         }
@@ -153,7 +208,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
             if self.total_size % K == 0 {
                 let b = self.data.pop().unwrap();
-                (*b).reset();
                 (*self.free_arena).free(b);
             }
 
@@ -279,7 +333,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
         unsafe {
             for b in self.data.drain(self.write_idx + 1..) {
-                (*b).reset();
                 (*self.free_arena).free(b);
             }
             (*self.data[self.write_idx]).set_len(len);

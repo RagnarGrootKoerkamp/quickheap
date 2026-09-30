@@ -42,6 +42,11 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
+    fn concat(&mut self, other: Self) {
+        self.data.extend(other.data);
+    }
+
+    #[inline]
     fn pop(&mut self) -> Option<T> {
         debug_assert!(self.data.len() > 0);
         self.data.pop()

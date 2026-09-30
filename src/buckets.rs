@@ -226,6 +226,8 @@ pub trait Bucket<T: PartialEq, const K: usize, const CAP: usize> {
     fn next_read_block(&mut self) -> *const T;
     fn get_next_unchecked(&mut self, n: usize) -> &[T];
 
+    fn concat(&mut self, other: Self);
+
     fn default(free_arena: *mut BlockArena<T, K, CAP>) -> Self;
     fn push(&mut self, elem: T);
     fn len(&self) -> usize;

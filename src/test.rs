@@ -7,7 +7,7 @@ use crate::{
         list_block_bucket::ListBlockBucket, vec_block_bucket::VecBlockBucket, vec_bucket::VecBucket,
     },
     pivot_strategies::MedianOfM,
-    rebalancing_strategies::{NaiveLogRebalancing, NoRebalancing, PivotForgetting},
+    rebalancing_strategies::{NoRebalancing, PivotForgetting},
 };
 
 /// Element-type capabilities needed by the generators.
@@ -126,12 +126,12 @@ where
         let mut q = <ConfigurableSimdQuickHeap<
             T,
             // VecBucket<T>,
-            VecBlockBucket<T, 128, 154>,
-            // ListBlockBucket<T, 128, 154>,
+            // VecBlockBucket<T, 128, 154>,
+            ListBlockBucket<T, 128, 154>,
             S,
             MedianOfM<3>,
-            NoRebalancing,
-            // PivotForgetting<2, 128>,
+            // NoRebalancing,
+            PivotForgetting<2, 1024>,
             16,
             128,
             154,
@@ -164,12 +164,12 @@ where
         let mut q1 = <ConfigurableSimdQuickHeap<
             T,
             // VecBucket<T>,
-            VecBlockBucket<T, 128, 154>,
-            // ListBlockBucket<T, 128, 154>,
+            // VecBlockBucket<T, 128, 154>,
+            ListBlockBucket<T, 128, 154>,
             S,
             MedianOfM<3>,
-            NoRebalancing,
-            // PivotForgetting<2, 128>,
+            // NoRebalancing,
+            PivotForgetting<2, 1024>,
             16,
             128,
             154,

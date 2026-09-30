@@ -1,17 +1,23 @@
 // TODO: Rewrite all rebalancing strategies to use buckets
 
-pub trait RebalancingStrategy<T> {
+use crate::buckets::Bucket;
+
+pub trait RebalancingStrategy<T: Ord, B: Bucket<T, K, CAP>, const K: usize, const CAP: usize> {
     const MAX_REBAL_ITERATIONS: usize;
-    fn on_pop(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
-    fn on_push(layer: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
+    fn on_pop(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<B>);
+    fn on_push(layer: usize, pivots: &mut Vec<T>, buckets: &mut Vec<B>);
 }
 
 pub struct NoRebalancing;
-impl<T> RebalancingStrategy<T> for NoRebalancing {
+impl<T: Ord, B: Bucket<T, K, CAP>, const K: usize, const CAP: usize>
+    RebalancingStrategy<T, B, K, CAP> for NoRebalancing
+{
     const MAX_REBAL_ITERATIONS: usize = usize::MAX;
-    fn on_pop(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
-    fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+    fn on_pop(_: usize, _: &mut Vec<T>, _: &mut Vec<B>) {}
+    fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<B>) {}
 }
+
+/*
 
 pub struct NaiveLogRebalancing<const THRESH: usize, const IT: usize>;
 impl<T: Copy, const THRESH: usize, const IT: usize> RebalancingStrategy<T>
@@ -38,13 +44,22 @@ impl<T: Copy, const THRESH: usize, const IT: usize> RebalancingStrategy<T>
     }
 
     fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
-}
+} */
+
+// , const K: usize, const CAP: usize>
 
 pub struct PivotForgetting<const F: usize, const IT: usize>;
-impl<T: Copy, const F: usize, const IT: usize> RebalancingStrategy<T> for PivotForgetting<F, IT> {
+impl<
+    T: Copy + Ord,
+    B: Bucket<T, K, CAP>,
+    const F: usize,
+    const IT: usize,
+    const K: usize,
+    const CAP: usize,
+> RebalancingStrategy<T, B, K, CAP> for PivotForgetting<F, IT>
+{
     const MAX_REBAL_ITERATIONS: usize = IT;
-    fn on_pop(_: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
-        // Invariant: buckets[pivots.len()] contains the smallest elements
+    fn on_pop(_: usize, pivots: &mut Vec<T>, buckets: &mut Vec<B>) {
         let mut total: usize = 0;
         let mut layer: usize = pivots.len();
         loop {
@@ -52,10 +67,10 @@ impl<T: Copy, const F: usize, const IT: usize> RebalancingStrategy<T> for PivotF
                 // Merge bucket with next one, forget the pivot of the layer
                 if buckets[layer].len() > buckets[layer - 1].len() {
                     let old_bucket = buckets.remove(layer - 1);
-                    buckets[layer - 1].extend(old_bucket);
+                    buckets[layer - 1].concat(old_bucket);
                 } else {
                     let old_bucket = buckets.remove(layer);
-                    buckets[layer - 1].extend(old_bucket);
+                    buckets[layer - 1].concat(old_bucket);
                 }
                 pivots.remove(layer - 1);
             } else if layer == 0 {
@@ -67,7 +82,7 @@ impl<T: Copy, const F: usize, const IT: usize> RebalancingStrategy<T> for PivotF
         }
     }
 
-    fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+    fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<B>) {}
 }
 
 // pub struct RandomizedRebalancing {}
@@ -79,6 +94,7 @@ impl<T: Copy, const F: usize, const IT: usize> RebalancingStrategy<T> for PivotF
 //     fn on_push(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
 // }
 
+/*
 pub struct LazyRandomizedRebalancing {}
 impl<T> RebalancingStrategy<T> for LazyRandomizedRebalancing {
     const MAX_REBAL_ITERATIONS: usize = 128;
@@ -93,7 +109,7 @@ impl<T: Copy> RebalancingStrategy<T> for ExponentialUpperBoundRebalancing {
     const MAX_REBAL_ITERATIONS: usize = 1;
     fn on_pop(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
 
-    fn on_push(layer: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
+    fn on_push(layer: usize, pivots: &mut Vec<T>, buckets: &mut Bucket<Vec<T>>) {
         // Exponential upper bound of layer
         let total_layers = buckets.len();
         let max_layer_size = 3 * 2 ^ (total_layers - layer);
@@ -144,4 +160,4 @@ impl ExponentialUpperBoundRebalancing {
 
         // TODO: Correctly do the pivots
     }
-}
+} */
