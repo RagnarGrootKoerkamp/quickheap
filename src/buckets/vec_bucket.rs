@@ -36,6 +36,30 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         unreachable!();
     }
 
+    fn min(&mut self) -> (T, usize) {
+        let min_pos = self
+            .data
+            .iter()
+            .enumerate()
+            .min_by_key(|&(_, x)| x)
+            .map(|(i, _)| i)
+            .unwrap();
+
+        (self.data[min_pos], min_pos)
+    }
+
+    fn max(&mut self) -> (T, usize) {
+        let max_pos = self
+            .data
+            .iter()
+            .enumerate()
+            .max_by_key(|&(_, x)| x)
+            .map(|(i, _)| i)
+            .unwrap();
+
+        (self.data[max_pos], max_pos)
+    }
+
     #[inline]
     fn push(&mut self, elem: T) {
         self.data.push(elem);

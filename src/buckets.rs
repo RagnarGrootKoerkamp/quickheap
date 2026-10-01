@@ -250,6 +250,9 @@ pub trait Bucket<T: PartialEq, const K: usize, const CAP: usize> {
     fn print(&self);
     fn get_unchecked_single(&self, idx: usize) -> T;
 
+    fn min(&mut self) -> (T, usize);
+    fn max(&mut self) -> (T, usize);
+
     fn assert_all_equal(&self) -> bool {
         if self.len() == 0 {
             return true;

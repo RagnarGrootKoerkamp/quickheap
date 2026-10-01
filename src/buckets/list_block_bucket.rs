@@ -53,6 +53,56 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         }
     }
 
+    fn min(&mut self) -> (T, usize) {
+        let mut i = 0;
+        self.reset_iters();
+        let mut curr = self.next_read_block();
+
+        unsafe {
+            let mut min: T = *curr;
+            let mut min_pos = 0;
+
+            while i < self.total_size {
+                if *(curr.add(i % K)) < min {
+                    min = *(curr.add(i % K));
+                    min_pos = i;
+                    i += 1;
+                }
+
+                if i % K == (K - 1) {
+                    curr = self.next_read_block();
+                }
+            }
+
+            (min, min_pos)
+        }
+    }
+
+    fn max(&mut self) -> (T, usize) {
+        let mut i = 0;
+        self.reset_iters();
+        let mut curr = self.next_read_block();
+
+        unsafe {
+            let mut max: T = *curr;
+            let mut max_pos = 0;
+
+            while i < self.total_size {
+                if *(curr.add(i % K)) > max {
+                    max = *(curr.add(i % K));
+                    max_pos = i;
+                    i += 1;
+                }
+
+                if i % K == (K - 1) {
+                    curr = self.next_read_block();
+                }
+            }
+
+            (max, max_pos)
+        }
+    }
+
     fn concat(&mut self, other: Self) {
         debug_assert!(!self.tail.is_null());
         debug_assert!(!other.head.is_null());
