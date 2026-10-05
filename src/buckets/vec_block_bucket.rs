@@ -94,7 +94,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     fn min(&mut self) -> (T, usize) {
         let mut i = 0;
-        self.reset_iters();
+        self.read_idx = 0;
         let mut curr = self.next_read_block();
 
         unsafe {
@@ -102,15 +102,16 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
             let mut min_pos = 0;
 
             while i < self.total_size {
+                if i > 0 && i % K == 0 {
+                    curr = self.next_read_block();
+                }
+
                 if *(curr.add(i % K)) < min {
                     min = *(curr.add(i % K));
                     min_pos = i;
-                    i += 1;
                 }
 
-                if i % K == (K - 1) {
-                    curr = self.next_read_block();
-                }
+                i += 1;
             }
 
             (min, min_pos)
@@ -119,7 +120,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     fn max(&mut self) -> (T, usize) {
         let mut i = 0;
-        self.reset_iters();
+        self.read_idx = 0;
         let mut curr = self.next_read_block();
 
         unsafe {
@@ -127,15 +128,16 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
             let mut max_pos = 0;
 
             while i < self.total_size {
+                if i > 0 && i % K == 0 {
+                    curr = self.next_read_block();
+                }
+
                 if *(curr.add(i % K)) > max {
                     max = *(curr.add(i % K));
                     max_pos = i;
-                    i += 1;
                 }
 
-                if i % K == (K - 1) {
-                    curr = self.next_read_block();
-                }
+                i += 1;
             }
 
             (max, max_pos)

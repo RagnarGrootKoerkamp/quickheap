@@ -15,14 +15,14 @@ for file_path in sorted(directory.glob("*.csv")):
     ns = df["n"].unique()
     sep = " & "
 
-    result = "\\multirow{4}{*}{" + filename + "} &"
+    result = "\\multirow{6}{*}{" + filename + "} &"
 
     wl_sep = ""
     for workload in workloads:
         workload_line = wl_sep
         wl_sep = "\\cmidrule(lr){2-11} &\n"
         df_wl = df[df["workload"] == workload]
-        workload_line += "\\multirow{2}{*}{" + workload + "} & Time (ns) "
+        workload_line += "\\multirow{3}{*}{" + workload + "} & Time (ns) "
 
         time = ""
         for t in df_wl["nanoseconds"]:
@@ -38,6 +38,14 @@ for file_path in sorted(directory.glob("*.csv")):
             cache += str(c)
         cache += "\\\\\n"
         workload_line += cache
+
+        ipc = "& & Instructions per Cycle "
+        for c in df_wl["inst_per_cycle"]:
+            ipc += "& "
+            ipc += str(c)
+        ipc += "\\\\\n"
+        workload_line += ipc
+
         result += workload_line
 
     result += "\\cmidrule(lr){1-11}\n"

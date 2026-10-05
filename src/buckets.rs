@@ -393,13 +393,15 @@ mod tests {
 
     #[test]
     fn test_partition_list_block_bucket() {
-        /*
         let mut h = ConfigurableSimdQuickHeap::<
             i32,
-            list_block_bucket::ListBlockBucket<i32, 128>,
+            list_block_bucket::ListBlockBucket<i32, 128, 154>,
             Avx2,
             MedianOfM<3>,
             NoRebalancing,
+            16,
+            128,
+            154,
         >::default();
 
         for i in 0..10000 {
@@ -409,7 +411,7 @@ mod tests {
         for i in 0..10000 {
             let r = h.pop().unwrap();
             assert!(r == i);
-        } */
+        }
     }
 
     #[test]

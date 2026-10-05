@@ -54,8 +54,10 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     fn min(&mut self) -> (T, usize) {
-        let mut i = 0;
-        self.reset_iters();
+        debug_assert!(self.total_size > 0);
+
+        let mut i = 1;
+        self.current_read = self.head;
         let mut curr = self.next_read_block();
 
         unsafe {
@@ -63,15 +65,16 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
             let mut min_pos = 0;
 
             while i < self.total_size {
+                if i % K == 0 {
+                    curr = self.next_read_block();
+                }
+
                 if *(curr.add(i % K)) < min {
                     min = *(curr.add(i % K));
                     min_pos = i;
-                    i += 1;
                 }
 
-                if i % K == (K - 1) {
-                    curr = self.next_read_block();
-                }
+                i += 1;
             }
 
             (min, min_pos)
@@ -79,8 +82,8 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     fn max(&mut self) -> (T, usize) {
-        let mut i = 0;
-        self.reset_iters();
+        let mut i = 1;
+        self.current_read = self.head;
         let mut curr = self.next_read_block();
 
         unsafe {
@@ -88,15 +91,16 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
             let mut max_pos = 0;
 
             while i < self.total_size {
+                if i % K == 0 {
+                    curr = self.next_read_block();
+                }
+
                 if *(curr.add(i % K)) > max {
                     max = *(curr.add(i % K));
                     max_pos = i;
-                    i += 1;
                 }
 
-                if i % K == (K - 1) {
-                    curr = self.next_read_block();
-                }
+                i += 1;
             }
 
             (max, max_pos)
@@ -104,8 +108,15 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     fn concat(&mut self, other: Self) {
-        debug_assert!(!self.tail.is_null());
         debug_assert!(!other.head.is_null());
+        // debug_assert!(!self.tail.is_null());
+        if self.tail.is_null() {
+            // Concat to empty bucket
+            self.total_size = other.total_size;
+            self.head = other.head;
+            self.tail = other.tail;
+            return;
+        }
 
         let last_block_self = self.tail;
         let last_block_other = other.tail;
@@ -366,6 +377,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
                 curr = (*curr).next();
             }
         }
+        println!(".. end");
     }
 
     #[inline]
@@ -504,8 +516,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         unreachable!();
     }
 
-    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T] {
-        debug_assert!(len < K); // TODO: Currently only blocks that are larger than the number of SIMD Lanes are allowed
+    unsafe fn get_unchecked(&self, _: usize, _: usize) -> &[T] {
         unreachable!();
     }
 
@@ -532,7 +543,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     #[inline]
     fn sort_decreasing(&mut self) {
-        debug_assert!(self.total_size <= K);
+        // debug_assert!(self.total_size <= K);
         unsafe {
             (*self.head).sort_decreasing();
         }

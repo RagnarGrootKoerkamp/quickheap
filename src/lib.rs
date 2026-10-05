@@ -64,8 +64,9 @@ impl<T: Copy + Ord> Elem for T {}
 pub use simd::SimdElem;
 
 use crate::{
-    buckets::{Block, Bucket, block_arena::BlockArena, vec_bucket::VecBucket},
+    buckets::{Bucket, block_arena::BlockArena, vec_bucket::VecBucket},
     rebalancing_strategies::NoRebalancing,
+    rebalancing_strategies::RebalancingStrategy,
 };
 
 use std::ops::Sub;
@@ -298,21 +299,18 @@ impl<
     }
 
     /// Push `t` onto the heap.
-    //#[inline(never)] // TODO: Temporary for profiling
     pub fn push(&mut self, t: T) {
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
-        let layer = &mut self.buckets[target_layer];
 
+        let layer = &mut self.buckets[target_layer];
         if !B::BLOCKED {
             layer.reserve(S::L + 1);
         }
 
-        // #[cfg(feature = "rebalancing")]
-        // R::on_push(target_layer, &mut self.pivots, &mut self.buckets);
-
+        /*
         if target_layer == self.pivots.len() {
             self.equal_buckets[target_layer] = false;
-        }
+        } */
 
         if SORT && target_layer == self.pivots.len() && layer.len() < N {
             // Count the number of larger elements in the prefix and insert the new element after them.
@@ -324,6 +322,60 @@ impl<
         }
 
         self.size += 1;
+
+        #[cfg(feature = "rebalancing")]
+        R::on_push(
+            target_layer,
+            &mut self.pivots,
+            &mut self.buckets,
+            self.free_arena,
+        );
+    }
+
+    fn pull(&mut self, layer: usize) {
+        // Semantic: Pull elements into layer
+
+        // If the bucket to pull from is also empty, recurse
+        if self.buckets[layer - 1].len() == 0 {
+            self.pull(layer - 1);
+        }
+
+        let total_layers = self.pivots.len() + 1;
+        let logical_layer = total_layers - layer - 1;
+
+        let shift = 120.min(logical_layer + 3);
+        let max_small_pull = ((2 as u128) << shift) as u128; // TODO: Maybe a problem for big number of layers
+
+        if (self.buckets[layer - 1].len() as u128) < max_small_pull {
+            // TODO: Check spec with paper
+            // If the bucket to pull from is small -> swap
+            debug_assert!(self.buckets[layer].len() == 0);
+            self.buckets.swap(layer, layer - 1);
+
+            if layer >= 2 {
+                self.pivots[layer - 1] = self.pivots[layer - 2];
+            }
+        } else {
+            // If the bucket to pull from too big -> partition
+            while self.buckets[layer].is_empty() {
+                self.partition_blocks(layer - 1);
+            }
+        }
+
+        debug_assert!(self.buckets[layer].len() > 0);
+    }
+
+    fn assert_pivots(&self) {
+        if self.pivots.len() <= 1 {
+            return;
+        }
+
+        let mut last_pivot = self.pivots[0];
+
+        for pivot in self.pivots[1..].iter() {
+            assert!(*pivot <= last_pivot);
+            last_pivot = *pivot;
+        }
     }
 
     /// Pop the smallest element from the queue.
@@ -333,12 +385,43 @@ impl<
             self.rebal_iteration += 1;
         }
 
-        let layer = self.pivots.len();
+        let mut layer = self.pivots.len();
         // Only the top layer can be empty.
-        if layer == 0 && self.buckets[0].is_empty() {
+        if self.size == 0 {
             return None;
         }
 
+        if R::ALLOW_EMPTY_LAYERS {
+            if self.buckets[self.pivots.len()].is_empty() {
+                self.pull(self.pivots.len());
+                // Clean up lowest layers
+                while self.pivots.len() > 0 {
+                    if self.buckets[0].is_empty() {
+                        self.buckets.remove(0);
+                        self.pivots.remove(0);
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            debug_assert!(self.buckets[self.pivots.len()].len() > 0);
+
+            while self.buckets[self.pivots.len()].len() > K {
+                self.partition_blocks(self.pivots.len());
+            }
+
+            debug_assert!(self.buckets[self.pivots.len()].len() > 0);
+
+            self.buckets[self.pivots.len()].sort_decreasing();
+
+            // self.assert_pivots();
+
+            self.size -= 1;
+            return self.buckets[self.pivots.len()].pop();
+        }
+
+        /*
         if EQUAL {
             if self.equal_buckets[layer] {
                 debug_assert!(self.buckets[layer].assert_all_equal());
@@ -365,7 +448,7 @@ impl<
 
                 return elem;
             }
-        }
+        } */
 
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].len() > N {
@@ -373,7 +456,7 @@ impl<
                 && self.buckets[self.pivots.len()].len() > N
             {
                 if B::BLOCKED {
-                    self.partition_blocks();
+                    self.partition_blocks(self.pivots.len());
                 } else {
                     self.partition();
                 }
@@ -395,9 +478,8 @@ impl<
         };
 
         // Update the active layer.
-        if layer.is_empty() && self.pivots.len() > 0 {
+        if !R::ALLOW_EMPTY_LAYERS && layer.is_empty() && self.pivots.len() > 0 {
             self.pivots.pop();
-
             self.clear_equals();
 
             // Sort the new final layer decreasing if it's already small.
@@ -433,15 +515,15 @@ impl<
     }
 
     #[inline(never)]
-    fn partition_blocks(&mut self) {
-        let layer = self.pivots.len();
+    fn partition_blocks(&mut self, layer: usize) {
+        let total_layers = self.pivots.len() + 1;
 
         // Reserve space for an additional L layers when needed.
-        if layer + 2 * S::L >= self.pivots.capacity() {
+        if total_layers + 2 * S::L >= self.pivots.capacity() {
             self.pivots.reserve(S::L);
         }
 
-        if layer + 1 == self.buckets.len() {
+        if layer == (total_layers - 1) && total_layers == self.buckets.len() {
             self.equal_buckets.push(false);
             self.buckets.push(B::default(self.free_arena));
         }
@@ -450,12 +532,23 @@ impl<
         let [cur_layer, next_layer] = &mut self.buckets[layer..=layer + 1] else {
             unreachable!()
         };
+
         let n = cur_layer.len();
 
         // Sample a pivot using the pivot strategy
         let (pivot, _) = P::pick_bucket(cur_layer);
 
-        self.pivots.push(pivot);
+        let old_pivot: T;
+        let replace: bool;
+        if layer < self.pivots.len() {
+            replace = true;
+            old_pivot = self.pivots.remove(layer);
+            self.pivots.insert(layer, pivot);
+        } else {
+            replace = false;
+            self.pivots.push(pivot);
+            old_pivot = pivot;
+        }
 
         // Clear the next layer
         next_layer.clear();
@@ -553,9 +646,15 @@ impl<
         cur_layer.set_last_block_len(cur_len);
         next_layer.set_last_block_len(next_len);
 
+        debug_assert!(next_layer.len() + cur_layer.len() == n);
+
         // If all elements ended up in the current layer
         if next_layer.len() == 0 {
-            self.pivots.pop().unwrap();
+            if replace {
+                self.pivots[layer] = old_pivot;
+            } else {
+                self.pivots.pop();
+            }
         }
 
         // If we extracted all elements to the next layer
@@ -563,7 +662,12 @@ impl<
         // undo and try again.
         if cur_layer.len() == 0 {
             std::mem::swap(cur_layer, next_layer);
-            self.pivots.pop().unwrap();
+
+            if replace {
+                self.pivots[layer] = old_pivot;
+            } else {
+                self.pivots.pop();
+            }
         }
     }
 
@@ -576,6 +680,7 @@ impl<
             return;
         }
 
+        /*
         if EQUAL {
             if layer_len > (self.size / 10) {
                 // TODO: Vary this constant
@@ -590,7 +695,7 @@ impl<
                     return;
                 }
             }
-        }
+        } */
 
         debug_assert!(!self.equal_buckets[layer]);
 

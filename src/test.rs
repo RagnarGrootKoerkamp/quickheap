@@ -7,7 +7,7 @@ use crate::{
         list_block_bucket::ListBlockBucket, vec_block_bucket::VecBlockBucket, vec_bucket::VecBucket,
     },
     pivot_strategies::MedianOfM,
-    rebalancing_strategies::{NoRebalancing, PivotForgetting},
+    rebalancing_strategies::{ExponentialUpperBoundRebalancing, NoRebalancing, PivotForgetting},
 };
 
 /// Element-type capabilities needed by the generators.
@@ -130,8 +130,9 @@ where
             ListBlockBucket<T, 128, 154>,
             S,
             MedianOfM<3>,
-            // NoRebalancing,
-            PivotForgetting<2, 1024>,
+            NoRebalancing,
+            // PivotForgetting<3, 2048>,
+            // ExponentialUpperBoundRebalancing,
             16,
             128,
             154,
@@ -168,8 +169,9 @@ where
             ListBlockBucket<T, 128, 154>,
             S,
             MedianOfM<3>,
-            // NoRebalancing,
-            PivotForgetting<2, 1024>,
+            NoRebalancing,
+            // PivotForgetting<3, 2048>,
+            // ExponentialUpperBoundRebalancing,
             16,
             128,
             154,
