@@ -411,25 +411,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         }
     }
 
-    /*
-    fn as_chunks<const S: usize>(&self) -> (Vec<[T; S]>, Vec<T>) {
-        unimplemented!();
-
-        let mut idx = 0;
-        let mut result: Vec<[T; S]> = vec![];
-        let mut curr_array = [T::default(); S];
-        while idx < self.total_size {
-            curr_array[idx % S] = self.get_unchecked_single(idx);
-            idx += 1;
-            if idx % S == S - 1 {
-                result.push(curr_array);
-            }
-        }
-
-        let remainder = curr_array[..self.total_size % K].to_vec();
-        (result, remainder)
-    }*/
-
     #[inline]
     fn insert_index(&self, elem: T) -> usize {
         debug_assert!(self.total_size < K); // Only insert to the smallest block (at most N elements, N <= K)
@@ -437,8 +418,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         if self.total_size == 0 {
             return 0;
         }
-
-        // unsafe { S::insert_index((*(*self.head).block()).as_slice(0, self.total_size), elem) }
 
         unsafe {
             (*self.head)
@@ -449,54 +428,9 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     #[inline]
     fn remove(&mut self, i: usize) -> T {
-        unimplemented!();
-
-        /*
-        assert!(i < self.total_size);
-        let need_swap = (i / K) != (self.total_size / K);
-        let last_elem = if need_swap {
-            let last_block = self.data.back_mut().expect("total_size > 0 but no blocks");
-            Some(last_block.remove(self.total_size % K))
-        } else {
-            None
-        };
-
-        let mut c = self.data.cursor_front_mut();
-        let mut idx = i;
-
-        // TODO: Does not work for sorted buckets
-        // (If K < smallest partition size)
-
-        let r;
-        while let Some(block) = c.current() {
-            if idx >= K {
-                idx -= K;
-                c.move_next();
-                continue;
-            }
-
-            r = block.remove(idx);
-            self.total_size -= 1;
-
-            if block.empty() {
-                self.idx_map.pop();
-                self.data.pop_back();
-                return r;
-            }
-
-            // Swap an element from the back
-            if need_swap {
-                block.override_elem(
-                    i % K,
-                    last_elem.expect("Needs swap is true but no element to swap."),
-                );
-            }
-            break;
-        }
-
-        assert!(false);
-        T::default()
-         */
+        debug_assert!(self.total_size > 0);
+        debug_assert!(i < K);
+        unsafe { (*self.head).remove(i) }
     }
 
     #[inline]

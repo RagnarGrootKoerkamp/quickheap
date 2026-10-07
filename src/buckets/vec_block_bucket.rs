@@ -303,37 +303,10 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     #[inline]
     fn remove(&mut self, i: usize) -> T {
-        unimplemented!();
-
-        /*
-        let block = i / K;
-        let in_block = i % K;
-
-        let last_block = self.data.len() - 1;
-
-        // TODO: Does not work for sorted buckets
-        // (If K < smallest partition size)
-
-        let r: T;
-
-        if block != last_block {
-            let last_idx = self.total_size % K;
-            let inter = self.data[last_block].remove(last_idx);
-            r = self.data[block].get(in_block);
-            self.data[block].override_elem(in_block, inter);
-            assert!(self.data[block].size() == K);
-        } else {
-            r = self.data[last_block].remove(i % K);
-        }
-
+        debug_assert!(self.total_size > 0);
+        debug_assert!(i < K);
         self.total_size -= 1;
-        if self.total_size % K == 0 {
-            assert!(self.data[last_block].size() == 0);
-            self.data.pop();
-        }
-
-        r
-         */
+        unsafe { (*self.data[0]).remove(i) }
     }
 
     #[inline]
@@ -367,8 +340,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         if self.total_size == 0 {
             return 0;
         }
-
-        // unsafe { S::insert_index((*(*self.head).block()).as_slice(0, self.total_size), elem) }
 
         unsafe {
             (*self.data[0])

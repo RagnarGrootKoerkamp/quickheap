@@ -419,8 +419,8 @@ impl<
         }
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.pivots.len()];
+        debug_assert!(!layer.is_empty());
         let min = if SORT {
-            debug_assert!(!layer.is_empty());
             layer.pop().unwrap()
         } else {
             let min_pos = simd::position_min_bucket::<T, S, B, K, CAP>(layer);
@@ -430,7 +430,6 @@ impl<
         // Update the active layer.
         if !R::ALLOW_EMPTY_LAYERS && layer.is_empty() && self.pivots.len() > 0 {
             self.pivots.pop();
-            self.clear_equals();
 
             // Sort the new final layer decreasing if it's already small.
             if !self.equal_buckets[self.pivots.len()]
@@ -456,14 +455,6 @@ impl<
         );
 
         Some(min)
-    }
-
-    #[inline(always)]
-    fn clear_equals(&mut self) {
-        if self.pivots.len() <= 1 {
-            self.equal_buckets[0] = false;
-            self.equal_buckets[1] = false;
-        }
     }
 
     #[inline(never)]
@@ -502,28 +493,13 @@ impl<
             old_pivot = pivot;
         }
 
+        // Check if the pivot is the same than the previous one
+        if (layer > 0) && pivot == self.pivots[layer - 1] {
+            // TODO: Implicit equal partitioning
+        }
+
         // Clear the next layer
         next_layer.clear();
-
-        /*
-         * if self.equal_buckets[layer] {
-             return;
-         }
-        if EQUAL {
-            if layer_len > (self.size / 10) {
-                // TODO: Vary this constant
-                use crate::buckets::equal_buckets::EqualBucketSamplingTest;
-                use crate::buckets::equal_buckets::EqualBucketTest;
-
-                let (test, elem) =
-                    EqualBucketSamplingTest::<8, K>::check::<T, B>(&self.buckets[layer]);
-
-                if test && elem != T::minimum() {
-                    self.equal_partition(elem);
-                    return;
-                }
-            }
-        } */
 
         PART::partition(cur_layer, next_layer, pivot);
 

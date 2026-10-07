@@ -112,6 +112,12 @@ pub trait SimdElem<T>: 'static {
     fn from_usize(n: usize) -> T;
     fn wrapping_add_one(t: T) -> T;
 
+    fn simd_min(a: Self::Simd, b: Self::Simd) -> Self::Simd;
+    fn simd_eq_bitmask(a: Self::Simd, b: Self::Simd) -> u64;
+    fn reduce_min(a: Self::Simd) -> T;
+    fn simd_max(a: Self::Simd, b: Self::Simd) -> Self::Simd;
+    fn reduce_max(a: Self::Simd) -> T;
+
     /// Partition all `L` lanes of `vals` against `threshold`.
     /// # Safety
     /// `cur_write` and `next_write` must have at least `L` elements of capacity beyond their current write index.
@@ -205,7 +211,14 @@ pub fn insert_index<T: Copy + Ord, S: SimdElem<T>>(layer: &[T], elem: T) -> usiz
     let mut target_idx = 0;
     while i < layer.len() {
         let vals = unsafe { (layer.as_ptr().add(i) as *const S::Simd).read_unaligned() };
-        target_idx += S::simd_lt_bitmask(vals, elem_simd).count_ones() as usize;
+        let ones = S::simd_lt_bitmask(vals, elem_simd).count_ones() as usize;
+
+        /*
+        if ones == 0 {
+            return target_idx;
+        } */
+
+        target_idx += ones;
         i += S::L;
     }
     target_idx
@@ -250,6 +263,83 @@ pub fn position_min_bucket<
     v: &mut B,
 ) -> usize {
     v.min().1
+}
+
+/// Returns `(min, index of first occurrence)`. For an empty slice returns `(S::MAX, 0)`.
+#[inline(never)]
+pub fn simd_min_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> (T, usize) {
+    let full = s.len() / S::L * S::L;
+
+    // Pass 1: minimum value.
+    let mut acc = S::splat(S::MAX);
+    let mut i = 0;
+    while i < full {
+        acc = S::simd_min(acc, unsafe { S::simd_from_ptr(s.as_ptr().add(i)) });
+        i += S::L;
+    }
+    let mut min = S::reduce_min(acc);
+    for &x in &s[full..] {
+        if x < min {
+            min = x;
+        }
+    }
+
+    // Pass 2: first position equal to the minimum.
+    let m = S::splat(min);
+    let mut i = 0;
+    while i < full {
+        let mask = S::simd_eq_bitmask(unsafe { S::simd_from_ptr(s.as_ptr().add(i)) }, m);
+        if mask != 0 {
+            return (min, i + mask.trailing_zeros() as usize);
+        }
+        i += S::L;
+    }
+    for (j, &x) in s[full..].iter().enumerate() {
+        if x == min {
+            return (min, full + j);
+        }
+    }
+    (min, 0)
+}
+
+/// Returns `(max, index of first occurrence)`, or `None` for an empty slice.
+#[inline(never)]
+pub fn simd_max_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> Option<(T, usize)> {
+    if s.is_empty() {
+        return None;
+    }
+    let full = s.len() / S::L * S::L;
+
+    // Pass 1: maximum value. Seeding with s[0] avoids needing a MIN constant.
+    let mut acc = S::splat(s[0]);
+    let mut i = 0;
+    while i < full {
+        acc = S::simd_max(acc, unsafe { S::simd_from_ptr(s.as_ptr().add(i)) });
+        i += S::L;
+    }
+    let mut max = S::reduce_max(acc);
+    for &x in &s[full..] {
+        if x > max {
+            max = x;
+        }
+    }
+
+    // Pass 2: first position equal to the maximum.
+    let m = S::splat(max);
+    let mut i = 0;
+    while i < full {
+        let mask = S::simd_eq_bitmask(unsafe { S::simd_from_ptr(s.as_ptr().add(i)) }, m);
+        if mask != 0 {
+            return Some((max, i + mask.trailing_zeros() as usize));
+        }
+        i += S::L;
+    }
+    for (j, &x) in s[full..].iter().enumerate() {
+        if x == max {
+            return Some((max, full + j));
+        }
+    }
+    unreachable!()
 }
 
 // ───────────────────────────── AVX2, 32-bit ─────────────────────────────
@@ -1417,6 +1507,31 @@ macro_rules! impl_simd_elem_32_neon {
             }
 
             #[inline(always)]
+            fn simd_min(a: $simd, b: $simd) -> $simd {
+                a.min(b)
+            }
+
+            #[inline(always)]
+            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_eq(b).to_bitmask() as u64
+            }
+
+            #[inline(always)]
+            fn reduce_min(a: $simd) -> $t {
+                a.to_array().into_iter().min().unwrap()
+            }
+
+            #[inline(always)]
+            fn simd_max(a: $simd, b: $simd) -> $simd {
+                a.max(b)
+            }
+
+            #[inline(always)]
+            fn reduce_max(a: $simd) -> $t {
+                a.to_array().into_iter().max().unwrap()
+            }
+
+            #[inline(always)]
             unsafe fn partition_fast(
                 vals: $simd,
                 threshold: $simd,
@@ -1616,6 +1731,31 @@ macro_rules! impl_simd_elem_64_neon {
             #[inline(always)]
             fn wrapping_add_one(t: $t) -> $t {
                 t.wrapping_add(1)
+            }
+
+            #[inline(always)]
+            fn simd_min(a: $simd, b: $simd) -> $simd {
+                a.min(b)
+            }
+
+            #[inline(always)]
+            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_eq(b).to_bitmask() as u64
+            }
+
+            #[inline(always)]
+            fn reduce_min(a: $simd) -> $t {
+                a.to_array().into_iter().min().unwrap()
+            }
+
+            #[inline(always)]
+            fn simd_max(a: $simd, b: $simd) -> $simd {
+                a.max(b)
+            }
+
+            #[inline(always)]
+            fn reduce_max(a: $simd) -> $t {
+                a.to_array().into_iter().max().unwrap()
             }
 
             #[inline(always)]
