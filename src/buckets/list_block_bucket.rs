@@ -543,7 +543,8 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     #[inline]
     fn sort_decreasing(&mut self) {
-        // debug_assert!(self.total_size <= K);
+        debug_assert!(self.total_size <= K);
+        debug_assert!(self.total_size > 0);
         unsafe {
             (*self.head).sort_decreasing();
         }

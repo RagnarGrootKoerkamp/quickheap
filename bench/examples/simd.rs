@@ -19,9 +19,12 @@ use quickheap::buckets::vec_bucket::VecBucket;
 use quickheap::pivot_strategies::MedianOfM;
 use quickheap::pivot_strategies::RandomPivot;
 use quickheap::pivot_strategies::TablePivot;
+use quickheap::rebalancing_strategies::AlphaBalancedRebalancing;
 use quickheap::rebalancing_strategies::ExponentialUpperBoundRebalancing;
+use quickheap::rebalancing_strategies::NaiveLogRebalancing;
 use quickheap::rebalancing_strategies::NoRebalancing;
 use quickheap::rebalancing_strategies::PivotForgetting;
+use quickheap::rebalancing_strategies::RandomizedRebalancing;
 
 use std::any::type_name;
 use std::fs::File;
@@ -96,6 +99,8 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>(
     let mut result: Vec<(u64, f64, f64, f64)> = vec![];
 
     // TODO: Bigger n
+
+    // TODO:
     let ns: Vec<u64> = (15..=22).step_by(1).map(|i| (2u64).pow(i)).collect();
     // let ns: Vec<u64> = (10..=25).step_by(5).map(|i| (2u64).pow(i)).collect();
 
@@ -168,7 +173,7 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>(
 }
 
 fn main() {
-    println!("Running the different variants of the SIMD quickheap:");
+    println!("Running the different SIMD quickheap experiments:");
 
     let mut cache: PerfCounter =
         PerfCounterBuilderLinux::from_hardware_event(HardwareEventType::CacheMisses)
@@ -296,6 +301,9 @@ fn main() {
 
     cnt += 1; */
 
+    // FROM HERE - - - - - - - -
+
+    /*
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
@@ -310,10 +318,11 @@ fn main() {
             true,                     // Last layer sorted
             false,                    // Use equal buckets
         >,
-    >(&mut pcs, &mut cnt);
+    >(&mut pcs, &mut cnt); */
 
     cnt += 1;
 
+    /*
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
@@ -328,10 +337,11 @@ fn main() {
             true,                          // Last layer sorted
             false,                         // Use equal buckets
         >,
-    >(&mut pcs, &mut cnt);
+    >(&mut pcs, &mut cnt); */
 
     cnt += 1;
 
+    /*
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
@@ -346,10 +356,11 @@ fn main() {
             true,                           // Last layer sorted
             false,                          // Use equal buckets
         >,
-    >(&mut pcs, &mut cnt);
+    >(&mut pcs, &mut cnt); */
 
     cnt += 1;
 
+    /*
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
@@ -364,10 +375,11 @@ fn main() {
             true,                     // Last layer sorted
             false,                    // Use equal buckets
         >,
-    >(&mut pcs, &mut cnt);
+    >(&mut pcs, &mut cnt); */
 
     cnt += 1;
 
+    /*
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
@@ -382,10 +394,11 @@ fn main() {
             true,                          // Last layer sorted
             false,                         // Use equal buckets
         >,
-    >(&mut pcs, &mut cnt);
+    >(&mut pcs, &mut cnt); */
 
     cnt += 1;
 
+    /*
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
@@ -400,10 +413,11 @@ fn main() {
             true,                           // Last layer sorted
             false,                          // Use equal buckets
         >,
-    >(&mut pcs, &mut cnt);
+    >(&mut pcs, &mut cnt); */
 
     cnt += 1;
 
+    /*
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
@@ -418,10 +432,65 @@ fn main() {
             true,                             // Last layer sorted
             false,                            // Use equal buckets
         >,
+    >(&mut pcs, &mut cnt); */
+
+    cnt += 1;
+
+    run_variant::<
+        i64, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i64,                            // Elem Type
+            ListBlockBucket<i64, 128, 154>, // Bucket
+            Avx512,                         // Simd
+            MedianOfM<3>,                   // Pivot Strategy
+            RandomizedRebalancing,          // Rebalancing Strategy
+            16,                             // Size smallest bucket
+            128,                            // Bucket Size
+            154,                            // Bucket Cap
+            true,                           // Last layer sorted
+            false,                          // Use equal buckets
+        >,
     >(&mut pcs, &mut cnt);
 
-    /*
     cnt += 1;
+
+    /*
+    run_variant::<
+        i64, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i64,                      // Elem Type
+            VecBucket<i64, 128, 128>, // Bucket
+            Avx512,                   // Simd
+            MedianOfM<3>,             // Pivot Strategy
+            AlphaBalancedRebalancing, // Rebalancing Strategy
+            16,                       // Size smallest bucket
+            128,                      // Bucket Size
+            128,                      // Bucket Cap
+            true,                     // Last layer sorted
+            false,                    // Use equal buckets
+        >,
+    >(&mut pcs, &mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i64, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i64,                           // Elem Type
+            VecBucket<i64, 128, 128>,      // Bucket
+            Avx512,                        // Simd
+            MedianOfM<3>,                  // Pivot Strategy
+            NaiveLogRebalancing<10, 2048>, // Rebalancing Strategy
+            16,                            // Size smallest bucket
+            128,                           // Bucket Size
+            128,                           // Bucket Cap
+            true,                          // Last layer sorted
+            false,                         // Use equal buckets
+        >,
+    >(&mut pcs, &mut cnt);
+
+    cnt += 1; */
+    /*
 
 
     // Different Buckets

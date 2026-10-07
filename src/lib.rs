@@ -174,6 +174,7 @@ pub struct ConfigurableSimdQuickHeap<
     free_arena: *mut BlockArena<T, K, CAP>,
 
     size: usize,
+    global_deletions: usize,
     #[allow(dead_code)]
     rebal_iteration: usize,
     #[allow(dead_code)]
@@ -223,6 +224,7 @@ impl<
             buckets: (0..128).map(|_| B::default(free_arena)).collect(),
             equal_buckets: (0..128).map(|_| false).collect(),
             size: 0,
+            global_deletions: 0,
             rebal_iteration: 0,
             free_arena,
             _p: PhantomData,
@@ -275,6 +277,7 @@ impl<
             buckets,
             equal_buckets: (0..num_buckets).map(|_| false).collect(),
             size: size,
+            global_deletions: 0,
             rebal_iteration: 0,
             free_arena,
             _p: PhantomData,
@@ -300,6 +303,10 @@ impl<
 
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
+        #[cfg(feature = "rebalancing")]
+        {
+            self.rebal_iteration += 1;
+        }
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
 
         let layer = &mut self.buckets[target_layer];
@@ -324,12 +331,19 @@ impl<
         self.size += 1;
 
         #[cfg(feature = "rebalancing")]
-        R::on_push(
-            target_layer,
-            &mut self.pivots,
-            &mut self.buckets,
-            self.free_arena,
-        );
+        {
+            if self.rebal_iteration >= R::MAX_REBAL_ITERATIONS {
+                R::on_push(
+                    self.size,
+                    self.global_deletions,
+                    target_layer,
+                    &mut self.pivots,
+                    &mut self.buckets,
+                    self.free_arena,
+                );
+                self.rebal_iteration = 0;
+            }
+        }
     }
 
     fn pull(&mut self, layer: usize) {
@@ -383,9 +397,9 @@ impl<
         #[cfg(feature = "rebalancing")]
         {
             self.rebal_iteration += 1;
+            self.global_deletions += 1;
         }
 
-        let mut layer = self.pivots.len();
         // Only the top layer can be empty.
         if self.size == 0 {
             return None;
@@ -496,11 +510,16 @@ impl<
 
         #[cfg(feature = "rebalancing")]
         {
-            if self.rebal_iteration < R::MAX_REBAL_ITERATIONS {
+            if self.rebal_iteration <= R::MAX_REBAL_ITERATIONS {
                 return Some(min);
             }
             self.rebal_iteration = 0;
-            R::on_pop(self.size, &mut self.pivots, &mut self.buckets);
+            R::on_pop(
+                self.size,
+                &mut self.global_deletions,
+                &mut self.pivots,
+                &mut self.buckets,
+            );
         }
 
         Some(min)
