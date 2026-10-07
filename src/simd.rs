@@ -4,6 +4,12 @@ use wide::{CmpEq, CmpGt, CmpLt};
 
 use crate::buckets;
 
+use wide::i32x4;
+use wide::u32x4;
+
+use wide::i64x2;
+use wide::u64x2;
+
 use wide::i32x8;
 use wide::u32x8;
 
@@ -20,6 +26,11 @@ const AVX2_ALT_I32: i32x8 = unsafe { transmute([0i32, 1, 0, 1, 0, 1, 0, 1]) };
 const AVX2_ALT_U32: u32x8 = unsafe { transmute([0i32, 1, 0, 1, 0, 1, 0, 1]) };
 const AVX2_ALT_I64: i64x4 = unsafe { transmute([0i64, 1, 0, 1]) };
 const AVX2_ALT_U64: u64x4 = unsafe { transmute([0i64, 1, 0, 1]) };
+
+const NEON_ALT_I32: i32x4 = unsafe { transmute([0i32, 1, 0, 1]) };
+const NEON_ALT_U32: u32x4 = unsafe { transmute([0i32, 1, 0, 1]) };
+const NEON_ALT_I64: i64x2 = unsafe { transmute([0i64, 1]) };
+const NEON_ALT_U64: u64x2 = unsafe { transmute([0i64, 1]) };
 
 const AVX512_ALT_I32: i32x16 =
     unsafe { transmute([0i32, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]) };
@@ -45,6 +56,11 @@ pub struct Avx2;
 ///
 /// [`ConfigurableSimdQuickHeap`]: crate::ConfigurableSimdQuickHeap
 pub struct Avx512<const CS: bool = false>;
+
+#[cfg(target_arch = "aarch64")]
+pub(crate) static NEON_SHUF32: [[u8; 16]; 16] = build_neon_shuf::<4, 16>();
+#[cfg(target_arch = "aarch64")]
+pub(crate) static NEON_SHUF64: [[u8; 16]; 4] = build_neon_shuf::<2, 4>();
 
 /// A SIMD backend strategy for element type `T`.
 ///
@@ -73,55 +89,7 @@ pub trait SimdElem<T>: 'static {
     fn from_usize(n: usize) -> T;
     fn wrapping_add_one(t: T) -> T;
 
-    /// Partition all `L` lanes of `vals` against `threshold`.
-    ///
-    /// When `EQUAL_DOWN = false` (default): lanes `>= threshold` go to `v`, lanes `< threshold`
-    /// go to `w`.
-    /// When `EQUAL_DOWN = true`: lanes `> threshold` go to `v`, lanes `<= threshold` go to `w`.
-    ///
-    /// # Safety
-    /// `v` and `w` must have at least `L` elements of capacity beyond their current write index.
-    unsafe fn partition_fast<const EQUAL_DOWN: bool>(
-        vals: Self::Simd,
-        threshold: Self::Simd,
-        v: &mut [T],
-        v_idx: &mut usize,
-        w: &mut [T],
-        w_idx: &mut usize,
-    );
-
-    unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
-        vals: Self::Simd,
-        threshold: Self::Simd,
-        v: *mut T,
-        v_idx: &mut usize,
-        w: *mut T,
-        w_idx: &mut usize,
-    );
-
-    /// Like `partition_fast`, but only the first `len` lanes are in range.
-    /// # Safety
-    /// Same capacity requirements as `partition_fast`.
-    unsafe fn partition_slow(
-        vals: Self::Simd,
-        len: Self::Simd,
-        threshold: Self::Simd,
-        v: &mut [T],
-        v_idx: &mut usize,
-        w: &mut [T],
-        w_idx: &mut usize,
-    );
-
-    unsafe fn partition_slow_bucket(
-        vals: Self::Simd,
-        len: Self::Simd,
-        threshold: Self::Simd,
-        v: *mut T,
-        v_idx: &mut usize,
-        w: *mut T,
-        w_idx: &mut usize,
-    );
-
+    /*
     unsafe fn partition_equal_bucket(
         vals: Self::Simd,
         len: Self::Simd,
@@ -132,9 +100,12 @@ pub trait SimdElem<T>: 'static {
         e_idx: &mut usize,
         w: *mut T,
         w_idx: &mut usize,
-    );
+    ); */
 
-    unsafe fn partition_block_fast(
+    /// Partition all `L` lanes of `vals` against `threshold`.
+    /// # Safety
+    /// `cur_write` and `next_write` must have at least `L` elements of capacity beyond their current write index.
+    unsafe fn partition_ptr_fast(
         vals: Self::Simd,
         threshold: Self::Simd,
         cur_write: *mut T,
@@ -143,7 +114,10 @@ pub trait SimdElem<T>: 'static {
         next_write_cnt: &mut usize,
     );
 
-    unsafe fn partition_block_slow(
+    /// Like `partition_fast`, but only the first `len` lanes are in range.
+    /// # Safety
+    /// Same capacity requirements as `partition_fast`.
+    unsafe fn partition_ptr_slow(
         vals: Self::Simd,
         len: Self::Simd,
         threshold: Self::Simd,
@@ -329,169 +303,7 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast<const EQUAL_DOWN: bool>(
-                vals: $simd,
-                threshold: $simd,
-                v: &mut [$t],
-                v_idx: &mut usize,
-                w: &mut [$t],
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    // bit i = lane i is small
-                    let small: u8 = if EQUAL_DOWN {
-                        !(threshold.simd_lt(vals).to_bitmask() as u8)
-                    } else {
-                        threshold.simd_gt(vals).to_bitmask() as u8
-                    };
-                    let large = !small;
-                    let vals: __m256i = transmute(vals);
-
-                    // Write large (>= threshold) to v: exclude small lanes.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[small as usize]);
-                    _mm256_storeu_si256(
-                        v.as_mut_ptr().add(*v_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *v_idx += large.count_ones() as usize;
-
-                    // Write small (< threshold) to w: exclude large lanes.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[large as usize]);
-                    _mm256_storeu_si256(
-                        w.as_mut_ptr().add(*w_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *w_idx += small.count_ones() as usize;
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
-                vals: $simd,
-                threshold: $simd,
-                v: *mut $t,
-                v_idx: &mut usize,
-                w: *mut $t,
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    // bit i = lane i is small
-                    let small: u8 = if EQUAL_DOWN {
-                        !(threshold.simd_lt(vals).to_bitmask() as u8)
-                    } else {
-                        threshold.simd_gt(vals).to_bitmask() as u8
-                    };
-                    let large = !small;
-                    let vals: __m256i = transmute(vals);
-
-                    // Write large (>= threshold) to v: exclude small lanes.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[small as usize]);
-                    _mm256_storeu_si256(
-                        v.add(*v_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *v_idx += large.count_ones() as usize;
-
-                    // Write small (< threshold) to w: exclude large lanes.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[large as usize]);
-                    _mm256_storeu_si256(
-                        w.add(*w_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *w_idx += small.count_ones() as usize;
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_slow(
-                vals: $simd,
-                len: $simd,
-                threshold: $simd,
-                v: &mut [$t],
-                v_idx: &mut usize,
-                w: &mut [$t],
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let mut small = vals.simd_lt(threshold).to_bitmask() as u8;
-                    let mut large = !small;
-                    let in_range = len
-                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
-                        .to_bitmask() as u8;
-                    small &= in_range;
-                    large &= in_range;
-
-                    let vals: __m256i = transmute(vals);
-
-                    // Exclude mask = complement of keep mask.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!large) as usize]);
-                    _mm256_storeu_si256(
-                        v.as_mut_ptr().add(*v_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *v_idx += large.count_ones() as usize;
-
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!small) as usize]);
-                    _mm256_storeu_si256(
-                        w.as_mut_ptr().add(*w_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *w_idx += small.count_ones() as usize;
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_slow_bucket(
-                vals: $simd,
-                len: $simd,
-                threshold: $simd,
-                v: *mut $t,
-                v_idx: &mut usize,
-                w: *mut $t,
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let mut small = vals.simd_lt(threshold).to_bitmask() as u8;
-                    let mut large = !small;
-                    let in_range = len
-                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
-                        .to_bitmask() as u8;
-                    small &= in_range;
-                    large &= in_range;
-
-                    let vals: __m256i = transmute(vals);
-
-                    // Exclude mask = complement of keep mask.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!large) as usize]);
-                    _mm256_storeu_si256(
-                        v.add(*v_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *v_idx += large.count_ones() as usize;
-
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF32[(!small) as usize]);
-                    _mm256_storeu_si256(
-                        w.add(*w_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *w_idx += small.count_ones() as usize;
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_block_fast(
+            unsafe fn partition_ptr_fast(
                 vals: Self::Simd,
                 threshold: Self::Simd,
                 cur_write: *mut $t,
@@ -534,7 +346,7 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            unsafe fn partition_block_slow(
+            unsafe fn partition_ptr_slow(
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
@@ -549,7 +361,6 @@ macro_rules! impl_simd_elem_32 {
 
                     let new_thresh = threshold + $alt;
 
-                    // let mut small = !(new_thresh.simd_lt(vals).to_bitmask() as u8);
                     let mut small: u8 = new_thresh.simd_gt(vals).to_bitmask() as u8;
 
                     let mut large = !small;
@@ -582,6 +393,7 @@ macro_rules! impl_simd_elem_32 {
                 }
             }
 
+            /*
             #[inline(always)]
             unsafe fn partition_equal_bucket(
                 vals: $simd,
@@ -633,7 +445,7 @@ macro_rules! impl_simd_elem_32 {
                     );
                     *w_idx += small.count_ones() as usize;
                 }
-            }
+            } */
         }
     };
 }
@@ -681,50 +493,7 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast<const EQUAL_DOWN: bool>(
-                vals: $simd,
-                threshold: $simd,
-                v: &mut [$t],
-                v_idx: &mut usize,
-                w: &mut [$t],
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    // 4-bit mask: bit i = lane i is small.
-                    let small: u8 = if EQUAL_DOWN {
-                        !(threshold.simd_lt(vals).to_bitmask() as u8) & 0xF
-                    } else {
-                        (threshold.simd_gt(vals).to_bitmask() as u8) & 0xF
-                    };
-                    let large = small ^ 0xF;
-                    let vals: __m256i = transmute(vals);
-
-                    // UNIQSHUF64[k] keeps the lanes described by keep_pattern = k ^ 0xF.
-                    // To keep large lanes (keep_pattern = large): index = large ^ 0xF = small.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[small as usize]);
-                    _mm256_storeu_si256(
-                        v.as_mut_ptr().add(*v_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *v_idx += large.count_ones() as usize;
-
-                    // FIXME: Can we avoid the 2nd permutevar? By prepending the entire register to a vec growing in the other direction?
-                    // To keep small lanes (keep_pattern = small): index = small ^ 0xF = large.
-                    // Or else a masked write.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[large as usize]);
-                    _mm256_storeu_si256(
-                        w.as_mut_ptr().add(*w_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *w_idx += small.count_ones() as usize;
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_block_fast(
+            unsafe fn partition_ptr_fast(
                 vals: $simd,
                 threshold: $simd,
                 cur_write: *mut $t,
@@ -778,91 +547,7 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
-                vals: $simd,
-                threshold: $simd,
-                v: *mut $t,
-                v_idx: &mut usize,
-                w: *mut $t,
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    // 4-bit mask: bit i = lane i is small.
-                    let small: u8 = if EQUAL_DOWN {
-                        !(threshold.simd_lt(vals).to_bitmask() as u8) & 0xF
-                    } else {
-                        (threshold.simd_gt(vals).to_bitmask() as u8) & 0xF
-                    };
-                    let large = small ^ 0xF;
-                    let vals: __m256i = transmute(vals);
-
-                    // UNIQSHUF64[k] keeps the lanes described by keep_pattern = k ^ 0xF.
-                    // To keep large lanes (keep_pattern = large): index = large ^ 0xF = small.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[small as usize]);
-                    _mm256_storeu_si256(
-                        v.add(*v_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *v_idx += large.count_ones() as usize;
-
-                    // To keep small lanes (keep_pattern = small): index = small ^ 0xF = large.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[large as usize]);
-                    _mm256_storeu_si256(
-                        w.add(*w_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *w_idx += small.count_ones() as usize;
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_slow(
-                vals: $simd,
-                len: $simd,
-                threshold: $simd,
-                v: &mut [$t],
-                v_idx: &mut usize,
-                w: &mut [$t],
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let mut small = (vals.simd_lt(threshold).to_bitmask() as u8) & 0xF;
-                    let mut large = small ^ 0xF;
-                    let in_range = (len
-                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
-                        .to_bitmask() as u8)
-                        & 0xF;
-                    small &= in_range;
-                    large &= in_range;
-
-                    let vals: __m256i = transmute(vals);
-
-                    // To keep large lanes: index = large ^ 0xF.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[(large ^ 0xF) as usize]);
-                    _mm256_storeu_si256(
-                        v.as_mut_ptr().add(*v_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *v_idx += large.count_ones() as usize;
-
-                    // To keep small lanes: index = small ^ 0xF.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[(small ^ 0xF) as usize]);
-                    _mm256_storeu_si256(
-                        w.as_mut_ptr().add(*w_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *w_idx += small.count_ones() as usize;
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_block_slow(
+            unsafe fn partition_ptr_slow(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
@@ -920,49 +605,7 @@ macro_rules! impl_simd_elem_64 {
                 }
             }
 
-            #[inline(always)]
-            unsafe fn partition_slow_bucket(
-                vals: $simd,
-                len: $simd,
-                threshold: $simd,
-                v: *mut $t,
-                v_idx: &mut usize,
-                w: *mut $t,
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let mut small = (vals.simd_lt(threshold).to_bitmask() as u8) & 0xF;
-                    let mut large = small ^ 0xF;
-                    let in_range = (len
-                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
-                        .to_bitmask() as u8)
-                        & 0xF;
-                    small &= in_range;
-                    large &= in_range;
-
-                    let vals: __m256i = transmute(vals);
-
-                    // To keep large lanes: index = large ^ 0xF.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[(large ^ 0xF) as usize]);
-                    _mm256_storeu_si256(
-                        v.add(*v_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *v_idx += large.count_ones() as usize;
-
-                    // To keep small lanes: index = small ^ 0xF.
-                    let key: __m256i = transmute(crate::simd::UNIQSHUF64[(small ^ 0xF) as usize]);
-                    _mm256_storeu_si256(
-                        w.add(*w_idx) as *mut __m256i,
-                        _mm256_permutevar8x32_epi32(vals, key),
-                    );
-                    *w_idx += small.count_ones() as usize;
-                }
-            }
-
+            /*
             #[inline(always)]
             unsafe fn partition_equal_bucket(
                 vals: $simd,
@@ -1017,7 +660,7 @@ macro_rules! impl_simd_elem_64 {
                     );
                     *w_idx += small.count_ones() as usize;
                 }
-            }
+            } */
         }
     };
 }
@@ -1065,54 +708,7 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast<const EQUAL_DOWN: bool>(
-                vals: $simd,
-                threshold: $simd,
-                v: &mut [$t],
-                v_idx: &mut usize,
-                w: &mut [$t],
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let small: u16 = if EQUAL_DOWN {
-                        !(threshold.simd_lt(vals).to_bitmask() as u16)
-                    } else {
-                        threshold.simd_gt(vals).to_bitmask() as u16
-                    };
-                    let large: u16 = !small;
-                    let vals: __m512i = transmute(vals);
-
-                    if CS {
-                        let cv = _mm512_maskz_compress_epi32(large, vals);
-                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut __m512i, cv);
-                        *v_idx += large.count_ones() as usize;
-
-                        let cw = _mm512_maskz_compress_epi32(small, vals);
-                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut __m512i, cw);
-                        *w_idx += small.count_ones() as usize;
-                    } else {
-                        _mm512_mask_compressstoreu_epi32(
-                            v.as_mut_ptr().add(*v_idx) as *mut i32,
-                            large,
-                            vals,
-                        );
-                        *v_idx += large.count_ones() as usize;
-
-                        _mm512_mask_compressstoreu_epi32(
-                            w.as_mut_ptr().add(*w_idx) as *mut i32,
-                            small,
-                            vals,
-                        );
-                        *w_idx += small.count_ones() as usize;
-                    }
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_block_fast(
+            unsafe fn partition_ptr_fast(
                 vals: Self::Simd,
                 threshold: Self::Simd,
                 cur_write: *mut $t,
@@ -1173,93 +769,7 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
-                vals: $simd,
-                threshold: $simd,
-                v: *mut $t,
-                v_idx: &mut usize,
-                w: *mut $t,
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let small: u16 = if EQUAL_DOWN {
-                        !(threshold.simd_lt(vals).to_bitmask() as u16)
-                    } else {
-                        threshold.simd_gt(vals).to_bitmask() as u16
-                    };
-                    let large: u16 = !small;
-                    let vals: __m512i = transmute(vals);
-
-                    if CS {
-                        let cv = _mm512_maskz_compress_epi32(large, vals);
-                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
-                        *v_idx += large.count_ones() as usize;
-
-                        let cw = _mm512_maskz_compress_epi32(small, vals);
-                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
-                        *w_idx += small.count_ones() as usize;
-                    } else {
-                        _mm512_mask_compressstoreu_epi32(v.add(*v_idx) as *mut i32, large, vals);
-                        *v_idx += large.count_ones() as usize;
-
-                        _mm512_mask_compressstoreu_epi32(w.add(*w_idx) as *mut i32, small, vals);
-                        *w_idx += small.count_ones() as usize;
-                    }
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_slow(
-                vals: $simd,
-                len: $simd,
-                threshold: $simd,
-                v: &mut [$t],
-                v_idx: &mut usize,
-                w: &mut [$t],
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let in_range: u16 = len
-                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
-                        .to_bitmask() as u16;
-                    let small: u16 = vals.simd_lt(threshold).to_bitmask() as u16 & in_range;
-                    let large: u16 = (!small) & in_range;
-                    let vals: __m512i = transmute(vals);
-
-                    if CS {
-                        let cv = _mm512_maskz_compress_epi32(large, vals);
-                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut __m512i, cv);
-                        *v_idx += large.count_ones() as usize;
-
-                        let cw = _mm512_maskz_compress_epi32(small, vals);
-                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut __m512i, cw);
-                        *w_idx += small.count_ones() as usize;
-                    } else {
-                        _mm512_mask_compressstoreu_epi32(
-                            v.as_mut_ptr().add(*v_idx) as *mut i32,
-                            large,
-                            vals,
-                        );
-                        *v_idx += large.count_ones() as usize;
-
-                        _mm512_mask_compressstoreu_epi32(
-                            w.as_mut_ptr().add(*w_idx) as *mut i32,
-                            small,
-                            vals,
-                        );
-                        *w_idx += small.count_ones() as usize;
-                    }
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_block_slow(
+            unsafe fn partition_ptr_slow(
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
@@ -1324,45 +834,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                 }
             }
 
-            #[inline(always)]
-            unsafe fn partition_slow_bucket(
-                vals: $simd,
-                len: $simd,
-                threshold: $simd,
-                v: *mut $t,
-                v_idx: &mut usize,
-                w: *mut $t,
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let in_range: u16 = len
-                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
-                        .to_bitmask() as u16;
-                    let small: u16 = vals.simd_lt(threshold).to_bitmask() as u16 & in_range;
-                    let large: u16 = (!small) & in_range;
-                    let vals: __m512i = transmute(vals);
-
-                    if CS {
-                        let cv = _mm512_maskz_compress_epi32(large, vals);
-                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
-                        *v_idx += large.count_ones() as usize;
-
-                        let cw = _mm512_maskz_compress_epi32(small, vals);
-                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
-                        *w_idx += small.count_ones() as usize;
-                    } else {
-                        _mm512_mask_compressstoreu_epi32(v.add(*v_idx) as *mut i32, large, vals);
-                        *v_idx += large.count_ones() as usize;
-
-                        _mm512_mask_compressstoreu_epi32(w.add(*w_idx) as *mut i32, small, vals);
-                        *w_idx += small.count_ones() as usize;
-                    }
-                }
-            }
-
+            /*
             #[inline(always)]
             unsafe fn partition_equal_bucket(
                 vals: $simd,
@@ -1411,7 +883,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                         *w_idx += small.count_ones() as usize;
                     }
                 }
-            }
+            } */
         }
     };
 }
@@ -1459,54 +931,7 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast<const EQUAL_DOWN: bool>(
-                vals: $simd,
-                threshold: $simd,
-                v: &mut [$t],
-                v_idx: &mut usize,
-                w: &mut [$t],
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let small: u8 = if EQUAL_DOWN {
-                        !(threshold.simd_lt(vals).to_bitmask() as u8)
-                    } else {
-                        threshold.simd_gt(vals).to_bitmask() as u8
-                    };
-                    let large: u8 = !small;
-                    let vals: __m512i = transmute(vals);
-
-                    if CS {
-                        let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut __m512i, cv);
-                        *v_idx += large.count_ones() as usize;
-
-                        let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut __m512i, cw);
-                        *w_idx += small.count_ones() as usize;
-                    } else {
-                        _mm512_mask_compressstoreu_epi64(
-                            v.as_mut_ptr().add(*v_idx) as *mut i64,
-                            large,
-                            vals,
-                        );
-                        *v_idx += large.count_ones() as usize;
-
-                        _mm512_mask_compressstoreu_epi64(
-                            w.as_mut_ptr().add(*w_idx) as *mut i64,
-                            small,
-                            vals,
-                        );
-                        *w_idx += small.count_ones() as usize;
-                    }
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_block_fast(
+            unsafe fn partition_ptr_fast(
                 vals: Self::Simd,
                 threshold: Self::Simd,
                 cur_write: *mut $t,
@@ -1567,93 +992,7 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast_bucket<const EQUAL_DOWN: bool>(
-                vals: $simd,
-                threshold: $simd,
-                v: *mut $t,
-                v_idx: &mut usize,
-                w: *mut $t,
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let small: u8 = if EQUAL_DOWN {
-                        !(threshold.simd_lt(vals).to_bitmask() as u8)
-                    } else {
-                        threshold.simd_gt(vals).to_bitmask() as u8
-                    };
-                    let large: u8 = !small;
-                    let vals: __m512i = transmute(vals);
-
-                    if CS {
-                        let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
-                        *v_idx += large.count_ones() as usize;
-
-                        let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
-                        *w_idx += small.count_ones() as usize;
-                    } else {
-                        _mm512_mask_compressstoreu_epi64(v.add(*v_idx) as *mut i64, large, vals);
-                        *v_idx += large.count_ones() as usize;
-
-                        _mm512_mask_compressstoreu_epi64(w.add(*w_idx) as *mut i64, small, vals);
-                        *w_idx += small.count_ones() as usize;
-                    }
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_slow(
-                vals: $simd,
-                len: $simd,
-                threshold: $simd,
-                v: &mut [$t],
-                v_idx: &mut usize,
-                w: &mut [$t],
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let in_range: u8 = len
-                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
-                        .to_bitmask() as u8;
-                    let small: u8 = vals.simd_lt(threshold).to_bitmask() as u8 & in_range;
-                    let large: u8 = (!small) & in_range;
-                    let vals: __m512i = transmute(vals);
-
-                    if CS {
-                        let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.as_mut_ptr().add(*v_idx) as *mut __m512i, cv);
-                        *v_idx += large.count_ones() as usize;
-
-                        let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.as_mut_ptr().add(*w_idx) as *mut __m512i, cw);
-                        *w_idx += small.count_ones() as usize;
-                    } else {
-                        _mm512_mask_compressstoreu_epi64(
-                            v.as_mut_ptr().add(*v_idx) as *mut i64,
-                            large,
-                            vals,
-                        );
-                        *v_idx += large.count_ones() as usize;
-
-                        _mm512_mask_compressstoreu_epi64(
-                            w.as_mut_ptr().add(*w_idx) as *mut i64,
-                            small,
-                            vals,
-                        );
-                        *w_idx += small.count_ones() as usize;
-                    }
-                }
-            }
-
-            #[inline(always)]
-            unsafe fn partition_block_slow(
+            unsafe fn partition_ptr_slow(
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
@@ -1719,45 +1058,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                 }
             }
 
-            #[inline(always)]
-            unsafe fn partition_slow_bucket(
-                vals: $simd,
-                len: $simd,
-                threshold: $simd,
-                v: *mut $t,
-                v_idx: &mut usize,
-                w: *mut $t,
-                w_idx: &mut usize,
-            ) {
-                unsafe {
-                    use core::arch::x86_64::*;
-                    use std::mem::transmute;
-
-                    let in_range: u8 = len
-                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
-                        .to_bitmask() as u8;
-                    let small: u8 = vals.simd_lt(threshold).to_bitmask() as u8 & in_range;
-                    let large: u8 = (!small) & in_range;
-                    let vals: __m512i = transmute(vals);
-
-                    if CS {
-                        let cv = _mm512_maskz_compress_epi64(large, vals);
-                        _mm512_storeu_si512(v.add(*v_idx) as *mut __m512i, cv);
-                        *v_idx += large.count_ones() as usize;
-
-                        let cw = _mm512_maskz_compress_epi64(small, vals);
-                        _mm512_storeu_si512(w.add(*w_idx) as *mut __m512i, cw);
-                        *w_idx += small.count_ones() as usize;
-                    } else {
-                        _mm512_mask_compressstoreu_epi64(v.add(*v_idx) as *mut i64, large, vals);
-                        *v_idx += large.count_ones() as usize;
-
-                        _mm512_mask_compressstoreu_epi64(w.add(*w_idx) as *mut i64, small, vals);
-                        *w_idx += small.count_ones() as usize;
-                    }
-                }
-            }
-
+            /*
             #[inline(always)]
             unsafe fn partition_equal_bucket(
                 vals: $simd,
@@ -1806,6 +1107,279 @@ macro_rules! impl_simd_elem_64_avx512 {
                         *w_idx += small.count_ones() as usize;
                     }
                 }
+            } */
+        }
+    };
+}
+
+/// Marker type selecting the NEON (128-bit) SIMD backend.
+#[cfg(target_arch = "aarch64")]
+pub struct Neon;
+
+/// Byte shuffles for `vqtbl1q_u8`: table[keep_mask] moves kept lanes to the front.
+#[cfg(target_arch = "aarch64")]
+const fn build_neon_shuf<const LANES: usize, const N: usize>() -> [[u8; 16]; N] {
+    let bytes = 16 / LANES;
+    let mut t = [[0xFFu8; 16]; N];
+    let mut m = 0;
+    while m < N {
+        let mut n = 0;
+        let mut lane = 0;
+        while lane < LANES {
+            if (m >> lane) & 1 == 1 {
+                let mut b = 0;
+                while b < bytes {
+                    t[m][n * bytes + b] = (lane * bytes + b) as u8;
+                    b += 1;
+                }
+                n += 1;
+            }
+            lane += 1;
+        }
+        m += 1;
+    }
+    t
+}
+
+macro_rules! impl_simd_elem_32_neon {
+    ($t:ty, $simd:ty, $alt:expr) => {
+        #[cfg(target_arch = "aarch64")]
+        impl SimdElem<$t> for Neon {
+            const L: usize = 4;
+            const MAX: $t = <$t>::MAX;
+            type Simd = $simd;
+
+            #[inline(always)]
+            fn splat(v: $t) -> $simd {
+                <$simd>::splat(v)
+            }
+
+            #[inline(always)]
+            unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
+                unsafe { <$simd>::from(*(slice.as_ptr() as *const [$t; 4])) }
+            }
+
+            #[inline(always)]
+            unsafe fn simd_from_ptr(ptr: *const $t) -> $simd {
+                unsafe { <$simd>::from(*(ptr as *const [$t; 4])) }
+            }
+
+            #[inline(always)]
+            fn simd_lt_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_lt(b).to_bitmask() as u64
+            }
+
+            #[inline(always)]
+            fn lane_indices() -> $simd {
+                <$simd>::from([0 as $t, 1, 2, 3])
+            }
+
+            #[inline(always)]
+            fn from_usize(n: usize) -> $t {
+                n as $t
+            }
+
+            #[inline(always)]
+            fn wrapping_add_one(t: $t) -> $t {
+                t.wrapping_add(1)
+            }
+
+            #[inline(always)]
+            unsafe fn partition_ptr_fast(
+                vals: $simd,
+                threshold: $simd,
+                cur_write: *mut $t,
+                cur_write_cnt: &mut usize,
+                next_write: *mut $t,
+                next_write_cnt: &mut usize,
+            ) {
+                unsafe {
+                    use core::arch::aarch64::*;
+                    use std::mem::transmute;
+
+                    let new_thresh = threshold + $alt;
+                    let small: u8 = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0xF;
+                    let large: u8 = small ^ 0xF;
+                    let v: uint8x16_t = transmute(vals);
+
+                    let key = vld1q_u8(NEON_SHUF32[large as usize].as_ptr());
+                    vst1q_u8(cur_write.add(*cur_write_cnt) as *mut u8, vqtbl1q_u8(v, key));
+                    *cur_write_cnt += large.count_ones() as usize;
+
+                    let key = vld1q_u8(NEON_SHUF32[small as usize].as_ptr());
+                    vst1q_u8(
+                        next_write.add(*next_write_cnt) as *mut u8,
+                        vqtbl1q_u8(v, key),
+                    );
+                    *next_write_cnt += small.count_ones() as usize;
+                }
+            }
+
+            #[inline(always)]
+            unsafe fn partition_ptr_slow(
+                vals: $simd,
+                len: $simd,
+                threshold: $simd,
+                cur_write: *mut $t,
+                cur_write_cnt: &mut usize,
+                next_write: *mut $t,
+                next_write_cnt: &mut usize,
+            ) {
+                unsafe {
+                    use core::arch::aarch64::*;
+                    use std::mem::transmute;
+
+                    let new_thresh = threshold + $alt;
+                    let small_raw: u8 = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0xF;
+                    let in_range: u8 = (len
+                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                        .to_bitmask() as u8)
+                        & 0xF;
+                    let small = small_raw & in_range;
+                    let large = (small_raw ^ 0xF) & in_range;
+                    let v: uint8x16_t = transmute(vals);
+
+                    let key = vld1q_u8(NEON_SHUF32[large as usize].as_ptr());
+                    vst1q_u8(cur_write.add(*cur_write_cnt) as *mut u8, vqtbl1q_u8(v, key));
+                    *cur_write_cnt += large.count_ones() as usize;
+
+                    let key = vld1q_u8(NEON_SHUF32[small as usize].as_ptr());
+                    vst1q_u8(
+                        next_write.add(*next_write_cnt) as *mut u8,
+                        vqtbl1q_u8(v, key),
+                    );
+                    *next_write_cnt += small.count_ones() as usize;
+                }
+            }
+        }
+    };
+}
+
+macro_rules! impl_simd_elem_64_neon {
+    ($t:ty, $simd:ty, $alt:expr) => {
+        #[cfg(target_arch = "aarch64")]
+        impl SimdElem<$t> for Neon {
+            const L: usize = 2;
+            const MAX: $t = <$t>::MAX;
+            type Simd = $simd;
+
+            #[inline(always)]
+            fn splat(v: $t) -> $simd {
+                <$simd>::splat(v)
+            }
+
+            #[inline(always)]
+            unsafe fn simd_from_slice(slice: &[$t]) -> $simd {
+                unsafe { <$simd>::from(*(slice.as_ptr() as *const [$t; 2])) }
+            }
+
+            #[inline(always)]
+            unsafe fn simd_from_ptr(ptr: *const $t) -> $simd {
+                unsafe { <$simd>::from(*(ptr as *const [$t; 2])) }
+            }
+
+            #[inline(always)]
+            fn simd_lt_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_lt(b).to_bitmask() as u64
+            }
+
+            #[inline(always)]
+            fn lane_indices() -> $simd {
+                <$simd>::from([0 as $t, 1])
+            }
+
+            #[inline(always)]
+            fn from_usize(n: usize) -> $t {
+                n as $t
+            }
+
+            #[inline(always)]
+            fn wrapping_add_one(t: $t) -> $t {
+                t.wrapping_add(1)
+            }
+
+            #[inline(always)]
+            unsafe fn partition_ptr_fast(
+                vals: $simd,
+                threshold: $simd,
+                cur_write: *mut $t,
+                cur_write_cnt: &mut usize,
+                next_write: *mut $t,
+                next_write_cnt: &mut usize,
+            ) {
+                unsafe {
+                    use core::arch::aarch64::*;
+                    use std::mem::transmute;
+
+                    let mut new_thresh = threshold;
+                    let small: u8;
+                    if new_thresh != <$simd>::splat(<$t>::MAX) {
+                        new_thresh += $alt;
+                        small = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0x3;
+                    } else {
+                        let eq = (vals.simd_eq(new_thresh).to_bitmask() as u8) & 0x3;
+                        let small_elems = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0x3;
+                        small = small_elems | (eq & 0b10);
+                    }
+                    let large: u8 = small ^ 0x3;
+                    let v: uint8x16_t = transmute(vals);
+
+                    let key = vld1q_u8(NEON_SHUF64[large as usize].as_ptr());
+                    vst1q_u8(cur_write.add(*cur_write_cnt) as *mut u8, vqtbl1q_u8(v, key));
+                    *cur_write_cnt += large.count_ones() as usize;
+
+                    let key = vld1q_u8(NEON_SHUF64[small as usize].as_ptr());
+                    vst1q_u8(
+                        next_write.add(*next_write_cnt) as *mut u8,
+                        vqtbl1q_u8(v, key),
+                    );
+                    *next_write_cnt += small.count_ones() as usize;
+                }
+            }
+
+            #[inline(always)]
+            unsafe fn partition_ptr_slow(
+                vals: $simd,
+                len: $simd,
+                threshold: $simd,
+                cur_write: *mut $t,
+                cur_write_cnt: &mut usize,
+                next_write: *mut $t,
+                next_write_cnt: &mut usize,
+            ) {
+                unsafe {
+                    use core::arch::aarch64::*;
+                    use std::mem::transmute;
+
+                    let mut new_thresh = threshold;
+                    let small_raw: u8;
+                    if new_thresh != <$simd>::splat(<$t>::MAX) {
+                        new_thresh += $alt;
+                        small_raw = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0x3;
+                    } else {
+                        let eq = (vals.simd_eq(new_thresh).to_bitmask() as u8) & 0x3;
+                        let small_elems = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0x3;
+                        small_raw = small_elems | (eq & 0b10);
+                    }
+                    let in_range: u8 = (len
+                        .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                        .to_bitmask() as u8)
+                        & 0x3;
+                    let small = small_raw & in_range;
+                    let large = (small_raw ^ 0x3) & in_range;
+                    let v: uint8x16_t = transmute(vals);
+
+                    let key = vld1q_u8(NEON_SHUF64[large as usize].as_ptr());
+                    vst1q_u8(cur_write.add(*cur_write_cnt) as *mut u8, vqtbl1q_u8(v, key));
+                    *cur_write_cnt += large.count_ones() as usize;
+
+                    let key = vld1q_u8(NEON_SHUF64[small as usize].as_ptr());
+                    vst1q_u8(
+                        next_write.add(*next_write_cnt) as *mut u8,
+                        vqtbl1q_u8(v, key),
+                    );
+                    *next_write_cnt += small.count_ones() as usize;
+                }
             }
         }
     };
@@ -1820,6 +1394,11 @@ impl_simd_elem_32_avx512!(i32, wide::i32x16, AVX512_ALT_I32);
 impl_simd_elem_32_avx512!(u32, wide::u32x16, AVX512_ALT_U32);
 impl_simd_elem_64_avx512!(i64, wide::i64x8, AVX512_ALT_I64);
 impl_simd_elem_64_avx512!(u64, wide::u64x8, AVX512_ALT_U64);
+
+impl_simd_elem_32_neon!(i32, wide::i32x4, NEON_ALT_I32);
+impl_simd_elem_32_neon!(u32, wide::u32x4, NEON_ALT_U32);
+impl_simd_elem_64_neon!(i64, wide::i64x2, NEON_ALT_I64);
+impl_simd_elem_64_neon!(u64, wide::u64x2, NEON_ALT_U64);
 
 /// For each of 256 masks of which elements are different than their predecessor,
 /// a shuffle that sends those new elements to the beginning.

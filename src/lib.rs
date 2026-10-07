@@ -25,8 +25,6 @@
 //! assert_eq!(q.pop(), None);
 //! ```
 
-#![feature(portable_simd)]
-
 #[cfg(feature = "c")]
 #[doc(hidden)]
 pub mod c;
@@ -151,7 +149,7 @@ pub struct ConfigurableSimdQuickHeap<
     R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP> = rebalancing_strategies::NoRebalancing,
     const N: usize = 16,
     const K: usize = 128,
-    const CAP: usize = 154,
+    const CAP: usize = 128,
     const SORT: bool = true,
     const EQUAL: bool = false,
 > {
@@ -205,7 +203,7 @@ pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
-    T: Elem + Default + Sub<Output = T> + EqualBucketConstraints,
+    T: Elem + Debug + Default + Sub<Output = T> + EqualBucketConstraints,
     B: buckets::Bucket<T, K, CAP>,
     S: simd::SimdElem<T>,
     P: pivot_strategies::PivotStrategy,
@@ -595,7 +593,7 @@ impl<
             while i < K {
                 unsafe {
                     let v = S::simd_from_ptr(src.add(i));
-                    S::partition_block_fast(
+                    S::partition_ptr_fast(
                         v,
                         threshold,
                         cur_write_ptr,
@@ -620,7 +618,7 @@ impl<
             let n2r = n_rem.next_multiple_of(S::L).saturating_sub(S::L);
             for _ in (0..n2r).step_by(S::L) {
                 unsafe {
-                    S::partition_block_fast(
+                    S::partition_ptr_fast(
                         S::simd_from_slice(cur_layer.get_next_unchecked(S::L)),
                         threshold,
                         cur_write_ptr,
@@ -641,7 +639,7 @@ impl<
 
             if n2r < n_rem {
                 unsafe {
-                    S::partition_block_slow(
+                    S::partition_ptr_slow(
                         S::simd_from_slice(cur_layer.get_next_unchecked(n_rem - n2r)),
                         S::splat(S::from_usize(n - n2)),
                         threshold,
@@ -754,12 +752,12 @@ impl<
         let half = (pivot_pos + 1).min(n2).next_multiple_of(S::L);
         let threshold = S::splat(pivot);
 
-        let cur_layer_ptr = cur_layer.write_buffer();
-        let next_layer_ptr = next_layer.write_buffer();
+        let cur_layer_ptr = cur_layer.write_ptr();
+        let next_layer_ptr = next_layer.write_ptr();
 
         for i in (0..half).step_by(S::L) {
             unsafe {
-                S::partition_fast_bucket::<true>(
+                S::partition_ptr_fast(
                     S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
                     threshold,
                     cur_layer_ptr,
@@ -772,7 +770,7 @@ impl<
 
         for i in (half..n2).step_by(S::L) {
             unsafe {
-                S::partition_fast_bucket::<false>(
+                S::partition_ptr_fast(
                     S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
                     threshold,
                     cur_layer_ptr,
@@ -784,13 +782,8 @@ impl<
         }
 
         if n2 < n {
-            let threshold = if pivot_pos >= n2 {
-                S::splat(S::wrapping_add_one(pivot))
-            } else {
-                S::splat(pivot)
-            };
             unsafe {
-                S::partition_slow_bucket(
+                S::partition_ptr_slow(
                     S::simd_from_slice(cur_layer.get_unchecked(n2, n - n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
@@ -801,11 +794,6 @@ impl<
                 );
             }
         }
-
-        cur_layer.flush(cur_len);
-        next_layer.flush(next_len);
-
-        debug_assert!(next_len > 0);
 
         unsafe {
             cur_layer.set_len(cur_len);
@@ -820,8 +808,14 @@ impl<
             self.pivots.pop().unwrap();
             self.clear_equals();
         }
+
+        if next_len == 0 {
+            self.pivots.pop().unwrap();
+            self.clear_equals();
+        }
     }
 
+    /*
     #[inline(never)]
     fn equal_partition(&mut self, pivot: T) {
         debug_assert!(pivot != T::minimum());
@@ -869,9 +863,9 @@ impl<
         // Partition a list into three (smaller, equal, greater) using SIMD.
         let threshold = S::splat(pivot);
 
-        let cur_layer_ptr = cur_layer.write_buffer();
-        let equal_layer_ptr = equal_layer.write_buffer();
-        let next_layer_ptr = next_layer.write_buffer();
+        let cur_layer_ptr = cur_layer.write_ptr();
+        let equal_layer_ptr = equal_layer.write_ptr();
+        let next_layer_ptr = next_layer.write_ptr();
 
         for i in (0..n2).step_by(S::L) {
             unsafe {
@@ -905,10 +899,6 @@ impl<
             }
         }
 
-        cur_layer.flush(cur_len);
-        equal_layer.flush(equal_len);
-        next_layer.flush(next_len);
-
         debug_assert!(equal_len > 0);
 
         unsafe {
@@ -940,7 +930,7 @@ impl<
             self.pivots.pop().unwrap();
             self.clear_equals();
         }
-    }
+    } */
 
     pub fn introspect(&self) {
         println!("#buckets: {} #elements: {}", self.buckets.len(), self.size);
