@@ -244,18 +244,25 @@ macro_rules! all_tests {
 
 #[rustfmt::skip]
 mod u64 {
+    #[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
     mod avx2   { use super::super::*; all_tests!(u64, crate::Avx2, 4); }
 
     #[cfg(target_feature = "avx512f")]
     mod avx512 { use super::super::*; all_tests!(u64, crate::Avx512, 8); }
+
+    mod neon   { use super::super::*; all_tests!(u64, crate::Neon, 2); }
 }
 
 #[rustfmt::skip]
 mod i64 {
+    #[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
     mod avx2   { use super::super::*; all_tests!(i64, crate::Avx2, 4); }
 
     #[cfg(target_feature = "avx512f")]
     mod avx512 { use super::super::*; all_tests!(i64, crate::Avx512, 8); }
+
+    #[cfg(target_arch = "aarch64")]
+    mod neon   { use super::super::*; all_tests!(i64, crate::Neon, 2); }
 }
 
 #[test]

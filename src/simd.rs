@@ -260,6 +260,7 @@ pub fn position_min_bucket<
     }
 }
 
+#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
 macro_rules! impl_simd_elem_32 {
     ($t:ty, $simd:ty, $alt:expr) => {
         impl SimdElem<$t> for Avx2 {
@@ -450,6 +451,7 @@ macro_rules! impl_simd_elem_32 {
     };
 }
 
+#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
 macro_rules! impl_simd_elem_64 {
     ($t:ty, $simd:ty, $alt:expr) => {
         impl SimdElem<$t> for Avx2 {
@@ -665,6 +667,7 @@ macro_rules! impl_simd_elem_64 {
     };
 }
 
+#[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_32_avx512 {
     ($t:ty, $simd:ty, $alt:expr) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
@@ -888,6 +891,7 @@ macro_rules! impl_simd_elem_32_avx512 {
     };
 }
 
+#[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_64_avx512 {
     ($t:ty, $simd:ty, $alt:expr) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
@@ -1141,6 +1145,7 @@ const fn build_neon_shuf<const LANES: usize, const N: usize>() -> [[u8; 16]; N] 
     t
 }
 
+#[cfg(target_arch = "aarch64")]
 macro_rules! impl_simd_elem_32_neon {
     ($t:ty, $simd:ty, $alt:expr) => {
         #[cfg(target_arch = "aarch64")]
@@ -1255,6 +1260,7 @@ macro_rules! impl_simd_elem_32_neon {
     };
 }
 
+#[cfg(target_arch = "aarch64")]
 macro_rules! impl_simd_elem_64_neon {
     ($t:ty, $simd:ty, $alt:expr) => {
         #[cfg(target_arch = "aarch64")]
@@ -1385,19 +1391,31 @@ macro_rules! impl_simd_elem_64_neon {
     };
 }
 
+#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
 impl_simd_elem_32!(i32, wide::i32x8, AVX2_ALT_I32);
+#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
 impl_simd_elem_32!(u32, wide::u32x8, AVX2_ALT_U32);
+#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
 impl_simd_elem_64!(i64, wide::i64x4, AVX2_ALT_I64);
+#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
 impl_simd_elem_64!(u64, wide::u64x4, AVX2_ALT_U64);
 
+#[cfg(target_feature = "avx512f")]
 impl_simd_elem_32_avx512!(i32, wide::i32x16, AVX512_ALT_I32);
+#[cfg(target_feature = "avx512f")]
 impl_simd_elem_32_avx512!(u32, wide::u32x16, AVX512_ALT_U32);
+#[cfg(target_feature = "avx512f")]
 impl_simd_elem_64_avx512!(i64, wide::i64x8, AVX512_ALT_I64);
+#[cfg(target_feature = "avx512f")]
 impl_simd_elem_64_avx512!(u64, wide::u64x8, AVX512_ALT_U64);
 
+#[cfg(target_arch = "aarch64")]
 impl_simd_elem_32_neon!(i32, wide::i32x4, NEON_ALT_I32);
+#[cfg(target_arch = "aarch64")]
 impl_simd_elem_32_neon!(u32, wide::u32x4, NEON_ALT_U32);
+#[cfg(target_arch = "aarch64")]
 impl_simd_elem_64_neon!(i64, wide::i64x2, NEON_ALT_I64);
+#[cfg(target_arch = "aarch64")]
 impl_simd_elem_64_neon!(u64, wide::u64x2, NEON_ALT_U64);
 
 /// For each of 256 masks of which elements are different than their predecessor,

@@ -41,15 +41,19 @@ mod simd;
 #[cfg(test)]
 mod test;
 
-pub use simd::{Avx2, Avx512};
+pub use simd::{Avx2, Avx512, Neon};
 use std::marker::PhantomData;
 
-/// Tag to use with [`ConfigurableSimdQuickHeap`] to use AVX-512 if it is available.
-#[cfg(not(target_feature = "avx512f"))]
-pub type Simd = Avx2;
-
+/// Tag to use with [`ConfigurableSimdQuickHeap`]: picks the widest available backend
+/// (AVX-512 > AVX2 > NEON).
 #[cfg(target_feature = "avx512f")]
 pub type Simd = Avx512;
+
+#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+pub type Simd = Avx2;
+
+#[cfg(target_arch = "aarch64")]
+pub type Simd = Neon;
 
 /// Wrapper trait for `Copy + Ord`.
 #[doc(hidden)]
