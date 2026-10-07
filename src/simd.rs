@@ -234,6 +234,7 @@ pub fn position_min_bucket<
     // }
     // return pos;
 
+    /*
     let mut min_pos = [0; 2];
     let mut min_val = [S::MAX; 2];
     for (i, &[l, r]) in v.as_chunks::<2>().0.iter().enumerate() {
@@ -257,7 +258,9 @@ pub fn position_min_bucket<
         min_pos[0]
     } else {
         min_pos[1]
-    }
+    } */
+
+    v.min().1
 }
 
 #[cfg(target_feature = "avx2")]

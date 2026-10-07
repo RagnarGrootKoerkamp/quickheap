@@ -1,4 +1,4 @@
-use crate::buckets::{Bucket, block::Block, block_arena::BlockArena};
+use crate::buckets::{BlockedBucket, Bucket, FlatBucket, block::Block, block_arena::BlockArena};
 use std::{fmt::Debug, ptr};
 
 pub struct ListBlockBucket<T: Default + Copy + Debug + PartialOrd, const K: usize, const CAP: usize>
@@ -34,12 +34,95 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> ListBloc
     }
 }
 
+impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> BlockedBucket<T, K, CAP>
+    for ListBlockBucket<T, K, CAP>
+{
+    #[inline]
+    fn reset_iters(&mut self) {
+        debug_assert!(self.total_size != 0);
+        debug_assert!(!self.head.is_null());
+        self.current_read = self.head;
+        self.current_write = self.head;
+        self.current_read_idx = 0;
+        self.total_size = 0;
+    }
+
+    #[inline]
+    fn active_write(&mut self) -> *mut T {
+        if self.head.is_null() {
+            // Empty list
+            self.push_new_block();
+        }
+
+        unsafe { (*self.current_write).as_mut_ptr() }
+    }
+
+    #[inline]
+    fn next_read_block(&mut self) -> *const T {
+        unsafe {
+            let node = self.current_read;
+            assert!(!node.is_null());
+            self.current_read = (*node).next();
+            (*node).as_ptr()
+        }
+    }
+
+    #[inline]
+    fn write_next(&mut self) {
+        self.total_size += K;
+        unsafe {
+            (*self.current_write).set_len(K);
+
+            if ((*self.current_write).next()).is_null() {
+                self.push_new_block();
+            }
+
+            self.current_write = (*self.current_write).next()
+        }
+    }
+
+    #[inline]
+    fn get_next_unchecked(&mut self, n: usize) -> &[T] {
+        debug_assert!(!self.current_read.is_null());
+        unsafe {
+            let c = (*self.current_read).as_slice(self.current_read_idx, n);
+            self.current_read_idx += n;
+
+            if self.current_read_idx == K {
+                self.current_read = (*self.current_read).next();
+                self.current_read_idx = 0;
+            }
+
+            c
+        }
+    }
+
+    #[inline]
+    fn set_last_block_len(&mut self, len: usize) {
+        assert!(!self.current_write.is_null());
+        self.total_size += len;
+        unsafe {
+            (*self.current_write).set_len(len);
+            self.tail = self.current_write;
+
+            let mut after_write = (*self.current_write).next();
+            (*self.current_write).set_next(ptr::null_mut());
+
+            let mut curr;
+            while !after_write.is_null() {
+                curr = after_write;
+                after_write = (*after_write).next();
+
+                (*curr).reset();
+                (*self.free_arena).free(curr);
+            }
+        }
+    }
+}
+
 impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
     for ListBlockBucket<T, K, CAP>
 {
-    const BLOCK_SIZE: usize = K;
-    const BLOCKED: bool = true;
-
     fn default(free_arena: *mut BlockArena<T, K, CAP>) -> Self {
         Self {
             head: ptr::null_mut(),
@@ -202,73 +285,8 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
-    fn reset_iters(&mut self) {
-        debug_assert!(self.total_size != 0);
-        debug_assert!(!self.head.is_null());
-        self.current_read = self.head;
-        self.current_write = self.head;
-        self.current_read_idx = 0;
-        self.total_size = 0;
-    }
-
-    #[inline]
-    fn active_write(&mut self) -> *mut T {
-        if self.head.is_null() {
-            // Empty list
-            self.push_new_block();
-        }
-
-        unsafe { (*self.current_write).as_mut_ptr() }
-    }
-
-    #[inline]
-    fn next_read_block(&mut self) -> *const T {
-        unsafe {
-            let node = self.current_read;
-            assert!(!node.is_null());
-            self.current_read = (*node).next();
-            (*node).as_ptr()
-        }
-    }
-
-    #[inline]
-    fn write_next(&mut self) {
-        self.total_size += K;
-        unsafe {
-            (*self.current_write).set_len(K);
-
-            if ((*self.current_write).next()).is_null() {
-                self.push_new_block();
-            }
-
-            self.current_write = (*self.current_write).next()
-        }
-    }
-
-    #[inline]
-    fn get_next_unchecked(&mut self, n: usize) -> &[T] {
-        debug_assert!(!self.current_read.is_null());
-        unsafe {
-            let c = (*self.current_read).as_slice(self.current_read_idx, n);
-            self.current_read_idx += n;
-
-            if self.current_read_idx == K {
-                self.current_read = (*self.current_read).next();
-                self.current_read_idx = 0;
-            }
-
-            c
-        }
-    }
-
-    #[inline]
     fn len(&self) -> usize {
         self.total_size
-    }
-
-    #[inline]
-    fn write_ptr(&mut self) -> *mut T {
-        unreachable!();
     }
 
     #[inline]
@@ -394,6 +412,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         }
     }
 
+    /*
     fn as_chunks<const S: usize>(&self) -> (Vec<[T; S]>, Vec<T>) {
         unimplemented!();
 
@@ -410,32 +429,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
         let remainder = curr_array[..self.total_size % K].to_vec();
         (result, remainder)
-    }
-
-    #[inline]
-    fn get_unchecked_single(&self, pos: usize) -> T {
-        unimplemented!();
-
-        /*
-        let block_idx = pos / K;
-        assert!(false);
-        unsafe { self.idx_map[block_idx].as_ref().get_unchecked(pos % K) }
-         */
-    }
-
-    #[inline]
-    fn override_elem(&mut self, pos: usize, elem: T) {
-        unimplemented!();
-
-        /*
-        let block_idx = pos / K;
-        unsafe {
-            self.idx_map[block_idx]
-                .as_mut()
-                .override_elem(pos % K, elem);
-        }
-         */
-    }
+    }*/
 
     #[inline]
     fn insert_index(&self, elem: T) -> usize {
@@ -504,39 +498,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         assert!(false);
         T::default()
          */
-    }
-
-    fn reserve(&mut self, n: usize) {
-        unreachable!();
-    }
-
-    unsafe fn set_len(&mut self, _: usize) {
-        unreachable!();
-    }
-
-    unsafe fn get_unchecked(&self, _: usize, _: usize) -> &[T] {
-        unreachable!();
-    }
-
-    fn set_last_block_len(&mut self, len: usize) {
-        assert!(!self.current_write.is_null());
-        self.total_size += len;
-        unsafe {
-            (*self.current_write).set_len(len);
-            self.tail = self.current_write;
-
-            let mut after_write = (*self.current_write).next();
-            (*self.current_write).set_next(ptr::null_mut());
-
-            let mut curr;
-            while !after_write.is_null() {
-                curr = after_write;
-                after_write = (*after_write).next();
-
-                (*curr).reset();
-                (*self.free_arena).free(curr);
-            }
-        }
     }
 
     #[inline]

@@ -1,8 +1,34 @@
-use crate::buckets::{Bucket, block_arena::BlockArena};
+use crate::buckets::{Bucket, FlatBucket, block_arena::BlockArena};
 use std::fmt::Debug;
 
 pub struct VecBucket<T, const K: usize, const CAP: usize> {
     data: Vec<T>,
+}
+
+impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> FlatBucket<T>
+    for VecBucket<T, K, CAP>
+{
+    #[inline]
+    fn reserve(&mut self, n: usize) {
+        self.data.reserve(n);
+    }
+
+    #[inline]
+    unsafe fn set_len(&mut self, n: usize) {
+        unsafe {
+            self.data.set_len(n);
+        }
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T] {
+        unsafe { self.data.get_unchecked(from..from + len) }
+    }
+
+    #[inline]
+    fn write_ptr(&mut self) -> *mut T {
+        self.data.as_mut_ptr()
+    }
 }
 
 impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
@@ -12,28 +38,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         Self {
             data: Vec::with_capacity(128),
         }
-    }
-
-    fn active_write(&mut self) -> *mut T {
-        unreachable!();
-    }
-
-    fn recompute_min_max(&mut self) {}
-
-    fn get_next_unchecked(&mut self, n: usize) -> &[T] {
-        unreachable!();
-    }
-
-    fn reset_iters(&mut self) {
-        unreachable!();
-    }
-
-    fn write_next(&mut self) {
-        unreachable!();
-    }
-
-    fn next_read_block(&mut self) -> *const T {
-        unreachable!();
     }
 
     fn min(&mut self) -> (T, usize) {
@@ -60,6 +64,8 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         (self.data[max_pos], max_pos)
     }
 
+    fn recompute_min_max(&mut self) {}
+
     #[inline]
     fn push(&mut self, elem: T) {
         self.data.push(elem);
@@ -82,11 +88,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
-    fn reserve(&mut self, n: usize) {
-        self.data.reserve(n);
-    }
-
-    #[inline]
     fn capacity(&self) -> usize {
         self.data.capacity()
     }
@@ -102,19 +103,8 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
-    fn as_chunks<const S: usize>(&self) -> (Vec<[T; S]>, Vec<T>) {
-        let (chunks, remainder) = self.data.as_chunks::<S>();
-        (chunks.to_vec(), remainder.to_vec())
-    }
-
-    #[inline]
     fn get(&self, i: usize) -> T {
         self.data[i]
-    }
-
-    #[inline]
-    fn get_unchecked_single(&self, idx: usize) -> T {
-        self.data[idx]
     }
 
     #[inline]
@@ -138,33 +128,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
-    unsafe fn set_len(&mut self, n: usize) {
-        unsafe {
-            self.data.set_len(n);
-        }
-    }
-
-    #[inline]
-    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T] {
-        unsafe { self.data.get_unchecked(from..from + len) }
-    }
-
-    #[inline]
-    fn write_ptr(&mut self) -> *mut T {
-        self.data.as_mut_ptr()
-    }
-
-    fn set_last_block_len(&mut self, len: usize) {
-        unreachable!()
-    }
-
-    #[inline]
     fn print(&self) {
         print!("{:?}\n", self.data);
-    }
-
-    #[inline]
-    fn override_elem(&mut self, pos: usize, elem: T) {
-        self.data[pos] = elem;
     }
 }
