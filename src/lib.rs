@@ -309,16 +309,6 @@ impl<
 
         let layer = &mut self.buckets[target_layer];
 
-        /* FIXME
-        if !B::BLOCKED {
-            layer.reserve(S::L + 1);
-        } */
-
-        /*
-        if target_layer == self.pivots.len() {
-            self.equal_buckets[target_layer] = false;
-        } */
-
         if SORT && target_layer == self.pivots.len() && layer.len() < N {
             // Count the number of larger elements in the prefix and insert the new element after them.
             let pos = layer.insert_index(t);
@@ -414,35 +404,6 @@ impl<
             return self.buckets[self.pivots.len()].pop();
         }
 
-        /*
-        if EQUAL {
-            if self.equal_buckets[layer] {
-                debug_assert!(self.buckets[layer].assert_all_equal());
-                debug_assert!(self.buckets[layer].len() > 0);
-
-                let elem = self.buckets[layer].pop();
-
-                // Update the active layer.
-                if self.buckets[layer].is_empty() && self.pivots.len() > 0 {
-                    self.equal_buckets[self.pivots.len()] = false;
-                    self.pivots.pop();
-
-                    self.clear_equals();
-
-                    // Sort the new final layer decreasing if it's already small.
-                    if !self.equal_buckets[self.pivots.len()]
-                        && SORT
-                        && self.buckets[self.pivots.len()].len() <= N
-                    {
-                        let layer = &mut self.buckets[self.pivots.len()];
-                        layer.sort_decreasing();
-                    }
-                }
-
-                return elem;
-            }
-        } */
-
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].len() > N {
             while !self.equal_buckets[self.pivots.len()]
@@ -504,9 +465,6 @@ impl<
             self.equal_buckets[1] = false;
         }
     }
-
-    #[inline(never)]
-    fn partition_blocks(&mut self, layer: usize) {}
 
     #[inline(never)]
     fn partition(&mut self, layer: usize) {
@@ -593,123 +551,6 @@ impl<
             }
         }
     }
-
-    /*
-    #[inline(never)]
-    fn equal_partition(&mut self, pivot: T) {
-        debug_assert!(pivot != T::minimum());
-        let layer = self.pivots.len();
-
-        // Reserve space for an additional L layers when needed.
-        if layer + 2 * S::L >= self.pivots.capacity() {
-            self.pivots.reserve(S::L);
-        }
-
-        if layer + 1 >= self.buckets.len() {
-            self.buckets.push(B::default(self.free_arena));
-            self.buckets.push(B::default(self.free_arena));
-            self.equal_buckets.push(false);
-            self.equal_buckets.push(false);
-        }
-
-        // Alias the current layer (to be split) and the next layers.
-        let [cur_layer, equal_layer, next_layer] = &mut self.buckets[layer..=layer + 2] else {
-            unreachable!()
-        };
-        let n = cur_layer.len();
-
-        self.pivots.push(pivot);
-        self.pivots.push(pivot - T::one());
-
-        // Reserve space in the next layers,
-        // and make sure the current layer can hold a spare SIMD register.
-        cur_layer.reserve(S::L);
-        equal_layer.clear();
-        equal_layer.reserve(n + S::L);
-        next_layer.clear();
-        next_layer.reserve(n + S::L);
-
-        unsafe { cur_layer.set_len(n + S::L) };
-        unsafe { equal_layer.set_len(n + S::L) };
-        unsafe { next_layer.set_len(n + S::L) };
-
-        let mut cur_len = 0;
-        let mut equal_len = 0;
-        let mut next_len = 0;
-
-        let n2 = n.next_multiple_of(S::L).saturating_sub(S::L);
-
-        // Partition a list into three (smaller, equal, greater) using SIMD.
-        let threshold = S::splat(pivot);
-
-        let cur_layer_ptr = cur_layer.write_ptr();
-        let equal_layer_ptr = equal_layer.write_ptr();
-        let next_layer_ptr = next_layer.write_ptr();
-
-        for i in (0..n2).step_by(S::L) {
-            unsafe {
-                S::partition_equal_bucket(
-                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
-                    S::splat(S::from_usize(S::L)),
-                    threshold,
-                    cur_layer_ptr,
-                    &mut cur_len,
-                    equal_layer_ptr,
-                    &mut equal_len,
-                    next_layer_ptr,
-                    &mut next_len,
-                );
-            }
-        }
-
-        if n2 < n {
-            unsafe {
-                S::partition_equal_bucket(
-                    S::simd_from_slice(cur_layer.get_unchecked(n2, S::L)),
-                    S::splat(S::from_usize(n - n2)),
-                    threshold,
-                    cur_layer_ptr,
-                    &mut cur_len,
-                    equal_layer_ptr,
-                    &mut equal_len,
-                    next_layer_ptr,
-                    &mut next_len,
-                );
-            }
-        }
-
-        debug_assert!(equal_len > 0);
-
-        unsafe {
-            cur_layer.set_len(cur_len);
-            equal_layer.set_len(equal_len);
-            next_layer.set_len(next_len);
-        }
-
-        debug_assert!(equal_layer.assert_all_equal());
-
-        self.equal_buckets[layer + 1] = true;
-
-        // If we extracted all elements to the next layer
-        // because the equal element was the largest one
-        if cur_len == 0 {
-            std::mem::swap(cur_layer, equal_layer);
-            std::mem::swap(cur_layer, next_layer);
-            self.pivots.swap(layer, layer + 1);
-            self.pivots.swap(layer + 1, layer + 2);
-            self.equal_buckets.swap(layer, layer + 1);
-            self.equal_buckets.swap(layer + 1, layer + 2);
-            self.pivots.pop().unwrap();
-            self.clear_equals();
-            self.equal_buckets[self.pivots.len()] = false;
-        }
-
-        if next_len == 0 {
-            self.equal_buckets[layer + 1] = false;
-            self.pivots.pop().unwrap();
-            self.clear_equals();
-        }
-    } */
 
     pub fn introspect(&self) {
         println!("#buckets: {} #elements: {}", self.buckets.len(), self.size);

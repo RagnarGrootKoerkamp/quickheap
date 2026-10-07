@@ -1,32 +1,9 @@
 use crate::{Elem, buckets};
 
 pub trait PivotStrategy {
-    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize);
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
         layer: &B,
     ) -> (T, usize);
-}
-
-#[inline]
-fn get_m_median<T: Elem>(layer: &Vec<T>, mut m: usize) -> (T, usize) {
-    if m % 2 == 0 {
-        m += 1;
-    }
-    let n = layer.len();
-    let k: usize = m / 2;
-
-    let mut pivots: Vec<(T, usize)> = (0..m)
-        .map(|_| {
-            let pos = rand::random_range(0..n);
-            (layer[pos], pos)
-        })
-        .collect();
-
-    pivots.select_nth_unstable(k);
-    let pivot_pos = pivots[k].1;
-    let pivot = pivots[k].0;
-
-    (pivot, pivot_pos)
 }
 
 #[inline]
@@ -54,7 +31,7 @@ fn get_m_median_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, c
     (pivot, pivot_pos)
 }
 
-#[inline(never)] // TODO: CHANGE INLINE
+#[inline(always)]
 fn get_m_median_bucket_const<
     T: Elem,
     B: buckets::Bucket<T, K, CAP>,
@@ -74,7 +51,7 @@ fn get_m_median_bucket_const<
     (pivots[k].0, pivots[k].1)
 }
 
-#[inline]
+#[inline(always)]
 fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
     assert!(M % 2 == 1, "M must be odd");
     let n = layer.len();
@@ -94,11 +71,7 @@ fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
 
 pub struct MedianOfM<const M: usize>;
 impl<const M: usize> PivotStrategy for MedianOfM<M> {
-    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
-        get_median::<T, M>(layer)
-    }
-
-    #[inline(never)] // TODO: CHANGE INLINE
+    #[inline(always)]
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
         layer: &B,
     ) -> (T, usize) {
@@ -108,13 +81,7 @@ impl<const M: usize> PivotStrategy for MedianOfM<M> {
 
 pub struct RandomPivot;
 impl PivotStrategy for RandomPivot {
-    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
-        let n = layer.len();
-        let pivot_pos = rand::random_range(0..n);
-        let pivot = layer[pivot_pos];
-        (pivot, pivot_pos)
-    }
-
+    #[inline(always)]
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
         layer: &B,
     ) -> (T, usize) {
@@ -135,18 +102,7 @@ impl<const A: usize, const B: usize> CbrtPivot<A, B> {
 }
 
 impl<const A: usize, const O: usize> PivotStrategy for CbrtPivot<A, O> {
-    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
-        let n = layer.len();
-        let idx = size_of::<T>() * 8 - n.leading_zeros() as usize;
-
-        let cbrt = CbrtPivot::<A, O>::CBRT_LOOKUP[idx];
-        let fac: f64 = 1 as f64 / A as f64;
-
-        let m = (fac * cbrt as f64) as usize + O;
-
-        get_m_median(layer, m)
-    }
-
+    #[inline(always)]
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
         layer: &B,
     ) -> (T, usize) {
@@ -164,14 +120,7 @@ impl<const A: usize, const O: usize> PivotStrategy for CbrtPivot<A, O> {
 
 pub struct Log2Pivot<const A: usize, const O: usize>;
 impl<const A: usize, const O: usize> PivotStrategy for Log2Pivot<A, O> {
-    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
-        let n = layer.len();
-        let idx = size_of::<T>() * 8 - n.leading_zeros() as usize;
-        let m = A * idx + O;
-
-        get_m_median(layer, m)
-    }
-
+    #[inline(always)]
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
         layer: &B,
     ) -> (T, usize) {
@@ -192,14 +141,7 @@ impl TablePivot {
 }
 
 impl PivotStrategy for TablePivot {
-    fn pick<T: Elem>(layer: &Vec<T>) -> (T, usize) {
-        let i = size_of::<T>() * 8 - layer.len().leading_zeros() as usize;
-        if i > 31 {
-            return get_m_median(layer, 47);
-        }
-        get_m_median(layer, TablePivot::LOOKUP[i])
-    }
-
+    #[inline(always)]
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
         layer: &B,
     ) -> (T, usize) {
