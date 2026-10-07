@@ -260,7 +260,7 @@ pub fn position_min_bucket<
     }
 }
 
-#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+#[cfg(target_feature = "avx2")]
 macro_rules! impl_simd_elem_32 {
     ($t:ty, $simd:ty, $alt:expr) => {
         impl SimdElem<$t> for Avx2 {
@@ -451,7 +451,7 @@ macro_rules! impl_simd_elem_32 {
     };
 }
 
-#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+#[cfg(target_feature = "avx2")]
 macro_rules! impl_simd_elem_64 {
     ($t:ty, $simd:ty, $alt:expr) => {
         impl SimdElem<$t> for Avx2 {
@@ -1391,13 +1391,13 @@ macro_rules! impl_simd_elem_64_neon {
     };
 }
 
-#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+#[cfg(target_feature = "avx2")]
 impl_simd_elem_32!(i32, wide::i32x8, AVX2_ALT_I32);
-#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+#[cfg(target_feature = "avx2")]
 impl_simd_elem_32!(u32, wide::u32x8, AVX2_ALT_U32);
-#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+#[cfg(target_feature = "avx2")]
 impl_simd_elem_64!(i64, wide::i64x4, AVX2_ALT_I64);
-#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+#[cfg(target_feature = "avx2")]
 impl_simd_elem_64!(u64, wide::u64x4, AVX2_ALT_U64);
 
 #[cfg(target_feature = "avx512f")]

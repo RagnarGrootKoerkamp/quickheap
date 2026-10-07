@@ -41,7 +41,13 @@ mod simd;
 #[cfg(test)]
 mod test;
 
-pub use simd::{Avx2, Avx512, Neon};
+#[cfg(target_feature = "avx2")]
+pub use simd::Avx2;
+#[cfg(target_feature = "avx512f")]
+pub use simd::Avx512;
+#[cfg(target_arch = "aarch64")]
+pub use simd::Neon;
+
 use std::marker::PhantomData;
 
 /// Tag to use with [`ConfigurableSimdQuickHeap`]: picks the widest available backend
