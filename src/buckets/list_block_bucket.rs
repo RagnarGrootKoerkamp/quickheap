@@ -194,7 +194,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     fn concat(&mut self, other: Self) {
         debug_assert!(!other.head.is_null());
-        // debug_assert!(!self.tail.is_null());
         if self.tail.is_null() {
             // Concat to empty bucket
             self.total_size = other.total_size;

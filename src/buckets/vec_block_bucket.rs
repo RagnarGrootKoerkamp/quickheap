@@ -101,8 +101,13 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     fn concat(&mut self, other: Self) {
-        debug_assert!(!self.data.is_empty());
         debug_assert!(!other.data.is_empty());
+
+        if self.data.is_empty() {
+            self.total_size = other.total_size;
+            self.data.extend(other.data);
+            return;
+        }
 
         let last_idx_self = self.data.len() - 1;
         let last_idx_other = other.data.len() - 1;

@@ -106,34 +106,6 @@ impl<T: Default + Ord + Copy + Debug + PartialOrd, const K: usize, const CAP: us
     }
 
     #[inline]
-    fn to_vec(&self) -> Vec<T> {
-        self.data[0..self.size].to_vec()
-    }
-
-    #[inline]
-    fn insert_with_overflow(&mut self, elem: T, pos: usize) -> T {
-        unreachable!();
-
-        assert!(pos < K);
-        assert!(self.size == K);
-
-        let mut idx = pos;
-        let mut old;
-        let mut new = elem;
-
-        let r = self.data[K - 1];
-
-        while idx < self.size {
-            old = self.data[idx];
-            self.data[idx] = new;
-            new = old;
-            idx += 1;
-        }
-
-        r
-    }
-
-    #[inline]
     pub fn remove(&mut self, i: usize) -> T {
         assert!(i < K);
         assert!(self.size > 0);
