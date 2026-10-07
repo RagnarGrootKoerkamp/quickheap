@@ -1,4 +1,4 @@
-use crate::buckets::{Block, Bucket, block_arena::BlockArena};
+use crate::buckets::{Bucket, block::Block, block_arena::BlockArena};
 use std::fmt::Debug;
 
 pub struct VecBlockBucket<T, const K: usize, const CAP: usize> {
@@ -268,7 +268,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
-    fn write_buffer(&mut self) -> *mut T {
+    fn write_ptr(&mut self) -> *mut T {
         unimplemented!();
         // self.buff.as_mut_ptr()
     }
@@ -329,15 +329,12 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
-    fn flush(&mut self, _: usize) {
-        unreachable!();
-    }
-
-    #[inline]
     fn override_elem(&mut self, pos: usize, elem: T) {
+        unreachable!();
+        /*
         unsafe {
             (*self.data[pos / K]).override_elem(pos % K, elem);
-        }
+        } */
     }
 
     #[inline]
@@ -391,6 +388,8 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
             self.total_size += len;
         }
     }
+
+    fn recompute_min_max(&mut self) {}
 
     #[inline]
     fn get_unchecked_single(&self, idx: usize) -> T {

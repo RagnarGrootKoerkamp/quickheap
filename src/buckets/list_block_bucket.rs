@@ -1,4 +1,4 @@
-use crate::buckets::{Block, Bucket, block_arena::BlockArena};
+use crate::buckets::{Bucket, block::Block, block_arena::BlockArena};
 use std::{fmt::Debug, ptr};
 
 pub struct ListBlockBucket<T: Default + Copy + Debug + PartialOrd, const K: usize, const CAP: usize>
@@ -52,6 +52,8 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
             free_arena,
         }
     }
+
+    fn recompute_min_max(&mut self) {}
 
     fn min(&mut self) -> (T, usize) {
         debug_assert!(self.total_size > 0);
@@ -265,7 +267,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
-    fn write_buffer(&mut self) -> *mut T {
+    fn write_ptr(&mut self) -> *mut T {
         unreachable!();
     }
 
@@ -361,10 +363,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
             debug_assert!(!curr.is_null());
             (*curr).get(curr_pos)
         }
-    }
-
-    fn flush(&mut self, _: usize) {
-        unreachable!();
     }
 
     fn print(&self) {

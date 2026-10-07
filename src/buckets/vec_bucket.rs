@@ -3,7 +3,6 @@ use std::fmt::Debug;
 
 pub struct VecBucket<T, const K: usize, const CAP: usize> {
     data: Vec<T>,
-    buff: Vec<T>,
 }
 
 impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
@@ -12,13 +11,14 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     fn default(_: *mut BlockArena<T, K, CAP>) -> Self {
         Self {
             data: Vec::with_capacity(128),
-            buff: Vec::with_capacity(128),
         }
     }
 
     fn active_write(&mut self) -> *mut T {
         unreachable!();
     }
+
+    fn recompute_min_max(&mut self) {}
 
     fn get_next_unchecked(&mut self, n: usize) -> &[T] {
         unreachable!();
@@ -84,7 +84,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     #[inline]
     fn reserve(&mut self, n: usize) {
         self.data.reserve(n);
-        self.buff.reserve(self.data.capacity());
     }
 
     #[inline]
@@ -136,7 +135,6 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     #[inline]
     fn clear(&mut self) {
         self.data.clear();
-        self.buff.clear();
     }
 
     #[inline]
@@ -152,23 +150,13 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     }
 
     #[inline]
-    fn write_buffer(&mut self) -> *mut T {
-        self.buff.as_mut_ptr()
+    fn write_ptr(&mut self) -> *mut T {
+        self.data.as_mut_ptr()
     }
 
-    #[inline]
-    fn flush(&mut self, idx: usize) {
-        debug_assert!(idx < self.buff.capacity());
-
-        unsafe {
-            self.buff.set_len(idx);
-        }
-
-        std::mem::swap(&mut self.data, &mut self.buff);
-        self.buff.clear();
+    fn set_last_block_len(&mut self, len: usize) {
+        unreachable!()
     }
-
-    fn set_last_block_len(&mut self, len: usize) {}
 
     #[inline]
     fn print(&self) {

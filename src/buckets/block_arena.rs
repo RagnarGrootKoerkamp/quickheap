@@ -1,9 +1,9 @@
 use std::{
     alloc::{Layout, alloc_zeroed, dealloc},
-    ptr,
+    fmt::Debug,
 };
 
-use crate::buckets::Block;
+use crate::buckets::block::Block;
 
 const SLAB_BLOCKS: usize = 1024;
 
@@ -12,7 +12,9 @@ pub struct BlockArena<T, const K: usize, const CAP: usize> {
     slabs: Vec<*mut Block<T, K, CAP>>,
 }
 
-impl<T, const K: usize, const CAP: usize> BlockArena<T, K, CAP> {
+impl<T: Default + Ord + Copy + Debug + PartialOrd, const K: usize, const CAP: usize>
+    BlockArena<T, K, CAP>
+{
     pub fn new() -> Self {
         Self {
             free: Vec::with_capacity(SLAB_BLOCKS),
@@ -32,9 +34,7 @@ impl<T, const K: usize, const CAP: usize> BlockArena<T, K, CAP> {
     #[inline]
     pub fn free(&mut self, b: *mut Block<T, K, CAP>) {
         unsafe {
-            (*b).size = 0;
-            (*b).next = ptr::null_mut();
-            (*b).prev = ptr::null_mut()
+            (*b).reset();
         };
         self.free.push(b);
     }
