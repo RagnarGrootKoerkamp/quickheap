@@ -73,7 +73,6 @@ pub use simd::SimdElem;
 
 use crate::{
     buckets::{
-        Bucket,
         block_arena::BlockArena,
         partitioning::{FlatPartitioning, Partition},
         vec_bucket::VecBucket,

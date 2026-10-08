@@ -99,6 +99,7 @@ pub trait SimdElem<T>: 'static {
     type Simd: Copy + Debug;
 
     fn splat(v: T) -> Self::Simd;
+
     /// # Safety
     /// `slice` must have at least `L` elements accessible (may read past `slice.len()`).
     unsafe fn simd_from_slice(slice: &[T]) -> Self::Simd;
@@ -112,11 +113,13 @@ pub trait SimdElem<T>: 'static {
     fn from_usize(n: usize) -> T;
     fn wrapping_add_one(t: T) -> T;
 
+    /*
     fn simd_min(a: Self::Simd, b: Self::Simd) -> Self::Simd;
     fn simd_eq_bitmask(a: Self::Simd, b: Self::Simd) -> u64;
     fn reduce_min(a: Self::Simd) -> T;
     fn simd_max(a: Self::Simd, b: Self::Simd) -> Self::Simd;
     fn reduce_max(a: Self::Simd) -> T;
+     */
 
     /// Partition all `L` lanes of `vals` against `threshold`.
     /// # Safety
