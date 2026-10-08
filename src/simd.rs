@@ -1511,6 +1511,7 @@ macro_rules! impl_simd_elem_32_neon {
                 t.wrapping_add(1)
             }
 
+            /*
             #[inline(always)]
             fn simd_min(a: $simd, b: $simd) -> $simd {
                 a.min(b)
@@ -1534,7 +1535,7 @@ macro_rules! impl_simd_elem_32_neon {
             #[inline(always)]
             fn reduce_max(a: $simd) -> $t {
                 a.to_array().into_iter().max().unwrap()
-            }
+            } */
 
             #[inline(always)]
             unsafe fn partition_fast(
@@ -1738,6 +1739,7 @@ macro_rules! impl_simd_elem_64_neon {
                 t.wrapping_add(1)
             }
 
+            /*
             #[inline(always)]
             fn simd_min(a: $simd, b: $simd) -> $simd {
                 a.min(b)
@@ -1761,7 +1763,7 @@ macro_rules! impl_simd_elem_64_neon {
             #[inline(always)]
             fn reduce_max(a: $simd) -> $t {
                 a.to_array().into_iter().max().unwrap()
-            }
+            } */
 
             #[inline(always)]
             unsafe fn partition_fast(
