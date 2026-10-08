@@ -269,6 +269,7 @@ pub fn position_min_bucket<
 }
 
 /// Returns `(min, index of first occurrence)`. For an empty slice returns `(S::MAX, 0)`.
+/*
 #[inline(never)]
 pub fn simd_min_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> (T, usize) {
     let full = s.len() / S::L * S::L;
@@ -303,8 +304,9 @@ pub fn simd_min_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> (T, usize) {
         }
     }
     (min, 0)
-}
+} */
 
+/*
 /// Returns `(max, index of first occurrence)`, or `None` for an empty slice.
 #[inline(never)]
 pub fn simd_max_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> Option<(T, usize)> {
@@ -344,7 +346,7 @@ pub fn simd_max_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> Option<(T, usize)
     }
     unreachable!()
 }
-
+ */
 // ───────────────────────────── AVX2, 32-bit ─────────────────────────────
 
 #[cfg(target_feature = "avx2")]
