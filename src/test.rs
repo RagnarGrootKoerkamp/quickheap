@@ -1,5 +1,5 @@
-use std::cmp::Reverse;
 use std::ops::Sub;
+use std::{cmp::Reverse, default};
 
 use crate::{
     ConfigurableSimdQuickHeap, EqualBucketConstraints, SimdElem,
@@ -10,6 +10,7 @@ use crate::{
         vec_bucket::VecBucket,
     },
     pivot_strategies::MedianOfM,
+    quickheap::{KVSimdQuickheap, SimpleSimdQuickheap},
     rebalancing_strategies::{
         ExponentialUpperBoundRebalancing, NaiveLogRebalancing, NoRebalancing, PivotForgetting,
         RandomizedRebalancing,
@@ -39,6 +40,24 @@ impl GenElem for i64 {
     fn gen_random() -> Self { rand::random() }
     fn gen_min() -> Self { i64::MIN }
     fn gen_max() -> Self { i64::MAX }
+    fn wrapping_inc(self) -> Self { self.wrapping_add(1) }
+    fn wrapping_dec(self) -> Self { self.wrapping_sub(1) }
+}
+
+#[rustfmt::skip]
+impl GenElem for u32 {
+    fn gen_random() -> Self { rand::random() }
+    fn gen_min() -> Self { u32::MIN }
+    fn gen_max() -> Self { u32::MAX }
+    fn wrapping_inc(self) -> Self { self.wrapping_add(1) }
+    fn wrapping_dec(self) -> Self { self.wrapping_sub(1) }
+}
+
+#[rustfmt::skip]
+impl GenElem for i32 {
+    fn gen_random() -> Self { rand::random() }
+    fn gen_min() -> Self { i32::MIN }
+    fn gen_max() -> Self { i32::MAX }
     fn wrapping_inc(self) -> Self { self.wrapping_add(1) }
     fn wrapping_dec(self) -> Self { self.wrapping_sub(1) }
 }
@@ -149,12 +168,26 @@ where
             false,
             false,
         >>::default();
+
+        let mut simple_q = <SimpleSimdQuickheap<T, S>>::default();
+        let mut kv_q = <KVSimdQuickheap<T, S>>::default();
+
         for _ in 0..n {
-            q.push(g.get());
+            let t = g.get();
+            q.push(t);
+            kv_q.push(t, T::gen_max());
+            simple_q.push(t);
         }
         let mut last: Option<T> = None;
         for _ in 0..n {
             let x = q.pop().unwrap();
+            let simple_x = simple_q.pop().unwrap();
+            let (kx, _) = kv_q.pop().unwrap();
+
+            println!("{:?}, {:?}, {:?}", x, simple_x, kx);
+            assert!(x == simple_x);
+            assert!(x == kx);
+
             if let Some(prev) = last {
                 assert!(x >= prev, "out of order: {x:?} < {prev:?}");
             }
@@ -194,37 +227,64 @@ where
         >>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
+        let mut q_simple = SimpleSimdQuickheap::<T, S>::default();
+        let mut q_kv = KVSimdQuickheap::<T, S>::default();
+
         // (push pop push) xn
         for _ in 0..n {
             let x = g.get();
             q1.push(x);
+            q_simple.push(x);
+            q_kv.push(x, T::gen_max());
             q2.push(Reverse(x));
 
             let p = q1.pop();
+            let p_simp = q_simple.pop().unwrap();
+            let p_kv = q_kv.pop().unwrap().0;
+
             assert_eq!(p, q2.pop().map(|v| v.0));
+            assert_eq!(p.unwrap(), p_simp);
+            assert_eq!(p.unwrap(), p_kv);
+
             if let Some(v) = p {
                 g.popped(v);
             }
 
             let x = g.get();
             q1.push(x);
+            q_simple.push(x);
+            q_kv.push(x, T::gen_max());
             q2.push(Reverse(x));
         }
 
         // (pop push pop) xn
         for _ in 0..n {
             let p = q1.pop();
+            let p_simp = q_simple.pop().unwrap();
+            let p_kv = q_kv.pop().unwrap().0;
+
             assert_eq!(p, q2.pop().map(|v| v.0));
+            assert_eq!(p.unwrap(), p_simp);
+            assert_eq!(p.unwrap(), p_kv);
+
             if let Some(v) = p {
                 g.popped(v);
             }
 
             let x = g.get();
             q1.push(x);
+            q_simple.push(x);
+            q_kv.push(x, T::gen_max());
             q2.push(Reverse(x));
 
             let p = q1.pop();
+            let p_simp = q_simple.pop().unwrap();
+            let p_kv = q_kv.pop().unwrap().0;
+
             assert_eq!(p, q2.pop().map(|v| v.0));
+            assert_eq!(p.unwrap(), p_simp);
+            assert_eq!(p.unwrap(), p_kv);
+
             if let Some(v) = p {
                 g.popped(v);
             }
@@ -273,22 +333,26 @@ mod i64 {
     mod neon   { use super::super::*; all_tests!(i64, crate::Neon, 2); }
 }
 
-#[test]
-fn test_initialization_from_layer_and_introspection() {
-    let layer_1: Vec<i32> = vec![6, 7, 8];
-    let layer_2: Vec<i32> = vec![4, 5];
-    let layer_3: Vec<i32> = vec![1, 2];
+#[rustfmt::skip]
+mod i32 {
+    #[cfg(target_feature = "avx2")]
+    mod avx2   { use super::super::*; all_tests!(i32, crate::Avx2, 8); }
 
-    let layers = vec![layer_1, layer_2, layer_3];
+    #[cfg(target_feature = "avx512f")]
+    mod avx512 { use super::super::*; all_tests!(i32, crate::Avx512, 16); }
 
-    /*
-    let mut h = ConfigurableSimdQuickHeap::<i32, VecBucket<i32>>::from_vecs(layers);
+    #[cfg(target_arch = "aarch64")]
+    mod neon   { use super::super::*; all_tests!(i32, crate::Neon, 4); }
+}
 
-    h.push(10);
-    h.push(12);
-    h.push(5);
-    h.push(0);
+#[rustfmt::skip]
+mod u32 {
+    #[cfg(target_feature = "avx2")]
+    mod avx2   { use super::super::*; all_tests!(u32, crate::Avx2, 8); }
 
-    h.introspect();
-     */
+    #[cfg(target_feature = "avx512f")]
+    mod avx512 { use super::super::*; all_tests!(u32, crate::Avx512, 16); }
+
+    #[cfg(target_arch = "aarch64")]
+    mod neon   { use super::super::*; all_tests!(u32, crate::Neon, 4); }
 }

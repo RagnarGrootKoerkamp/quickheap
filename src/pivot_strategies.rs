@@ -52,6 +52,18 @@ fn get_m_median_bucket_const<
 }
 
 #[inline(always)]
+fn get_m_median_const<T: Elem, const M: usize>(layer: &Vec<T>) -> T {
+    let n = layer.len();
+    let k = M / 2;
+    let mut pivots: [T; M] = std::array::from_fn(|_| {
+        let pos = rand::random_range(0..n);
+        layer[pos]
+    });
+    pivots.select_nth_unstable(k);
+    pivots[k]
+}
+
+#[inline(always)]
 fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
     assert!(M % 2 == 1, "M must be odd");
     let n = layer.len();
@@ -76,6 +88,13 @@ impl<const M: usize> PivotStrategy for MedianOfM<M> {
         layer: &B,
     ) -> (T, usize) {
         get_m_median_bucket_const::<T, B, M, K, CAP>(layer)
+    }
+}
+
+impl<const M: usize> MedianOfM<M> {
+    #[inline(always)]
+    pub fn pick<T: Elem>(layer: &Vec<T>) -> T {
+        get_m_median_const::<T, M>(layer)
     }
 }
 

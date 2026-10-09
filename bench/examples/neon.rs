@@ -8,7 +8,6 @@ use bench::workloads::{
     RandomWiggle, Workload,
 };
 
-use quickheap::Neon;
 use quickheap::buckets::list_block_bucket::ListBlockBucket;
 use quickheap::buckets::vec_block_bucket::VecBlockBucket;
 use quickheap::buckets::vec_bucket::VecBucket;
@@ -21,6 +20,10 @@ use quickheap::rebalancing_strategies::NaiveLogRebalancing;
 use quickheap::rebalancing_strategies::NoRebalancing;
 use quickheap::rebalancing_strategies::PivotForgetting;
 use quickheap::rebalancing_strategies::RandomizedRebalancing;
+use quickheap::{
+    Neon,
+    buckets::partitioning::{FlatPartitioning, VecPartitioning},
+};
 
 use std::any::type_name;
 use std::fs::File;
@@ -132,22 +135,33 @@ fn main() {
     cnt += 1;
 
     // Run the SIMD Variants
-    /*
+    // Run the SIMD Variants
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
             i64,                      // Elem Type
             VecBucket<i64, 128, 128>, // Bucket
-            Avx2,                     // Simd
-            MedianOfM<3>,             // Pivot Strategy
-            NoRebalancing,            // Rebalancing Strategy
-            16,                       // Size smallest bucket
-            128,                      // Bucket Size
-            128,                      // Bucket Cap
-            true,                     // Last layer sorted
-            false,                    // Use equal buckets
+            FlatPartitioning<Neon, 128, 128>,
+            Neon,          // Simd
+            MedianOfM<3>,  // Pivot Strategy
+            NoRebalancing, // Rebalancing Strategy
+            16,            // Size smallest bucket
+            128,           // Bucket Size
+            128,           // Bucket Cap
+            true,          // Last layer sorted
+            false,         // Use equal buckets
         >,
-    >(pcs, &mut cnt); */
+    >(&mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i64, // Elem Type
+        quickheap::quickheap::SimpleSimdQuickheap<
+            i64,  // Elem Type
+            Neon, // Simd
+        >,
+    >(&mut cnt);
 
     /*
     cnt += 1;
@@ -362,6 +376,7 @@ fn main() {
 
     cnt += 1;
 
+    /*
     run_variant::<
         i64, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
@@ -376,7 +391,7 @@ fn main() {
             true,                           // Last layer sorted
             false,                          // Use equal buckets
         >,
-    >(&mut cnt);
+    >(&mut cnt); */
 
     cnt += 1;
 

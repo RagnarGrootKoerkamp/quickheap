@@ -35,7 +35,7 @@ pub mod pivot_strategies;
 #[doc(hidden)]
 pub mod rebalancing_strategies;
 
-use std::{fmt::Debug, ptr};
+use std::fmt::Debug;
 
 mod simd;
 #[cfg(test)]
@@ -47,6 +47,8 @@ pub use simd::Avx2;
 pub use simd::Avx512;
 #[cfg(target_arch = "aarch64")]
 pub use simd::Neon;
+
+pub mod quickheap;
 
 use std::marker::PhantomData;
 
