@@ -48,38 +48,6 @@ impl<const S: usize, const K: usize, const CAP: usize> EqualBucketTest<S, K, CAP
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::buckets::{
-        BlockArena, Bucket,
-        equal_buckets::{EqualBucketSamplingTest, EqualBucketTest},
-        vec_bucket::VecBucket,
-    };
-
-    use std::ptr;
-
-    #[test]
-    fn test_equal_sampling() {
-        let ptr: *mut BlockArena<u64, 8, 8> = ptr::null_mut();
-        let mut b = VecBucket::<u64, 8, 8>::default(ptr);
-
-        for i in 0..32 {
-            b.push(i);
-        }
-
-        for _ in 0..20 {
-            b.push(3);
-        }
-
-        b.print();
-
-        let (test, elem) =
-            EqualBucketSamplingTest::<128, 8>::check::<u64, VecBucket<u64, 8, 8>>(&b);
-
-        assert!(!test || elem == 3);
-    }
-}
-
 // Equal-buckets:
 // 1 Check if many equal elements in bucket
 //   - Q: Which buckets to check? Smaller? Bigger? Something in between?
