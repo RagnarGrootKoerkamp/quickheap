@@ -1,6 +1,7 @@
 use std::ops::Sub;
 use std::{cmp::Reverse, default};
 
+use crate::quickheap::IndexElem;
 use crate::{
     ConfigurableSimdQuickHeap, EqualBucketConstraints, SimdElem,
     buckets::{
@@ -22,6 +23,7 @@ trait GenElem: Copy + Ord + std::fmt::Debug {
     fn gen_random() -> Self;
     fn gen_min() -> Self;
     fn gen_max() -> Self;
+    fn gen_zero() -> Self;
     fn wrapping_inc(self) -> Self;
     fn wrapping_dec(self) -> Self;
 }
@@ -31,6 +33,7 @@ impl GenElem for u64 {
     fn gen_random() -> Self { rand::random() }
     fn gen_min() -> Self { u64::MIN }
     fn gen_max() -> Self { u64::MAX }
+    fn gen_zero() -> Self { 0 }
     fn wrapping_inc(self) -> Self { self.wrapping_add(1) }
     fn wrapping_dec(self) -> Self { self.wrapping_sub(1) }
 }
@@ -40,6 +43,7 @@ impl GenElem for i64 {
     fn gen_random() -> Self { rand::random() }
     fn gen_min() -> Self { i64::MIN }
     fn gen_max() -> Self { i64::MAX }
+    fn gen_zero() -> Self { 0 }
     fn wrapping_inc(self) -> Self { self.wrapping_add(1) }
     fn wrapping_dec(self) -> Self { self.wrapping_sub(1) }
 }
@@ -49,6 +53,7 @@ impl GenElem for u32 {
     fn gen_random() -> Self { rand::random() }
     fn gen_min() -> Self { u32::MIN }
     fn gen_max() -> Self { u32::MAX }
+    fn gen_zero() -> Self { 0 }
     fn wrapping_inc(self) -> Self { self.wrapping_add(1) }
     fn wrapping_dec(self) -> Self { self.wrapping_sub(1) }
 }
@@ -58,6 +63,7 @@ impl GenElem for i32 {
     fn gen_random() -> Self { rand::random() }
     fn gen_min() -> Self { i32::MIN }
     fn gen_max() -> Self { i32::MAX }
+    fn gen_zero() -> Self { 0 }
     fn wrapping_inc(self) -> Self { self.wrapping_add(1) }
     fn wrapping_dec(self) -> Self { self.wrapping_sub(1) }
 }
@@ -170,23 +176,18 @@ where
         >>::default();
 
         let mut simple_q = <SimpleSimdQuickheap<T, S>>::default();
-        let mut kv_q = <KVSimdQuickheap<T, S>>::default();
 
         for _ in 0..n {
             let t = g.get();
             q.push(t);
-            kv_q.push(t, T::gen_max());
             simple_q.push(t);
         }
         let mut last: Option<T> = None;
         for _ in 0..n {
             let x = q.pop().unwrap();
             let simple_x = simple_q.pop().unwrap();
-            let (kx, _) = kv_q.pop().unwrap();
 
-            println!("{:?}, {:?}, {:?}", x, simple_x, kx);
             assert!(x == simple_x);
-            assert!(x == kx);
 
             if let Some(prev) = last {
                 assert!(x >= prev, "out of order: {x:?} < {prev:?}");
@@ -228,23 +229,19 @@ where
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
         let mut q_simple = SimpleSimdQuickheap::<T, S>::default();
-        let mut q_kv = KVSimdQuickheap::<T, S>::default();
 
         // (push pop push) xn
         for _ in 0..n {
             let x = g.get();
             q1.push(x);
             q_simple.push(x);
-            q_kv.push(x, T::gen_max());
             q2.push(Reverse(x));
 
             let p = q1.pop();
             let p_simp = q_simple.pop().unwrap();
-            let p_kv = q_kv.pop().unwrap().0;
 
             assert_eq!(p, q2.pop().map(|v| v.0));
             assert_eq!(p.unwrap(), p_simp);
-            assert_eq!(p.unwrap(), p_kv);
 
             if let Some(v) = p {
                 g.popped(v);
@@ -253,7 +250,6 @@ where
             let x = g.get();
             q1.push(x);
             q_simple.push(x);
-            q_kv.push(x, T::gen_max());
             q2.push(Reverse(x));
         }
 
@@ -261,11 +257,9 @@ where
         for _ in 0..n {
             let p = q1.pop();
             let p_simp = q_simple.pop().unwrap();
-            let p_kv = q_kv.pop().unwrap().0;
 
             assert_eq!(p, q2.pop().map(|v| v.0));
             assert_eq!(p.unwrap(), p_simp);
-            assert_eq!(p.unwrap(), p_kv);
 
             if let Some(v) = p {
                 g.popped(v);
@@ -274,16 +268,13 @@ where
             let x = g.get();
             q1.push(x);
             q_simple.push(x);
-            q_kv.push(x, T::gen_max());
             q2.push(Reverse(x));
 
             let p = q1.pop();
             let p_simp = q_simple.pop().unwrap();
-            let p_kv = q_kv.pop().unwrap().0;
 
             assert_eq!(p, q2.pop().map(|v| v.0));
             assert_eq!(p.unwrap(), p_simp);
-            assert_eq!(p.unwrap(), p_kv);
 
             if let Some(v) = p {
                 g.popped(v);

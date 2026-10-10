@@ -168,6 +168,25 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> SimpleSimdQuickheap<T, S> {
     }
 }
 
+pub trait IndexElem {
+    fn to_usize(&self) -> usize;
+}
+
+macro_rules! impl_index_elem {
+    ($t: ty) => {
+        impl IndexElem for $t {
+            fn to_usize(&self) -> usize {
+                *self as usize
+            }
+        }
+    };
+}
+
+impl_index_elem!(i32);
+impl_index_elem!(u32);
+impl_index_elem!(i64);
+impl_index_elem!(u64);
+
 /// The KVSimdQuickHeap implementation
 ///
 /// - `T`: the element type.
@@ -189,25 +208,24 @@ pub struct KVSimdQuickheap<T: Elem, S: simd::SimdElem<T>> {
     /// This can be longer than `layer` to reuse allocations.
     keys: Vec<Vec<T>>,
     values: Vec<Vec<T>>,
+    popped_values: Vec<bool>,
     size: usize,
     _backend: PhantomData<S>,
 }
 
-/// Return a default instance with plenty (128) layers of empty buckets.
-impl<T: Elem + Default, S: simd::SimdElem<T>> Default for KVSimdQuickheap<T, S> {
-    fn default() -> Self {
+impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickheap<T, S> {
+    const N: usize = 16;
+
+    pub fn new(n: usize) -> Self {
         Self {
             pivots: Vec::with_capacity(128),
             keys: (0..128).map(|_| vec![]).collect(),
             values: (0..128).map(|_| vec![]).collect(),
+            popped_values: vec![false; n],
             size: 0,
             _backend: PhantomData,
         }
     }
-}
-
-impl<T: Elem + Debug + Default, S: simd::SimdElem<T>> KVSimdQuickheap<T, S> {
-    const N: usize = 16;
 
     /// Return the total capacity over all buckets.
     pub fn capacity(&self) -> usize {
@@ -227,7 +245,9 @@ impl<T: Elem + Debug + Default, S: simd::SimdElem<T>> KVSimdQuickheap<T, S> {
     }
 
     /// Decrease key of element `value` to `new_key`
-    pub fn decrease_key(&mut self, old_key: usize, new_key: usize, value: usize) {
+    pub fn decrease_key(&mut self, _: T, new_key: T, value: T) {
+        self.push(new_key, value);
+        self.size -= 1; // Decrease size because it is a duplicate element
 
         // 3 Ideas:
         // - Normal (just reinsert, check on pop)
@@ -301,7 +321,12 @@ impl<T: Elem + Debug + Default, S: simd::SimdElem<T>> KVSimdQuickheap<T, S> {
             }
         }
 
+        if self.popped_values[val.to_usize()] {
+            return self.pop();
+        }
+
         self.size -= 1;
+        self.popped_values[val.to_usize()] = true;
 
         Some((key, val))
     }
@@ -399,5 +424,42 @@ impl<T: Elem + Debug + Default, S: simd::SimdElem<T>> KVSimdQuickheap<T, S> {
                 cur = next;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::quickheap::KVSimdQuickheap;
+    use crate::simd::Neon;
+
+    #[test]
+    fn test_decrease_key() {
+        let mut heap = KVSimdQuickheap::<i32, Neon>::new(10);
+        // v: 2 k: 1
+        // v: 7 k: 5
+        // v: 3 k: 10
+        // v: 1 k: 200
+        // v: 0 k: 500
+
+        heap.push(1000, 0);
+        heap.push(200, 1);
+        heap.push(123, 2);
+        heap.push(10, 3);
+        heap.push(5, 7);
+        heap.decrease_key(123, 11, 2);
+        heap.decrease_key(1000, 500, 0);
+        heap.decrease_key(11, 1, 2);
+
+        let (k1, v1) = heap.pop().unwrap();
+        assert!(k1 == 1 && v1 == 2);
+        let (k2, v2) = heap.pop().unwrap();
+        assert!(k2 == 5 && v2 == 7);
+        let (k3, v3) = heap.pop().unwrap();
+        assert!(k3 == 10 && v3 == 3);
+        let (k4, v4) = heap.pop().unwrap();
+        assert!(k4 == 200 && v4 == 1);
+        let (k5, v5) = heap.pop().unwrap();
+        assert!(k5 == 500 && v5 == 0);
+        assert!(heap.pop().is_none());
     }
 }

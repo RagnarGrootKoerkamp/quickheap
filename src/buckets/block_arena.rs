@@ -22,6 +22,14 @@ impl<T: Default + Ord + Copy + Debug + PartialOrd, const K: usize, const CAP: us
         }
     }
 
+    pub fn capacity(&self) -> usize {
+        self.slabs.len() * K * SLAB_BLOCKS
+    }
+
+    pub fn free_capacity(&self) -> usize {
+        self.free.len() * K
+    }
+
     #[inline]
     pub fn alloc(&mut self) -> *mut Block<T, K, CAP> {
         if let Some(b) = self.free.pop() {
@@ -54,6 +62,7 @@ impl<T: Default + Ord + Copy + Debug + PartialOrd, const K: usize, const CAP: us
 }
 
 impl<T, const K: usize, const CAP: usize> Drop for BlockArena<T, K, CAP> {
+    // TODO: Free memory by checking if all the blocks of one slab can be deallocated
     fn drop(&mut self) {
         let layout = Layout::array::<Block<T, K, CAP>>(SLAB_BLOCKS).unwrap();
         for &p in &self.slabs {
