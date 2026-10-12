@@ -79,7 +79,7 @@ use crate::{
         partitioning::{FlatPartitioning, Partition},
         vec_bucket::VecBucket,
     },
-    rebalancing_strategies::{NoRebalancing, RebalancingStrategy},
+    rebalancing_strategies::NoRebalancing,
 };
 
 use std::ops::Sub;
@@ -290,6 +290,14 @@ impl<
 
     /// Return the total capacity over all buckets.
     pub fn capacity(&self) -> usize {
+        unsafe {
+            // For the blocked data structures we want the
+            // total sizes of all allocated blocks
+            if (*self.free_arena).capacity() != 0 {
+                return (*self.free_arena).capacity();
+            }
+        }
+
         self.buckets.iter().map(|b| b.capacity()).sum()
     }
 

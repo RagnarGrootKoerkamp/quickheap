@@ -431,8 +431,8 @@ impl Workload for MostlyPushDecreasing {
     const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
-        // let stride = T::stride();
-        let stride = 2 << 15;
+        let stride = T::stride();
+        // let stride = 2 << 22;
         let mut rng = fastrand::Rng::new();
         let mut values = std::iter::repeat_with(|| rng.u64(0..stride))
             .take(10 * n as usize)
@@ -452,13 +452,12 @@ impl Workload for MostlyPushDecreasing {
                 h.push(T::try_from(values_it.next().unwrap()));
                 h.push(T::try_from(values_it.next().unwrap()));
                 h.push(T::try_from(values_it.next().unwrap()));
-                h.pop().unwrap();
                 h.push(T::try_from(values_it.next().unwrap()));
                 h.push(T::try_from(values_it.next().unwrap()));
                 h.pop().unwrap();
             }
 
-            for _ in 0..(7 * n) {
+            for _ in 0..(8 * n) {
                 h.pop().unwrap().get();
             }
             black_box(h)
