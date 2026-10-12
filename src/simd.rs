@@ -396,6 +396,18 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
+            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+                let lanes = 0xFFu64;
+                if threshold != <$simd>::splat(<$t>::MAX) {
+                    ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
+                } else {
+                    let lt = (threshold.simd_gt(keys).to_bitmask() as u64) & lanes;
+                    let eq = (keys.simd_eq(threshold).to_bitmask() as u64) & lanes;
+                    lt | (eq & 0b10101010)
+                }
+            }
+
+            #[inline(always)]
             unsafe fn partition_fast(
                 vals: Self::Simd,
                 threshold: Self::Simd,
@@ -529,7 +541,7 @@ macro_rules! impl_simd_elem_32 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask(keys, threshold);
+                    let mut small = <Self as SimdElem<$t>>::small_mask(keys, threshold) as u8;
                     let mut large = !small;
                     let in_range = len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
@@ -609,6 +621,18 @@ macro_rules! impl_simd_elem_64 {
             #[inline(always)]
             fn wrapping_add_one(t: $t) -> $t {
                 t.wrapping_add(1)
+            }
+
+            #[inline(always)]
+            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+                let lanes = 0xFu64;
+                if threshold != <$simd>::splat(<$t>::MAX) {
+                    ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
+                } else {
+                    let lt = (threshold.simd_gt(keys).to_bitmask() as u64) & lanes;
+                    let eq = (keys.simd_eq(threshold).to_bitmask() as u64) & lanes;
+                    lt | (eq & 0b1010)
+                }
             }
 
             #[inline(always)]
@@ -868,6 +892,18 @@ macro_rules! impl_simd_elem_32_avx512 {
             #[inline(always)]
             fn wrapping_add_one(t: $t) -> $t {
                 t.wrapping_add(1)
+            }
+
+            #[inline(always)]
+            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+                let lanes = 0xFFFFu64;
+                if threshold != <$simd>::splat(<$t>::MAX) {
+                    ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
+                } else {
+                    let lt = (threshold.simd_gt(keys).to_bitmask() as u64) & lanes;
+                    let eq = (keys.simd_eq(threshold).to_bitmask() as u64) & lanes;
+                    lt | (eq & 0b1010101010101010)
+                }
             }
 
             #[inline(always)]
@@ -1188,6 +1224,18 @@ macro_rules! impl_simd_elem_64_avx512 {
             #[inline(always)]
             fn wrapping_add_one(t: $t) -> $t {
                 t.wrapping_add(1)
+            }
+
+            #[inline(always)]
+            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+                let lanes = 0xFFu64;
+                if threshold != <$simd>::splat(<$t>::MAX) {
+                    ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
+                } else {
+                    let lt = (threshold.simd_gt(keys).to_bitmask() as u64) & lanes;
+                    let eq = (keys.simd_eq(threshold).to_bitmask() as u64) & lanes;
+                    lt | (eq & 0b10101010)
+                }
             }
 
             #[inline(always)]

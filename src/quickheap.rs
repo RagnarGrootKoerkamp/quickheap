@@ -430,8 +430,10 @@ impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickhea
 #[cfg(test)]
 mod test {
     use crate::quickheap::KVSimdQuickheap;
+    #[cfg(target_arch = "aarch64")]
     use crate::simd::Neon;
 
+    #[cfg(target_arch = "aarch64")]
     #[test]
     fn test_decrease_key() {
         let mut heap = KVSimdQuickheap::<i32, Neon>::new(10);
