@@ -50,6 +50,8 @@ pub use simd::Neon;
 
 pub mod quickheap;
 
+pub mod layer_stats;
+
 use std::marker::PhantomData;
 
 /// Tag to use with [`ConfigurableSimdQuickHeap`]: picks the widest available backend
@@ -170,9 +172,14 @@ pub struct ConfigurableSimdQuickHeap<
     free_arena: *mut BlockArena<T, K, CAP>,
 
     size: usize,
+    // TODO: Store subtree sizes
+    // subtree_sizes: Vec<usize>,
+
     global_deletions: usize,
     #[allow(dead_code)]
-    rebal_iteration: usize,
+    rebal_push_iteration: usize,
+    #[allow(dead_code)]
+    rebal_pop_iteration: usize,
     #[allow(dead_code)]
     _p: PhantomData<P>,
     _r: PhantomData<R>,
@@ -224,7 +231,8 @@ impl<
             equal_buckets: (0..128).map(|_| false).collect(),
             size: 0,
             global_deletions: 0,
-            rebal_iteration: 0,
+            rebal_pop_iteration: 0,
+            rebal_push_iteration: 0,
             free_arena,
             _p: PhantomData,
             _part: PhantomData,
@@ -279,7 +287,8 @@ impl<
             equal_buckets: (0..num_buckets).map(|_| false).collect(),
             size: size,
             global_deletions: 0,
-            rebal_iteration: 0,
+            rebal_pop_iteration: 0,
+            rebal_push_iteration: 0,
             free_arena,
             _p: PhantomData,
             _part: PhantomData,
@@ -313,7 +322,10 @@ impl<
 
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
-        self.rebal_iteration += 1;
+        #[cfg(feature = "layer_stats")]
+        layer_stats::layer_stats::record(self.pivots.len() + 1);
+
+        self.rebal_push_iteration += 1;
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
 
         let layer = &mut self.buckets[target_layer];
@@ -329,7 +341,7 @@ impl<
 
         self.size += 1;
 
-        if self.rebal_iteration >= R::MAX_REBAL_ITERATIONS {
+        if self.rebal_push_iteration >= R::MAX_REBAL_ITERATIONS {
             R::on_push(
                 self.size,
                 self.global_deletions,
@@ -338,7 +350,7 @@ impl<
                 &mut self.buckets,
                 self.free_arena,
             );
-            self.rebal_iteration = 0;
+            self.rebal_push_iteration = 0;
         }
     }
 
@@ -377,7 +389,10 @@ impl<
 
     /// Pop the smallest element from the queue.
     pub fn pop(&mut self) -> Option<T> {
-        self.rebal_iteration += 1;
+        #[cfg(feature = "layer_stats")]
+        layer_stats::layer_stats::record(self.pivots.len() + 1);
+
+        self.rebal_pop_iteration += 1;
         self.global_deletions += 1;
 
         // Only the top layer can be empty.
@@ -452,10 +467,10 @@ impl<
 
         self.size -= 1;
 
-        if self.rebal_iteration <= R::MAX_REBAL_ITERATIONS {
+        if self.rebal_pop_iteration <= R::MAX_REBAL_ITERATIONS {
             return Some(min);
         }
-        self.rebal_iteration = 0;
+        self.rebal_pop_iteration = 0;
         R::on_pop(
             self.size,
             &mut self.global_deletions,

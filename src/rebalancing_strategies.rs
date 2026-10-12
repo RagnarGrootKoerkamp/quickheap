@@ -230,18 +230,19 @@ impl ExponentialUpperBoundRebalancing {
 
 #[inline]
 fn one_in(s: usize) -> bool {
-    fastrand::usize(0..s) == 0
+    fastrand::usize(0..=s) == 0
 }
 
-pub struct RandomizedRebalancing {}
+pub struct RandomizedRebalancing<const IT: usize> {}
 impl<
     T: Ord + EqualBucketConstraints + Sub<Output = T>,
     B: Bucket<T, K, CAP>,
+    const IT: usize,
     const K: usize,
     const CAP: usize,
-> RebalancingStrategy<T, B, K, CAP> for RandomizedRebalancing
+> RebalancingStrategy<T, B, K, CAP> for RandomizedRebalancing<IT>
 {
-    const MAX_REBAL_ITERATIONS: usize = 2048;
+    const MAX_REBAL_ITERATIONS: usize = IT;
 
     fn on_pop(_: usize, _: &mut usize, _: &mut Vec<T>, _: &mut Vec<B>) {}
 
@@ -249,24 +250,24 @@ impl<
     fn on_push(
         total_size: usize,
         _: usize,
-        layer: usize,
+        _: usize,
         pivots: &mut Vec<T>,
         buckets: &mut Vec<B>,
         _: *mut BlockArena<T, K, CAP>,
     ) {
-        let mut s = total_size;
-        for i in (layer.max(1)..=pivots.len()).rev() {
-            if one_in(s) {
-                let rest: Vec<B> = buckets.drain(1..=i).collect();
-                pivots.drain(0..i);
+        let mut size: usize = total_size;
+
+        for i in 0..pivots.len() {
+            if one_in(size / 8) {
+                let rest: Vec<B> = buckets.drain(i + 1..=pivots.len()).collect();
+                pivots.drain(i..);
                 for b in rest {
-                    if b.len() > 0 {
-                        buckets[0].concat(b);
-                    }
+                    buckets[i].concat(b);
                 }
                 break;
             }
-            s -= buckets[i].len();
+
+            size -= buckets[i].len();
         }
 
         if buckets[pivots.len()].len() <= 16 {

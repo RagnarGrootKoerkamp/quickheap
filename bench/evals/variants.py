@@ -55,6 +55,13 @@ for file_path in sorted(directory.glob("*.csv")):
         mem += "\\\\\n"
         workload_line += mem
 
+        layers = "& & Median # layers "
+        for c in df_wl["median_layers"]:
+            layers += "& "
+            layers += str(c)
+        layers += "\\\\\n"
+        workload_line += layers
+
         result += workload_line
 
     result += "\\cmidrule(lr){1-11}\n"
