@@ -562,13 +562,20 @@ impl<
         }
 
         // Clear the next layer
+        debug_assert!(self.equal_buckets[layer + 1] == false);
         next_layer.clear();
 
         // Check if the pivot is the same than the previous one
         if EQUAL && (layer > 0) && self.pivots[layer] == self.pivots[layer - 1] {
             if pivot == T::minimum() {
                 self.equal_buckets[layer] = true;
-                self.pivots.pop();
+
+                if replace {
+                    self.pivots[layer] = old_pivot;
+                } else {
+                    self.pivots.pop();
+                }
+
                 return;
             }
 
@@ -588,7 +595,8 @@ impl<
                 self.equal_buckets[layer] = false;
                 self.pivots[layer] = old_pivot;
             } else {
-                self.equal_buckets[self.pivots.len()] = false;
+                debug_assert!(layer == self.pivots.len() - 1);
+                self.equal_buckets[layer] = false;
                 self.pivots.pop();
             }
         }
@@ -602,7 +610,8 @@ impl<
                 self.equal_buckets[layer] = false;
                 self.pivots[layer] = old_pivot;
             } else {
-                self.equal_buckets[self.pivots.len()] = false;
+                debug_assert!(layer == self.pivots.len() - 1);
+                self.equal_buckets[layer] = false;
                 self.pivots.pop();
             }
         }

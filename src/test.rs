@@ -158,8 +158,8 @@ where
             T,
             // VecBucket<T, 112, 128>,
             // FlatPartitioning<S, 112, 128>,
-            VecBlockBucket<T, 112, 128>,
-            // ListBlockBucket<T, 112, 128>,
+            // VecBlockBucket<T, 112, 128>,
+            ListBlockBucket<T, 112, 128>,
             BlockedPartitioning<S, 112, 128>,
             S,
             MedianOfM<3>,
@@ -171,8 +171,8 @@ where
             16,
             112,
             128,
-            false,
-            false,
+            true,
+            true,
         >>::default();
 
         let mut simple_q = <SimpleSimdQuickheap<T, S>>::default();
@@ -210,8 +210,8 @@ where
             T,
             // VecBucket<T, 112, 128>,
             // FlatPartitioning<S, 112, 128>,
-            VecBlockBucket<T, 112, 128>,
-            // ListBlockBucket<T, 112, 128>,
+            // VecBlockBucket<T, 112, 128>,
+            ListBlockBucket<T, 112, 128>,
             BlockedPartitioning<S, 112, 128>,
             S,
             MedianOfM<3>,
@@ -223,8 +223,8 @@ where
             16,
             112,
             128,
-            false,
-            false,
+            true,
+            true,
         >>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
