@@ -1,4 +1,5 @@
-use crate::{Elem, buckets};
+use crate::buckets;
+use quickheap::Elem;
 
 pub trait PivotStrategy {
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
@@ -88,13 +89,6 @@ impl<const M: usize> PivotStrategy for MedianOfM<M> {
         layer: &B,
     ) -> (T, usize) {
         get_m_median_bucket_const::<T, B, M, K, CAP>(layer)
-    }
-}
-
-impl<const M: usize> MedianOfM<M> {
-    #[inline(always)]
-    pub fn pick<T: Elem>(layer: &Vec<T>) -> T {
-        get_m_median_const::<T, M>(layer)
     }
 }
 

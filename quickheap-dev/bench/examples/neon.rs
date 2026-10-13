@@ -8,23 +8,18 @@ use bench::workloads::{
     RandomWiggle, Workload,
 };
 
-use quickheap::buckets::vec_block_bucket::VecBlockBucket;
-use quickheap::buckets::vec_bucket::VecBucket;
-use quickheap::buckets::{
-    block::Block, list_block_bucket::ListBlockBucket, partitioning::BlockedPartitioning,
+use quickheap::simd::Neon;
+use quickheap_dev::buckets::vec_bucket::VecBucket;
+use quickheap_dev::buckets::{
+    block::Block, block_partitioning::BlockedPartitioning, list_block_bucket::ListBlockBucket,
 };
-use quickheap::pivot_strategies::MedianOfM;
-use quickheap::pivot_strategies::RandomPivot;
-use quickheap::pivot_strategies::TablePivot;
-use quickheap::rebalancing_strategies::AlphaBalancedRebalancing;
-use quickheap::rebalancing_strategies::ExponentialUpperBoundRebalancing;
-use quickheap::rebalancing_strategies::NaiveLogRebalancing;
-use quickheap::rebalancing_strategies::NoRebalancing;
-use quickheap::rebalancing_strategies::PivotForgetting;
-use quickheap::rebalancing_strategies::RandomizedRebalancing;
-use quickheap::{
-    Neon,
-    buckets::partitioning::{FlatPartitioning, VecPartitioning},
+use quickheap_dev::buckets::{
+    block_partitioning::FlatPartitioning, vec_block_bucket::VecBlockBucket,
+};
+use quickheap_dev::pivot_strategies::{MedianOfM, RandomPivot, TablePivot};
+use quickheap_dev::rebalancing_strategies::{
+    AlphaBalancedRebalancing, ExponentialUpperBoundRebalancing, NaiveLogRebalancing, NoRebalancing,
+    PivotForgetting, RandomizedRebalancing,
 };
 
 use std::any::type_name;
@@ -149,7 +144,7 @@ fn main() {
 
     run_variant::<
         i32, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
+        quickheap_dev::ConfigurableSimdQuickHeap<
             i32,                      // Elem Type
             VecBucket<i32, 128, 128>, // Bucket
             FlatPartitioning<Neon, 128, 128>,
@@ -168,7 +163,7 @@ fn main() {
 
     run_variant::<
         i32, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
+        quickheap_dev::ConfigurableSimdQuickHeap<
             i32,                            // Elem Type
             ListBlockBucket<i32, 112, 128>, // Bucket
             BlockedPartitioning<Neon, 112, 128>,
@@ -187,7 +182,7 @@ fn main() {
 
     run_variant::<
         i32, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
+        quickheap_dev::ConfigurableSimdQuickHeap<
             i32,                      // Elem Type
             VecBucket<i32, 128, 128>, // Bucket
             FlatPartitioning<Neon, 128, 128>,
@@ -206,7 +201,7 @@ fn main() {
 
     run_variant::<
         i32, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
+        quickheap_dev::ConfigurableSimdQuickHeap<
             i32,                            // Elem Type
             ListBlockBucket<i32, 112, 128>, // Bucket
             BlockedPartitioning<Neon, 112, 128>,

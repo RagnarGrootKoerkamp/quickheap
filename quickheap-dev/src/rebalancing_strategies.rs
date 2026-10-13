@@ -1,7 +1,10 @@
 use crate::{
-    Elem, ElemConstraint,
+    ElemConstraint,
     buckets::{Bucket, block_arena::BlockArena},
 };
+
+use quickheap::Elem;
+
 use fastrand;
 use std::ops::Sub;
 

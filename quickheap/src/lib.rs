@@ -1,17 +1,62 @@
 //! # SimdQuickHeap: A fast SIMD-based priority queue
 //!
-//! Just use the [`SimdQuickHeap`] type and it's [`default`](SimdQuickHeap::default), [`push`](SimdQuickHeap::push), and [`pop`](SimdQuickHeap::pop) functions.
+//! Just use the [`SimdQuickHeap`] type and the and it's [`default`](SimdQuickHeap::default), [`push`](SimdQuickHeap::push), and [`pop`](SimdQuickHeap::pop) functions.
+//!
+//! ## Example
+//! ```
+//! let mut q = quickheap::SimdQuickHeap::<u64>::default();
+//! q.push(4);
+//! q.push(1);
+//! q.push(7);
+//! assert_eq!(q.pop(), Some(1));
+//! q.push(7);
+//! q.push(3);
+//! assert_eq!(q.pop(), Some(3));
+//! assert_eq!(q.pop(), Some(4));
+//! assert_eq!(q.pop(), Some(7));
+//! assert_eq!(q.pop(), Some(7));
+//! assert_eq!(q.pop(), None);
+//! ```
 
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crate::{Elem, buckets::partitioning::VecPartitioning, pivot_strategies::MedianOfM, simd};
+use crate::simd::Avx2;
 
-/// The SimpleSimdQuickHeap implementation
+#[cfg(feature = "c")]
+#[doc(hidden)]
+pub mod c;
+#[doc(hidden)]
+pub mod partitioning;
+#[doc(hidden)]
+pub mod pivots;
+#[doc(hidden)]
+pub mod simd;
+
+#[cfg(test)]
+mod test;
+
+#[cfg(target_feature = "avx512f")]
+pub type Simd = simd::Avx512;
+
+#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+pub type Simd = simd::Avx2;
+
+#[cfg(target_arch = "aarch64")]
+pub type Simd = simd::Neon;
+
+/// Wrapper trait for `Copy + Ord`.
+#[doc(hidden)]
+pub trait Elem: Copy + Ord {}
+impl<T: Copy + Ord> Elem for T {}
+
+use crate::{partitioning::VecPartitioning, pivots::MedianOfM};
+
+/// The SimdQuickHeap implementation
 ///
 /// - `T`: the element type.
 /// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
-pub struct SimpleSimdQuickheap<T: Elem, S: simd::SimdElem<T>> {
+pub struct SimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -32,7 +77,7 @@ pub struct SimpleSimdQuickheap<T: Elem, S: simd::SimdElem<T>> {
 }
 
 /// Return a default instance with plenty (128) layers of empty buckets.
-impl<T: Elem + Default, S: simd::SimdElem<T>> Default for SimpleSimdQuickheap<T, S> {
+impl<T: Elem + Default, S: simd::SimdElem<T>> Default for SimdQuickHeap<T, S> {
     fn default() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
@@ -43,7 +88,7 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> Default for SimpleSimdQuickheap<T,
     }
 }
 
-impl<T: Elem + Default, S: simd::SimdElem<T>> SimpleSimdQuickheap<T, S> {
+impl<T: Elem + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
     const N: usize = 16;
 
     /// Return the total capacity over all buckets.
@@ -191,7 +236,7 @@ impl_index_elem!(u64);
 ///
 /// - `T`: the element type.
 /// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
-pub struct KVSimdQuickheap<T: Elem, S: simd::SimdElem<T>> {
+pub struct KVSimdQuickHeap<T: Elem, S: simd::SimdElem<T>> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -213,7 +258,7 @@ pub struct KVSimdQuickheap<T: Elem, S: simd::SimdElem<T>> {
     _backend: PhantomData<S>,
 }
 
-impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickheap<T, S> {
+impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickHeap<T, S> {
     const N: usize = 16;
 
     pub fn new(n: usize) -> Self {
@@ -424,44 +469,5 @@ impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickhea
                 cur = next;
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::quickheap::KVSimdQuickheap;
-    #[cfg(target_arch = "aarch64")]
-    use crate::simd::Neon;
-
-    #[cfg(target_arch = "aarch64")]
-    #[test]
-    fn test_decrease_key() {
-        let mut heap = KVSimdQuickheap::<i32, Neon>::new(10);
-        // v: 2 k: 1
-        // v: 7 k: 5
-        // v: 3 k: 10
-        // v: 1 k: 200
-        // v: 0 k: 500
-
-        heap.push(1000, 0);
-        heap.push(200, 1);
-        heap.push(123, 2);
-        heap.push(10, 3);
-        heap.push(5, 7);
-        heap.decrease_key(123, 11, 2);
-        heap.decrease_key(1000, 500, 0);
-        heap.decrease_key(11, 1, 2);
-
-        let (k1, v1) = heap.pop().unwrap();
-        assert!(k1 == 1 && v1 == 2);
-        let (k2, v2) = heap.pop().unwrap();
-        assert!(k2 == 5 && v2 == 7);
-        let (k3, v3) = heap.pop().unwrap();
-        assert!(k3 == 10 && v3 == 3);
-        let (k4, v4) = heap.pop().unwrap();
-        assert!(k4 == 200 && v4 == 1);
-        let (k5, v5) = heap.pop().unwrap();
-        assert!(k5 == 500 && v5 == 0);
-        assert!(heap.pop().is_none());
     }
 }

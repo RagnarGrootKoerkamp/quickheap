@@ -1,18 +1,12 @@
 [workspace]
-members = [".", "bench", "ext/s3q-sys", "ext/sequence-heap-sys", "ext/boost-heap-sys", "ext/original-quickheap-sys", "ext/radix-heap-sys"]
+members = ["quickheap"]
+exclude = ["quickheap-dev"]
+resolver = "3"
 
-[profile.release]
-debug = true
-codegen-units = 1
-lto = "fat"
+default-members = ["quickheap"]
 
-[profile.profiling]
-inherits = "release"
-debug = true
-strip = false
-
-[package]
-name = "quickheap"
+[workspace.package]
+# name = "quickheap"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
@@ -21,20 +15,3 @@ keywords = ["priority-queue", "heap", "simd"]
 categories = ["algorithms", "data-structures"]
 authors = ["Ragnar Groot Koerkamp", "Marvin Williams", "Johannes Breitling"]
 description = "A SIMD-accelerated priority queue"
-
-[lib]
-name = "quickheap"
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
-ensure_simd = "0.1.0"
-fastrand = "2.4.1"
-rand = "0.10.1"
-wide = "1.2.0"
-
-[features]
-default = []
-rebalancing = []
-
-# C-ABI bindings (src/c.rs), used by the C++ bindings in cpp/.
-c = []

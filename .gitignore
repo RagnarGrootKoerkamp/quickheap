@@ -1,5 +1,5 @@
-/target
-/input
-/output
+target/
+input/
+output/
 /bench/evals/plots
 /perf

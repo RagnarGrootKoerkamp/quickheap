@@ -8,22 +8,6 @@
 //!
 //! By default, it uses AVX2, or AVX-512 when available during compile time.
 //! To force one or the other, use `SimdQuickHeap<T, Avx2>` or `SimdQuickHeap<T, Avx512>`.
-//!
-//! ## Example
-//! ```
-//! let mut q = quickheap::SimdQuickHeap::<u64>::default();
-//! q.push(4);
-//! q.push(1);
-//! q.push(7);
-//! assert_eq!(q.pop(), Some(1));
-//! q.push(7);
-//! q.push(3);
-//! assert_eq!(q.pop(), Some(3));
-//! assert_eq!(q.pop(), Some(4));
-//! assert_eq!(q.pop(), Some(7));
-//! assert_eq!(q.pop(), Some(7));
-//! assert_eq!(q.pop(), None);
-//! ```
 
 #[cfg(feature = "c")]
 #[doc(hidden)]
@@ -35,20 +19,22 @@ pub mod pivot_strategies;
 #[doc(hidden)]
 pub mod rebalancing_strategies;
 
+#[doc(hidden)]
+pub mod buckets;
+
+mod simd_buckets;
+
 use std::fmt::Debug;
 
-mod simd;
 #[cfg(test)]
 mod test;
 
 #[cfg(target_feature = "avx2")]
-pub use simd::Avx2;
+pub use quickheap::simd::Avx2;
 #[cfg(target_feature = "avx512f")]
-pub use simd::Avx512;
+pub use quickheap::simd::Avx512;
 #[cfg(target_arch = "aarch64")]
-pub use simd::Neon;
-
-pub mod quickheap;
+pub use quickheap::simd::Neon;
 
 pub mod layer_stats;
 
@@ -65,22 +51,18 @@ pub type Simd = Avx2;
 #[cfg(target_arch = "aarch64")]
 pub type Simd = Neon;
 
-/// Wrapper trait for `Copy + Ord`.
-#[doc(hidden)]
-pub trait Elem: Copy + Ord {}
-impl<T: Copy + Ord> Elem for T {}
-
 /// The SIMD tag ([`Avx2`] or [`Avx512`]) must implement `SimdElem<T>`.
 ///
 /// For now, this means you can only use `u32`, `i32`, `u64`, and `i64`.
-pub use simd::SimdElem;
+pub use quickheap::simd::SimdElem;
+
+use crate::buckets::block_partitioning::FlatPartitioning;
+use quickheap::Elem;
+use quickheap::partitioning::Partition;
+use quickheap::simd;
 
 use crate::{
-    buckets::{
-        block_arena::BlockArena,
-        partitioning::{FlatPartitioning, Partition},
-        vec_bucket::VecBucket,
-    },
+    buckets::{block_arena::BlockArena, vec_bucket::VecBucket},
     rebalancing_strategies::NoRebalancing,
 };
 
@@ -164,8 +146,6 @@ impl ElemConstraint for u64 {
         *self as usize
     }
 }
-
-pub mod buckets;
 
 /// The full SimdQuickHeap implementation, with all configuration parameters.
 ///
@@ -490,7 +470,7 @@ impl<
         let min = if SORT || self.equal_buckets[self.pivots.len()] {
             layer.pop().unwrap()
         } else {
-            let min_pos = simd::position_min_bucket::<T, S, B, K, CAP>(layer);
+            let min_pos = simd_buckets::position_min_bucket::<T, S, B, K, CAP>(layer);
             layer.remove(min_pos)
         };
 
@@ -563,9 +543,11 @@ impl<
 
         // Clear the next layer
         debug_assert!(self.equal_buckets[layer + 1] == false);
+        debug_assert!(self.equal_buckets[layer] == false);
         next_layer.clear();
 
         // Check if the pivot is the same than the previous one
+        let mut equal_set = false;
         if EQUAL && (layer > 0) && self.pivots[layer] == self.pivots[layer - 1] {
             if pivot == T::minimum() {
                 self.equal_buckets[layer] = true;
@@ -592,11 +574,9 @@ impl<
         // because the pivot was the smallest one
         if next_layer.len() == 0 {
             if replace {
-                self.equal_buckets[layer] = false;
                 self.pivots[layer] = old_pivot;
             } else {
                 debug_assert!(layer == self.pivots.len() - 1);
-                self.equal_buckets[layer] = false;
                 self.pivots.pop();
             }
         }

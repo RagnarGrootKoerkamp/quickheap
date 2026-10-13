@@ -1,18 +1,18 @@
 [submodule "ext/s3q-sys/third_party/s3q"]
-	path = ext/s3q-sys/third_party/s3q
+	path = quickheap-dev/ext/s3q-sys/third_party/s3q
 	url = https://github.com/raphinesse/s3q.git
 [submodule "ext/s3q-sys/third_party/ips4o"]
-	path = ext/s3q-sys/third_party/ips4o
+	path = quickheap-dev/ext/s3q-sys/third_party/ips4o
 	url = https://github.com/raphinesse/ips4o.git
 [submodule "ext/s3q-sys/third_party/range-v3"]
-	path = ext/s3q-sys/third_party/range-v3
+	path = quickheap-dev/ext/s3q-sys/third_party/range-v3
 	url = https://github.com/ericniebler/range-v3.git
 [submodule "ext/s3q-sys/third_party/xoshiro"]
-	path = ext/s3q-sys/third_party/xoshiro
+	path = quickheap-dev/ext/s3q-sys/third_party/xoshiro
 	url = https://github.com/Reputeless/Xoshiro-cpp.git
 [submodule "ext/sequence-heap-sys/third_party/SequenceHeap"]
-	path = ext/sequence-heap-sys/third_party/SequenceHeap
+	path = quickheap-dev/ext/sequence-heap-sys/third_party/SequenceHeap
 	url = https://github.com/raphinesse/SequenceHeap.git
 [submodule "ext/radix-heap-sys/third_party/radix-heap"]
-	path = ext/radix-heap-sys/third_party/radix-heap
+	path = quickheap-dev/ext/radix-heap-sys/third_party/radix-heap
 	url = github:iwiwi/radix-heap

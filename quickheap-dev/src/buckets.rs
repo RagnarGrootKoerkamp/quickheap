@@ -2,9 +2,9 @@ use crate::buckets::block_arena::BlockArena;
 
 pub mod block;
 pub mod block_arena;
+pub mod block_partitioning;
 pub mod equal_buckets;
 pub mod list_block_bucket;
-pub mod partitioning;
 pub mod vec_block_bucket;
 pub mod vec_bucket;
 

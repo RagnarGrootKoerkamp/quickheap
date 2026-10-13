@@ -2,8 +2,6 @@ use std::{fmt::Debug, mem::transmute};
 
 use wide::{CmpEq, CmpGt, CmpLt};
 
-use crate::buckets;
-
 use wide::i32x4;
 use wide::u32x4;
 
@@ -256,19 +254,6 @@ pub fn position_min<T: Copy + Ord, S: SimdElem<T>>(v: &mut Vec<T>) -> usize {
     } else {
         min_pos[1]
     }
-}
-
-#[inline(never)]
-pub fn position_min_bucket<
-    T: Copy + Ord,
-    S: SimdElem<T>,
-    B: buckets::Bucket<T, K, CAP>,
-    const K: usize,
-    const CAP: usize,
->(
-    v: &mut B,
-) -> usize {
-    v.min().1
 }
 
 /// Returns `(min, index of first occurrence)`. For an empty slice returns `(S::MAX, 0)`.

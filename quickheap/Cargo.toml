@@ -1,0 +1,20 @@
+[package]
+name = "quickheap"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ensure_simd = "0.1.0"
+fastrand = "2.4.1"
+rand = "0.10.1"
+wide = "1.2.0"
+
+[lib]
+name = "quickheap"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["c"]
+layer_stats = []
+# C-ABI bindings (src/c.rs), used by the C++ bindings in cpp/.
+c = []

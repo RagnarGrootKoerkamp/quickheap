@@ -1,17 +1,15 @@
 use std::cmp::Reverse;
 use std::ops::{Index, Sub};
 
-use crate::quickheap::IndexElem;
 use crate::{
     ConfigurableSimdQuickHeap, ElemConstraint, SimdElem,
     buckets::{
+        block_partitioning::{BlockedPartitioning, FlatPartitioning},
         list_block_bucket::ListBlockBucket,
-        partitioning::{BlockedPartitioning, FlatPartitioning},
         vec_block_bucket::VecBlockBucket,
         vec_bucket::VecBucket,
     },
     pivot_strategies::MedianOfM,
-    quickheap::{KVSimdQuickheap, SimpleSimdQuickheap},
     rebalancing_strategies::{
         ExponentialUpperBoundRebalancing, NaiveLogRebalancing, NoRebalancing, PivotForgetting,
         RandomizedRebalancing,
@@ -174,19 +172,13 @@ where
             true,
         >>::default();
 
-        let mut simple_q = <SimpleSimdQuickheap<T, S>>::default();
-
         for _ in 0..n {
             let t = g.get();
             q.push(t);
-            simple_q.push(t);
         }
         let mut last: Option<T> = None;
         for _ in 0..n {
             let x = q.pop().unwrap();
-            let simple_x = simple_q.pop().unwrap();
-
-            assert!(x == simple_x);
 
             if let Some(prev) = last {
                 assert!(x >= prev, "out of order: {x:?} < {prev:?}");
@@ -227,20 +219,15 @@ where
         >>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
-        let mut q_simple = SimpleSimdQuickheap::<T, S>::default();
-
         // (push pop push) xn
         for _ in 0..n {
             let x = g.get();
             q1.push(x);
-            q_simple.push(x);
             q2.push(Reverse(x));
 
             let p = q1.pop();
-            let p_simp = q_simple.pop().unwrap();
 
             assert_eq!(p, q2.pop().map(|v| v.0));
-            assert_eq!(p.unwrap(), p_simp);
 
             if let Some(v) = p {
                 g.popped(v);
@@ -248,17 +235,14 @@ where
 
             let x = g.get();
             q1.push(x);
-            q_simple.push(x);
             q2.push(Reverse(x));
         }
 
         // (pop push pop) xn
         for _ in 0..n {
             let p = q1.pop();
-            let p_simp = q_simple.pop().unwrap();
 
             assert_eq!(p, q2.pop().map(|v| v.0));
-            assert_eq!(p.unwrap(), p_simp);
 
             if let Some(v) = p {
                 g.popped(v);
@@ -266,14 +250,11 @@ where
 
             let x = g.get();
             q1.push(x);
-            q_simple.push(x);
             q2.push(Reverse(x));
 
             let p = q1.pop();
-            let p_simp = q_simple.pop().unwrap();
 
             assert_eq!(p, q2.pop().map(|v| v.0));
-            assert_eq!(p.unwrap(), p_simp);
 
             if let Some(v) = p {
                 g.popped(v);
