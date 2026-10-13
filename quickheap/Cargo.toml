@@ -4,8 +4,6 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-ensure_simd = "0.1.0"
-fastrand = "2.4.1"
 rand = "0.10.1"
 wide = "1.2.0"
 
