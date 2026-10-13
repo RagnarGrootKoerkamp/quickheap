@@ -47,7 +47,7 @@ pub struct Avx2;
 /// Marker type selecting the AVX-512 (512-bit) SIMD backend for [`ConfigurableSimdQuickHeap`].
 ///
 /// The const generic `CS` controls how compressed results are written:
-/// - `Avx512<false>` (the default) uses `_mm512_mask_compressstoreu_epi*`.
+/// - `Avx512<true>` (the default) uses `_mm512_mask_compressstoreu_epi*`.
 /// - `Avx512<true>` uses `_mm512_maskz_compress_epi*` followed by `_mm512_storeu_si512`.
 ///
 /// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"` and the `avx512` feature.
@@ -396,7 +396,7 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+            fn small_mask<const TIE: bool>(keys: $simd, threshold: $simd) -> u64 {
                 let lanes = 0xFFu64;
                 if threshold != <$simd>::splat(<$t>::MAX) {
                     ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
@@ -408,7 +408,7 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const TIE: bool>(
                 vals: Self::Simd,
                 threshold: Self::Simd,
                 cur_write: *mut $t,
@@ -420,7 +420,7 @@ macro_rules! impl_simd_elem_32 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask(vals, threshold) as u8;
+                    let small = <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8;
                     let large = !small;
                     let vals: __m256i = transmute(vals);
 
@@ -441,7 +441,7 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow(
+            unsafe fn partition_slow<const TIE: bool>(
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
@@ -454,7 +454,8 @@ macro_rules! impl_simd_elem_32 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut small = <Self as SimdElem<$t>>::small_mask(vals, threshold) as u8;
+                    let mut small =
+                        <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8;
                     let mut large = !small;
                     let in_range = len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
@@ -495,7 +496,7 @@ macro_rules! impl_simd_elem_32 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask(keys, threshold);
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold);
                     let large = !small;
                     let keys: __m256i = transmute(keys);
                     let vals: __m256i = transmute(vals);
@@ -541,7 +542,8 @@ macro_rules! impl_simd_elem_32 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut small = <Self as SimdElem<$t>>::small_mask(keys, threshold) as u8;
+                    let mut small =
+                        <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold) as u8;
                     let mut large = !small;
                     let in_range = len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
@@ -624,7 +626,7 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+            fn small_mask<const TIE: bool>(keys: $simd, threshold: $simd) -> u64 {
                 let lanes = 0xFu64;
                 if threshold != <$simd>::splat(<$t>::MAX) {
                     ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
@@ -636,7 +638,7 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const TIE: bool>(
                 vals: $simd,
                 threshold: $simd,
                 cur_write: *mut $t,
@@ -648,17 +650,7 @@ macro_rules! impl_simd_elem_64 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut new_thresh = threshold;
-                    let small: u8;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0xF;
-                    } else {
-                        let eq = vals.simd_eq(new_thresh).to_bitmask() as u8;
-                        let small_elems: u8 = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0xF;
-                        small = small_elems | (eq & 0b10101010);
-                    }
-
+                    let small = <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8;
                     let large = small ^ 0xF;
                     let vals: __m256i = transmute(vals);
 
@@ -680,7 +672,7 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow(
+            unsafe fn partition_slow<const TIE: bool>(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
@@ -693,26 +685,15 @@ macro_rules! impl_simd_elem_64 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut new_thresh = threshold;
-                    let mut small: u8;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0xF;
-                    } else {
-                        let eq = (vals.simd_eq(new_thresh).to_bitmask() as u8) & 0xF;
-                        let small_elems: u8 = (new_thresh.simd_gt(vals).to_bitmask() as u8) & 0xF;
-                        small = small_elems | (eq & 0b10101010);
-                    }
-
-                    let mut large = small ^ 0xF;
                     let in_range = (len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8)
                         & 0xF;
-                    small &= in_range;
-                    large &= in_range;
-                    let vals: __m256i = transmute(vals);
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8 & in_range;
+                    let large = (small ^ 0xF) & in_range;
 
+                    let vals: __m256i = transmute(vals);
                     let key: __m256i = transmute(crate::simd::UNIQSHUF64[(large ^ 0xF) as usize]);
                     _mm256_storeu_si256(
                         cur_write.add(*cur_write_cnt) as *mut __m256i,
@@ -745,17 +726,7 @@ macro_rules! impl_simd_elem_64 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut new_thresh = threshold;
-                    let small: u8;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = (new_thresh.simd_gt(keys).to_bitmask() as u8) & 0xF;
-                    } else {
-                        let eq = (keys.simd_eq(new_thresh).to_bitmask() as u8) & 0xF;
-                        let small_elems: u8 = (new_thresh.simd_gt(keys).to_bitmask() as u8) & 0xF;
-                        small = small_elems | (eq & 0b10101010);
-                    }
-
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold) as u8;
                     let large = small ^ 0xF;
                     let keys: __m256i = transmute(keys);
                     let vals: __m256i = transmute(vals);
@@ -801,24 +772,13 @@ macro_rules! impl_simd_elem_64 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut new_thresh = threshold;
-                    let mut small: u8;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = (new_thresh.simd_gt(keys).to_bitmask() as u8) & 0xF;
-                    } else {
-                        let eq = (keys.simd_eq(new_thresh).to_bitmask() as u8) & 0xF;
-                        let small_elems: u8 = (new_thresh.simd_gt(keys).to_bitmask() as u8) & 0xF;
-                        small = small_elems | (eq & 0b10101010);
-                    }
-
-                    let mut large = small ^ 0xF;
                     let in_range = (len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8)
                         & 0xF;
-                    small &= in_range;
-                    large &= in_range;
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold) as u8
+                        & in_range;
+                    let large = (small ^ 0xF) & in_range;
                     let keys: __m256i = transmute(keys);
                     let vals: __m256i = transmute(vals);
 
@@ -895,7 +855,7 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+            fn small_mask<const TIE: bool>(keys: $simd, threshold: $simd) -> u64 {
                 let lanes = 0xFFFFu64;
                 if threshold != <$simd>::splat(<$t>::MAX) {
                     ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
@@ -907,7 +867,7 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const TIE: bool>(
                 vals: Self::Simd,
                 threshold: Self::Simd,
                 cur_write: *mut $t,
@@ -919,17 +879,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut new_thresh = threshold;
-                    let small: u16;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = new_thresh.simd_gt(vals).to_bitmask() as u16;
-                    } else {
-                        let eq = vals.simd_eq(new_thresh).to_bitmask() as u16;
-                        let small_elems: u16 = new_thresh.simd_gt(vals).to_bitmask() as u16;
-                        small = small_elems | (eq & 0b1010101010101010);
-                    }
-
+                    let small = <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u16;
                     let large: u16 = !small;
                     let vals: __m512i = transmute(vals);
                     let large_elems = large.count_ones() as usize;
@@ -961,7 +911,7 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow(
+            unsafe fn partition_slow<const TIE: bool>(
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
@@ -978,18 +928,9 @@ macro_rules! impl_simd_elem_32_avx512 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u16;
 
-                    let mut new_thresh = threshold;
-                    let small: u16;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = (new_thresh.simd_gt(vals).to_bitmask() as u16) & in_range;
-                    } else {
-                        let eq = vals.simd_eq(new_thresh).to_bitmask() as u16;
-                        let small_elems: u16 = new_thresh.simd_gt(vals).to_bitmask() as u16;
-                        small = (small_elems | (eq & 0b1010101010101010)) & in_range;
-                    }
-
-                    let large: u16 = (!small) & in_range;
+                    let small = <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u16
+                        & in_range;
+                    let large: u16 = !small & in_range;
                     let vals: __m512i = transmute(vals);
                     let large_elems = large.count_ones() as usize;
                     let small_elems = small.count_ones() as usize;
@@ -1035,17 +976,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut new_thresh = threshold;
-                    let small: u16;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = new_thresh.simd_gt(keys).to_bitmask() as u16;
-                    } else {
-                        let eq = keys.simd_eq(new_thresh).to_bitmask() as u16;
-                        let small_elems: u16 = new_thresh.simd_gt(keys).to_bitmask() as u16;
-                        small = small_elems | (eq & 0b1010101010101010);
-                    }
-
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(vals, threshold) as u16;
                     let large: u16 = !small;
                     let keys: __m512i = transmute(keys);
                     let vals: __m512i = transmute(vals);
@@ -1117,17 +1048,8 @@ macro_rules! impl_simd_elem_32_avx512 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u16;
 
-                    let mut new_thresh = threshold;
-                    let small: u16;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = (new_thresh.simd_gt(keys).to_bitmask() as u16) & in_range;
-                    } else {
-                        let eq = keys.simd_eq(new_thresh).to_bitmask() as u16;
-                        let small_elems: u16 = new_thresh.simd_gt(keys).to_bitmask() as u16;
-                        small = (small_elems | (eq & 0b1010101010101010)) & in_range;
-                    }
-
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(vals, threshold) as u16
+                        & in_range;
                     let large: u16 = (!small) & in_range;
                     let keys: __m512i = transmute(keys);
                     let vals: __m512i = transmute(vals);
@@ -1227,7 +1149,7 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+            fn small_mask<const TIE: bool>(keys: $simd, threshold: $simd) -> u64 {
                 let lanes = 0xFFu64;
                 if threshold != <$simd>::splat(<$t>::MAX) {
                     ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
@@ -1239,7 +1161,7 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const TIE: bool>(
                 vals: Self::Simd,
                 threshold: Self::Simd,
                 cur_write: *mut $t,
@@ -1251,17 +1173,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut new_thresh = threshold;
-                    let small: u8;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = new_thresh.simd_gt(vals).to_bitmask() as u8;
-                    } else {
-                        let eq = vals.simd_eq(new_thresh).to_bitmask() as u8;
-                        let small_elems: u8 = new_thresh.simd_gt(vals).to_bitmask() as u8;
-                        small = small_elems | (eq & 0b10101010);
-                    }
-
+                    let small = <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8;
                     let large: u8 = !small;
                     let vals: __m512i = transmute(vals);
                     let large_elems = large.count_ones() as usize;
@@ -1293,7 +1205,7 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow(
+            unsafe fn partition_slow<const TIE: bool>(
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
@@ -1310,17 +1222,8 @@ macro_rules! impl_simd_elem_64_avx512 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8;
 
-                    let mut new_thresh = threshold;
-                    let small: u8;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = (new_thresh.simd_gt(vals).to_bitmask() as u8) & in_range;
-                    } else {
-                        let eq = vals.simd_eq(new_thresh).to_bitmask() as u8;
-                        let small_elems: u8 = new_thresh.simd_gt(vals).to_bitmask() as u8;
-                        small = (small_elems | (eq & 0b10101010)) & in_range;
-                    }
-
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8 & in_range;
                     let large: u8 = (!small) & in_range;
                     let vals: __m512i = transmute(vals);
                     let large_elems = large.count_ones() as usize;
@@ -1367,17 +1270,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut new_thresh = threshold;
-                    let small: u8;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = new_thresh.simd_gt(keys).to_bitmask() as u8;
-                    } else {
-                        let eq = keys.simd_eq(new_thresh).to_bitmask() as u8;
-                        let small_elems: u8 = new_thresh.simd_gt(keys).to_bitmask() as u8;
-                        small = small_elems | (eq & 0b10101010);
-                    }
-
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(vals, threshold) as u8;
                     let large: u8 = !small;
                     let keys: __m512i = transmute(keys);
                     let vals: __m512i = transmute(vals);
@@ -1449,17 +1342,8 @@ macro_rules! impl_simd_elem_64_avx512 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8;
 
-                    let mut new_thresh = threshold;
-                    let small: u8;
-                    if new_thresh != <$simd>::splat(<$t>::MAX) {
-                        new_thresh += $alt;
-                        small = (new_thresh.simd_gt(keys).to_bitmask() as u8) & in_range;
-                    } else {
-                        let eq = keys.simd_eq(new_thresh).to_bitmask() as u8;
-                        let small_elems: u8 = new_thresh.simd_gt(keys).to_bitmask() as u8;
-                        small = (small_elems | (eq & 0b10101010)) & in_range;
-                    }
-
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold) as u8
+                        & in_range;
                     let large: u8 = (!small) & in_range;
                     let keys: __m512i = transmute(keys);
                     let vals: __m512i = transmute(vals);
