@@ -8,9 +8,11 @@ use bench::workloads::{
     RandomWiggle, Workload,
 };
 
-use quickheap::buckets::list_block_bucket::ListBlockBucket;
 use quickheap::buckets::vec_block_bucket::VecBlockBucket;
 use quickheap::buckets::vec_bucket::VecBucket;
+use quickheap::buckets::{
+    block::Block, list_block_bucket::ListBlockBucket, partitioning::BlockedPartitioning,
+};
 use quickheap::pivot_strategies::MedianOfM;
 use quickheap::pivot_strategies::RandomPivot;
 use quickheap::pivot_strategies::TablePivot;
@@ -59,15 +61,15 @@ fn run_variant<T: Elem, H: Heap<T>>(idx: &mut usize) {
 
     let mut writer = BufWriter::with_capacity(1 << 15, file);
 
-    let result_hs = run_variant_with_workload::<T, H, HeapSort>();
+    // let result_hs = run_variant_with_workload::<T, H, HeapSort>();
     // let result_bad = run_variant_with_workload::<T, H, MostlyPushDecreasing>();
-    // let result_rw = run_variant_with_workload::<T, H, RandomWiggle>(pcs);
-    // let result_rc = run_variant_with_workload::<T, H, RandomConstantSize>(pcs);
-    // let result_mw = run_variant_with_workload::<T, H, MonotoneWiggle>(pcs);
+    // let result_rw = run_variant_with_workload::<T, H, RandomWiggle>();
+    let result_rc = run_variant_with_workload::<T, H, RandomConstantSize>();
+    // let result_mw = run_variant_with_workload::<T, H, MonotoneWiggle>();
     let result_mc = run_variant_with_workload::<T, H, MonotoneConstantSize>();
 
     // let r = [times_hs, times_rw, times_rc, times_mw, times_mc];
-    let r = [result_mc, result_hs];
+    let r = [result_mc, result_rc];
 
     writer
         .write_all("workload,n,nanoseconds,cache_misses,inst_per_cycle\n".as_bytes())
@@ -93,9 +95,10 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>() -> WorkloadResu
 
     // TODO:
     let ns: Vec<u64> = (15..=22).step_by(1).map(|i| (2u64).pow(i)).collect();
-    // let ns: Vec<u64> = (10..=25).step_by(5).map(|i| (2u64).pow(i)).collect();
+    // let ns: Vec<u64> = (17..=24).step_by(1).map(|i| (2u64).pow(i)).collect();
+    // let ns: Vec<u64> = (10..=23).step_by(5).map(|i| (2u64).pow(i)).collect();
 
-    const REPEATS: usize = 3;
+    const REPEATS: usize = 5;
     let mut times: [f64; REPEATS] = [0f64; REPEATS];
 
     for n in ns {
@@ -131,16 +134,24 @@ fn main() {
 
     // Run the Scalar Variant
     // run_variant::<i64, ScalarQuickHeap<i64, 3, false, { Search::LinearScan }>>(&mut cnt);
-
-    cnt += 1;
+    // cnt += 1;
 
     // Run the SIMD Variants
-    // Run the SIMD Variants
+    /*
     run_variant::<
-        i64, // Elem Type
+        i32, // Elem Type
+        quickheap::quickheap::SimpleSimdQuickheap<
+            i32,  // Elem Type
+            Neon, // Simd
+        >,
+    >(&mut cnt);
+    cnt += 1; */
+
+    run_variant::<
+        i32, // Elem Type
         quickheap::ConfigurableSimdQuickHeap<
-            i64,                      // Elem Type
-            VecBucket<i64, 128, 128>, // Bucket
+            i32,                      // Elem Type
+            VecBucket<i32, 128, 128>, // Bucket
             FlatPartitioning<Neon, 128, 128>,
             Neon,          // Simd
             MedianOfM<3>,  // Pivot Strategy
@@ -156,10 +167,57 @@ fn main() {
     cnt += 1;
 
     run_variant::<
-        i64, // Elem Type
-        quickheap::quickheap::SimpleSimdQuickheap<
-            i64,  // Elem Type
-            Neon, // Simd
+        i32, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i32,                            // Elem Type
+            ListBlockBucket<i32, 112, 128>, // Bucket
+            BlockedPartitioning<Neon, 112, 128>,
+            Neon,          // Simd
+            MedianOfM<3>,  // Pivot Strategy
+            NoRebalancing, // Rebalancing Strategy
+            16,            // Size smallest bucket
+            112,           // Bucket Size
+            128,           // Bucket Cap
+            true,          // Last layer sorted
+            false,         // Use equal buckets
+        >,
+    >(&mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i32, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i32,                      // Elem Type
+            VecBucket<i32, 128, 128>, // Bucket
+            FlatPartitioning<Neon, 128, 128>,
+            Neon,          // Simd
+            MedianOfM<3>,  // Pivot Strategy
+            NoRebalancing, // Rebalancing Strategy
+            16,            // Size smallest bucket
+            128,           // Bucket Size
+            128,           // Bucket Cap
+            true,          // Last layer sorted
+            true,          // Use equal buckets
+        >,
+    >(&mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i32, // Elem Type
+        quickheap::ConfigurableSimdQuickHeap<
+            i32,                            // Elem Type
+            ListBlockBucket<i32, 112, 128>, // Bucket
+            BlockedPartitioning<Neon, 112, 128>,
+            Neon,          // Simd
+            MedianOfM<3>,  // Pivot Strategy
+            NoRebalancing, // Rebalancing Strategy
+            16,            // Size smallest bucket
+            112,           // Bucket Size
+            128,           // Bucket Cap
+            true,          // Last layer sorted
+            true,          // Use equal buckets
         >,
     >(&mut cnt);
 

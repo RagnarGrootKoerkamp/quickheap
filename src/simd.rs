@@ -114,7 +114,7 @@ pub trait SimdElem<T>: 'static {
     fn wrapping_add_one(t: T) -> T;
 
     /// Bit i = lane i of `keys` goes to the "small" side (below threshold, with the alternating-lane tie rule).
-    fn small_mask(keys: Self::Simd, threshold: Self::Simd) -> u64;
+    fn small_mask<const TIE: bool>(keys: Self::Simd, threshold: Self::Simd) -> u64;
 
     /*
     fn simd_min(a: Self::Simd, b: Self::Simd) -> Self::Simd;
@@ -127,7 +127,7 @@ pub trait SimdElem<T>: 'static {
     /// Partition all `L` lanes of `vals` against `threshold`.
     /// # Safety
     /// `cur_write` and `next_write` must have at least `L` elements of capacity beyond their current write index.
-    unsafe fn partition_fast(
+    unsafe fn partition_fast<const TIE: bool>(
         vals: Self::Simd,
         threshold: Self::Simd,
         cur_write: *mut T,
@@ -139,7 +139,7 @@ pub trait SimdElem<T>: 'static {
     /// Like `partition_fast`, but only the first `len` lanes are in range.
     /// # Safety
     /// Same capacity requirements as `partition_fast`.
-    unsafe fn partition_slow(
+    unsafe fn partition_slow<const TIE: bool>(
         vals: Self::Simd,
         len: Self::Simd,
         threshold: Self::Simd,
@@ -1559,8 +1559,13 @@ macro_rules! impl_simd_elem_32_neon {
             }
 
             #[inline(always)]
-            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+            fn small_mask<const TIE: bool>(keys: $simd, threshold: $simd) -> u64 {
                 let lanes = 0xFu64;
+
+                if !TIE {
+                    return ((threshold).simd_gt(keys).to_bitmask() as u64) & lanes;
+                }
+
                 if threshold != <$simd>::splat(<$t>::MAX) {
                     ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
                 } else {
@@ -1597,7 +1602,7 @@ macro_rules! impl_simd_elem_32_neon {
             } */
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const TIE: bool>(
                 vals: $simd,
                 threshold: $simd,
                 cur_write: *mut $t,
@@ -1609,7 +1614,8 @@ macro_rules! impl_simd_elem_32_neon {
                     use core::arch::aarch64::*;
                     use std::mem::transmute;
 
-                    let small: u8 = <Self as SimdElem<$t>>::small_mask(vals, threshold) as u8;
+                    let small: u8 =
+                        <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8;
                     let large: u8 = small ^ 0xF;
                     let v: uint8x16_t = transmute(vals);
 
@@ -1627,7 +1633,7 @@ macro_rules! impl_simd_elem_32_neon {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow(
+            unsafe fn partition_slow<const TIE: bool>(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
@@ -1646,7 +1652,7 @@ macro_rules! impl_simd_elem_32_neon {
                         & 0xF;
 
                     let small: u8 =
-                        <Self as SimdElem<$t>>::small_mask(vals, threshold) as u8 & in_range;
+                        <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8 & in_range;
                     let large = (small ^ 0xF) & in_range;
                     let v: uint8x16_t = transmute(vals);
 
@@ -1679,7 +1685,7 @@ macro_rules! impl_simd_elem_32_neon {
                     use core::arch::aarch64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask(keys, threshold) as u8;
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold) as u8;
                     let large: u8 = small ^ 0xF;
                     let k: uint8x16_t = transmute(keys);
                     let v: uint8x16_t = transmute(vals);
@@ -1724,8 +1730,8 @@ macro_rules! impl_simd_elem_32_neon {
                         .to_bitmask() as u8)
                         & 0xF;
 
-                    let small =
-                        <Self as SimdElem<$t>>::small_mask(keys, threshold) as u8 & in_range;
+                    let small = <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold) as u8
+                        & in_range;
                     let large = (small ^ 0xF) & in_range;
                     let k: uint8x16_t = transmute(keys);
                     let v: uint8x16_t = transmute(vals);
@@ -1797,8 +1803,13 @@ macro_rules! impl_simd_elem_64_neon {
             }
 
             #[inline(always)]
-            fn small_mask(keys: $simd, threshold: $simd) -> u64 {
+            fn small_mask<const TIE: bool>(keys: $simd, threshold: $simd) -> u64 {
                 let lanes = 0xFu64;
+
+                if !TIE {
+                    return ((threshold).simd_gt(keys).to_bitmask() as u64) & lanes;
+                }
+
                 if threshold != <$simd>::splat(<$t>::MAX) {
                     ((threshold + $alt).simd_gt(keys).to_bitmask() as u64) & lanes
                 } else {
@@ -1835,7 +1846,7 @@ macro_rules! impl_simd_elem_64_neon {
             } */
 
             #[inline(always)]
-            unsafe fn partition_fast(
+            unsafe fn partition_fast<const TIE: bool>(
                 vals: $simd,
                 threshold: $simd,
                 cur_write: *mut $t,
@@ -1847,7 +1858,7 @@ macro_rules! impl_simd_elem_64_neon {
                     use core::arch::aarch64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask(vals, threshold) as u8;
+                    let small = <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8;
                     let large: u8 = small ^ 0x3;
                     let v: uint8x16_t = transmute(vals);
 
@@ -1865,7 +1876,7 @@ macro_rules! impl_simd_elem_64_neon {
             }
 
             #[inline(always)]
-            unsafe fn partition_slow(
+            unsafe fn partition_slow<const TIE: bool>(
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
@@ -1884,7 +1895,7 @@ macro_rules! impl_simd_elem_64_neon {
                         & 0x3;
 
                     let small =
-                        <Self as SimdElem<$t>>::small_mask(vals, threshold) as u8 & in_range;
+                        <Self as SimdElem<$t>>::small_mask::<TIE>(vals, threshold) as u8 & in_range;
                     let large = (small ^ 0x3) & in_range;
                     let v: uint8x16_t = transmute(vals);
 
@@ -1917,7 +1928,8 @@ macro_rules! impl_simd_elem_64_neon {
                     use core::arch::aarch64::*;
                     use std::mem::transmute;
 
-                    let small: u8 = <Self as SimdElem<$t>>::small_mask(keys, threshold) as u8;
+                    let small: u8 =
+                        <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold) as u8;
                     let large: u8 = small ^ 0x3;
                     let k: uint8x16_t = transmute(keys);
                     let v: uint8x16_t = transmute(vals);
@@ -1962,8 +1974,9 @@ macro_rules! impl_simd_elem_64_neon {
                         .to_bitmask() as u8)
                         & 0x3;
 
-                    let small: u8 =
-                        <Self as SimdElem<$t>>::small_mask(keys, threshold) as u8 & in_range;
+                    let small: u8 = <Self as SimdElem<$t>>::small_mask::<true>(keys, threshold)
+                        as u8
+                        & in_range;
                     let large = (small ^ 0x3) & in_range;
                     let k: uint8x16_t = transmute(keys);
                     let v: uint8x16_t = transmute(vals);

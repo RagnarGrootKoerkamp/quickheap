@@ -69,7 +69,7 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> SimpleSimdQuickheap<T, S> {
 
         if target_layer == self.pivots.len() && layer.len() < Self::N {
             // Count the number of larger elements in the prefix and insert the new element after them.
-            let pos = layer.partition_point(|x| *x > t); // TODO: Is this correct??
+            let pos = layer.partition_point(|x| *x > t);
             layer.insert(pos, t);
             // TODO: SIMD
         } else {

@@ -7,7 +7,7 @@ impl<
         + workloads::Elem
         + std::ops::Sub<Output = T>
         + Default
-        + quickheap::EqualBucketConstraints,
+        + quickheap::ElemConstraint,
     B: quickheap::buckets::Bucket<T, K, CAP>,
     PART: Partition<T, B>,
     S: quickheap::SimdElem<T>,

@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use std::ptr;
 
 pub trait Partition<T, B> {
-    fn partition(cur_layer: &mut B, next_layer: &mut B, pivot: T);
+    fn partition<const TIE: bool>(cur_layer: &mut B, next_layer: &mut B, pivot: T);
 }
 
 pub struct VecPartitioning<T, S>(PhantomData<T>, PhantomData<S>);
@@ -45,7 +45,7 @@ impl<
 > Partition<T, B> for FlatPartitioning<S, K, CAP>
 {
     #[inline]
-    fn partition(cur_layer: &mut B, next_layer: &mut B, pivot: T) {
+    fn partition<const TIE: bool>(cur_layer: &mut B, next_layer: &mut B, pivot: T) {
         let n = cur_layer.len();
 
         // Reserve space in the next layer,
@@ -68,7 +68,7 @@ impl<
 
         for i in (0..n2).step_by(S::L) {
             unsafe {
-                S::partition_fast(
+                S::partition_fast::<TIE>(
                     S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
                     threshold,
                     cur_layer_ptr,
@@ -81,7 +81,7 @@ impl<
 
         if n2 < n {
             unsafe {
-                S::partition_slow(
+                S::partition_slow::<TIE>(
                     S::simd_from_slice(cur_layer.get_unchecked(n2, n - n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
@@ -109,7 +109,7 @@ impl<
 > Partition<T, B> for BlockedPartitioning<S, K, CAP>
 {
     #[inline]
-    fn partition(cur_layer: &mut B, next_layer: &mut B, pivot: T) {
+    fn partition<const TIE: bool>(cur_layer: &mut B, next_layer: &mut B, pivot: T) {
         let n = cur_layer.len();
 
         cur_layer.reset_iters();
@@ -136,7 +136,7 @@ impl<
             while i < K {
                 unsafe {
                     let v = S::simd_from_ptr(src.add(i));
-                    S::partition_fast(
+                    S::partition_fast::<TIE>(
                         v,
                         threshold,
                         cur_write_ptr,
@@ -161,7 +161,7 @@ impl<
             let n2r = n_rem.next_multiple_of(S::L).saturating_sub(S::L);
             for _ in (0..n2r).step_by(S::L) {
                 unsafe {
-                    S::partition_fast(
+                    S::partition_fast::<TIE>(
                         S::simd_from_slice(cur_layer.get_next_unchecked(S::L)),
                         threshold,
                         cur_write_ptr,
@@ -182,7 +182,7 @@ impl<
 
             if n2r < n_rem {
                 unsafe {
-                    S::partition_slow(
+                    S::partition_slow::<TIE>(
                         S::simd_from_slice(cur_layer.get_next_unchecked(n_rem - n2r)),
                         S::splat(S::from_usize(n - n2)),
                         threshold,
@@ -233,7 +233,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
 
         for i in (0..n2).step_by(S::L) {
             unsafe {
-                S::partition_fast(
+                S::partition_fast::<true>(
                     S::simd_from_slice(cur_layer.get_unchecked(i..i + S::L)),
                     threshold,
                     cur_layer_ptr,
@@ -246,7 +246,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
 
         if n2 < n {
             unsafe {
-                S::partition_slow(
+                S::partition_slow::<true>(
                     S::simd_from_slice(cur_layer.get_unchecked(n2..n)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,

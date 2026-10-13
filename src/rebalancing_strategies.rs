@@ -1,5 +1,5 @@
 use crate::{
-    EqualBucketConstraints,
+    Elem, ElemConstraint,
     buckets::{Bucket, block_arena::BlockArena},
 };
 use fastrand;
@@ -132,7 +132,7 @@ impl<
 
 pub struct ExponentialUpperBoundRebalancing {}
 impl<
-    T: Ord + EqualBucketConstraints + Sub<Output = T>,
+    T: Ord + ElemConstraint + Sub<Output = T>,
     B: Bucket<T, K, CAP>,
     const K: usize,
     const CAP: usize,
@@ -235,7 +235,7 @@ fn one_in(s: usize) -> bool {
 
 pub struct RandomizedRebalancing<const IT: usize> {}
 impl<
-    T: Ord + EqualBucketConstraints + Sub<Output = T>,
+    T: Ord + ElemConstraint + Sub<Output = T>,
     B: Bucket<T, K, CAP>,
     const IT: usize,
     const K: usize,
@@ -278,7 +278,7 @@ impl<
 
 pub struct AlphaBalancedRebalancing {}
 impl<
-    T: Ord + EqualBucketConstraints + Sub<Output = T>,
+    T: Ord + ElemConstraint + Sub<Output = T>,
     B: Bucket<T, K, CAP>,
     const K: usize,
     const CAP: usize,

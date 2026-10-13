@@ -86,12 +86,14 @@ use crate::{
 
 use std::ops::Sub;
 
-pub trait EqualBucketConstraints {
+pub trait ElemConstraint {
     fn one() -> Self;
+    fn dec(&self) -> Self;
     fn minimum() -> Self;
+    fn to_usize(&self) -> usize;
 }
 
-impl EqualBucketConstraints for i32 {
+impl ElemConstraint for i32 {
     fn one() -> Self {
         1
     }
@@ -99,9 +101,17 @@ impl EqualBucketConstraints for i32 {
     fn minimum() -> Self {
         i32::MIN
     }
+
+    fn dec(&self) -> Self {
+        self.saturating_sub(1)
+    }
+
+    fn to_usize(&self) -> usize {
+        *self as usize
+    }
 }
 
-impl EqualBucketConstraints for i64 {
+impl ElemConstraint for i64 {
     fn one() -> Self {
         1
     }
@@ -109,9 +119,17 @@ impl EqualBucketConstraints for i64 {
     fn minimum() -> Self {
         i64::MIN
     }
+
+    fn dec(&self) -> Self {
+        self.saturating_sub(1)
+    }
+
+    fn to_usize(&self) -> usize {
+        *self as usize
+    }
 }
 
-impl EqualBucketConstraints for u32 {
+impl ElemConstraint for u32 {
     fn one() -> Self {
         1
     }
@@ -119,15 +137,31 @@ impl EqualBucketConstraints for u32 {
     fn minimum() -> Self {
         0
     }
+
+    fn dec(&self) -> Self {
+        self.saturating_sub(1)
+    }
+
+    fn to_usize(&self) -> usize {
+        *self as usize
+    }
 }
 
-impl EqualBucketConstraints for u64 {
+impl ElemConstraint for u64 {
     fn one() -> Self {
         1
     }
 
     fn minimum() -> Self {
         0
+    }
+
+    fn dec(&self) -> Self {
+        self.saturating_sub(1)
+    }
+
+    fn to_usize(&self) -> usize {
+        *self as usize
     }
 }
 
@@ -210,7 +244,7 @@ pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
-    T: Elem + Debug + Default + Sub<Output = T> + EqualBucketConstraints,
+    T: Elem + Debug + Default + Sub<Output = T> + ElemConstraint,
     B: buckets::Bucket<T, K, CAP>,
     PART: Partition<T, B>,
     S: simd::SimdElem<T>,
@@ -243,7 +277,7 @@ impl<
 }
 
 impl<
-    T: Elem + Debug + Default + Sub<Output = T> + EqualBucketConstraints,
+    T: Elem + Debug + Default + Sub<Output = T> + ElemConstraint,
     B: buckets::Bucket<T, K, CAP>,
     PART: Partition<T, B>,
     S: simd::SimdElem<T>,
@@ -330,7 +364,16 @@ impl<
 
         let layer = &mut self.buckets[target_layer];
 
-        if SORT && target_layer == self.pivots.len() && layer.len() < N {
+        if target_layer > 0 && self.equal_buckets[target_layer] && t < self.pivots[target_layer - 1]
+        {
+            self.equal_buckets[target_layer] = false;
+        }
+
+        if !self.equal_buckets[target_layer]
+            && SORT
+            && target_layer == self.pivots.len()
+            && layer.len() < N
+        {
             // Count the number of larger elements in the prefix and insert the new element after them.
             let pos = layer.insert_index(t);
             layer.insert(pos, t);
@@ -435,7 +478,7 @@ impl<
             {
                 self.partition(self.pivots.len());
             }
-            if SORT {
+            if !self.equal_buckets[self.pivots.len()] && SORT {
                 // Sort final layer decreasing.
                 let layer = &mut self.buckets[self.pivots.len()];
                 layer.sort_decreasing();
@@ -444,7 +487,7 @@ impl<
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.pivots.len()];
         debug_assert!(!layer.is_empty());
-        let min = if SORT {
+        let min = if SORT || self.equal_buckets[self.pivots.len()] {
             layer.pop().unwrap()
         } else {
             let min_pos = simd::position_min_bucket::<T, S, B, K, CAP>(layer);
@@ -453,6 +496,7 @@ impl<
 
         // Update the active layer.
         if !R::ALLOW_EMPTY_LAYERS && layer.is_empty() && self.pivots.len() > 0 {
+            self.equal_buckets[self.pivots.len()] = false;
             self.pivots.pop();
 
             // Sort the new final layer decreasing if it's already small.
@@ -517,23 +561,34 @@ impl<
             old_pivot = pivot;
         }
 
-        // Check if the pivot is the same than the previous one
-        if (layer > 0) && pivot == self.pivots[layer - 1] {
-            // TODO: Implicit equal partitioning
-        }
-
         // Clear the next layer
         next_layer.clear();
 
-        PART::partition(cur_layer, next_layer, pivot);
+        // Check if the pivot is the same than the previous one
+        if EQUAL && (layer > 0) && self.pivots[layer] == self.pivots[layer - 1] {
+            if pivot == T::minimum() {
+                self.equal_buckets[layer] = true;
+                self.pivots.pop();
+                return;
+            }
+
+            self.pivots[layer] = pivot.dec();
+            self.equal_buckets[layer] = true; // Implicit equal bucket
+            PART::partition::<false>(cur_layer, next_layer, pivot);
+        } else {
+            PART::partition::<true>(cur_layer, next_layer, pivot);
+        }
 
         debug_assert!(next_layer.len() + cur_layer.len() == n);
 
         // If all elements ended up in the current layer
+        // because the pivot was the smallest one
         if next_layer.len() == 0 {
             if replace {
+                self.equal_buckets[layer] = false;
                 self.pivots[layer] = old_pivot;
             } else {
+                self.equal_buckets[self.pivots.len()] = false;
                 self.pivots.pop();
             }
         }
@@ -543,13 +598,29 @@ impl<
         // undo and try again.
         if cur_layer.len() == 0 {
             std::mem::swap(cur_layer, next_layer);
-
             if replace {
+                self.equal_buckets[layer] = false;
                 self.pivots[layer] = old_pivot;
             } else {
+                self.equal_buckets[self.pivots.len()] = false;
                 self.pivots.pop();
             }
         }
+    }
+
+    pub fn assert_equal_buck(bucket: &B) -> bool {
+        if bucket.len() <= 1 {
+            return true;
+        }
+
+        let elem = bucket.get(0);
+        for i in 1..bucket.len() {
+            if elem != bucket.get(i) {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub fn introspect(&self) {

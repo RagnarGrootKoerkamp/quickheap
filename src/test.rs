@@ -1,9 +1,9 @@
-use std::ops::Sub;
-use std::{cmp::Reverse, default};
+use std::cmp::Reverse;
+use std::ops::{Index, Sub};
 
 use crate::quickheap::IndexElem;
 use crate::{
-    ConfigurableSimdQuickHeap, EqualBucketConstraints, SimdElem,
+    ConfigurableSimdQuickHeap, ElemConstraint, SimdElem,
     buckets::{
         list_block_bucket::ListBlockBucket,
         partitioning::{BlockedPartitioning, FlatPartitioning},
@@ -148,7 +148,7 @@ impl<T: GenElem> Generator<T> for MostlyMinGen {
 
 fn heapsort_with_gen<T, S, G, const L: usize>()
 where
-    T: GenElem + Default + Sub<Output = T> + EqualBucketConstraints,
+    T: GenElem + Default + Sub<Output = T> + ElemConstraint,
     S: SimdElem<T>,
     G: Generator<T>,
 {
@@ -163,11 +163,11 @@ where
             BlockedPartitioning<S, 112, 128>,
             S,
             MedianOfM<3>,
-            // NoRebalancing,
+            NoRebalancing,
             // NaiveLogRebalancing<4, 2048>,
             // PivotForgetting<3, 2048>,
             // ExponentialUpperBoundRebalancing,
-            RandomizedRebalancing<128>,
+            // RandomizedRebalancing<128>,
             16,
             112,
             128,
@@ -200,7 +200,7 @@ where
 
 fn wiggle_with_gen<T, S, G, const L: usize>()
 where
-    T: GenElem + Default + Sub<Output = T> + EqualBucketConstraints,
+    T: GenElem + Default + Sub<Output = T> + ElemConstraint,
     S: SimdElem<T>,
     G: Generator<T>,
 {
@@ -215,11 +215,11 @@ where
             BlockedPartitioning<S, 112, 128>,
             S,
             MedianOfM<3>,
-            // NoRebalancing,
+            NoRebalancing,
             // NaiveLogRebalancing<4, 2048>,
             // PivotForgetting<3, 2048>,
             // ExponentialUpperBoundRebalancing,
-            RandomizedRebalancing<128>,
+            // RandomizedRebalancing<128>,
             16,
             112,
             128,
