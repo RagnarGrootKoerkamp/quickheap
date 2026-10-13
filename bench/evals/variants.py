@@ -15,6 +15,8 @@ for file_path in sorted(directory.glob("*.csv")):
     num_workloads = len(workloads)
     num_features = len(df.columns) - 2 # Num of columns minus col n and col workload
 
+    # TODO:
+    num_features = 1
 
     result_col_str = str(num_workloads * num_features)
     result = "\\multirow{" + result_col_str + "}{*}{" + filename + "} &"
@@ -34,33 +36,33 @@ for file_path in sorted(directory.glob("*.csv")):
         workload_line += time
 
 
-        cache = "& & Cache Misses "
-        for c in df_wl["cache_misses"]:
-            cache += "& "
-            cache += str(c)
-        cache += "\\\\\n"
-        workload_line += cache
+        # cache = "& & Cache Misses "
+        # for c in df_wl["cache_misses"]:
+        #     cache += "& "
+        #     cache += str(c)
+        # cache += "\\\\\n"
+        # workload_line += cache
 
-        ipc = "& & Instructions per Cycle "
-        for c in df_wl["inst_per_cycle"]:
-            ipc += "& "
-            ipc += str(c)
-        ipc += "\\\\\n"
-        workload_line += ipc
+        # ipc = "& & Instructions per Cycle "
+        # for c in df_wl["inst_per_cycle"]:
+        #     ipc += "& "
+        #     ipc += str(c)
+        # ipc += "\\\\\n"
+        # workload_line += ipc
 
-        mem = "& & Bytes per Elem "
-        for c in df_wl["bytes_per_elem"]:
-            mem += "& "
-            mem += str(c)
-        mem += "\\\\\n"
-        workload_line += mem
+        # mem = "& & Bytes per Elem "
+        # for c in df_wl["bytes_per_elem"]:
+        #     mem += "& "
+        #     mem += str(c)
+        # mem += "\\\\\n"
+        # workload_line += mem
 
-        layers = "& & Median # layers "
-        for c in df_wl["median_layers"]:
-            layers += "& "
-            layers += str(c)
-        layers += "\\\\\n"
-        workload_line += layers
+        # layers = "& & Median # layers "
+        # for c in df_wl["median_layers"]:
+        #     layers += "& "
+        #     layers += str(c)
+        # layers += "\\\\\n"
+        # workload_line += layers
 
         result += workload_line
 

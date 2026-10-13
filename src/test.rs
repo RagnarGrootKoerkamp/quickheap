@@ -158,7 +158,6 @@ where
             T,
             // VecBucket<T, 112, 128>,
             // FlatPartitioning<S, 112, 128>,
-            // VecBlockBucket<T, 112, 128>,
             ListBlockBucket<T, 112, 128>,
             BlockedPartitioning<S, 112, 128>,
             S,
