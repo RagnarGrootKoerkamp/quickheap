@@ -3,12 +3,19 @@ use std::marker::PhantomData;
 
 pub struct VecPartitioning<T, S>(PhantomData<T>, PhantomData<S>);
 pub trait Partition<T, B> {
-    fn partition<const TIE: bool>(cur_layer: &mut B, next_layer: &mut B, pivot: T);
+    fn partition<const MODE: usize>(
+        cur_layer: &mut B,
+        next_layer: &mut B,
+        pivot: T,
+        pivot_pos: usize,
+    );
 }
+
+use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
 
 impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
     #[inline]
-    pub fn partition(cur_layer: &mut Vec<T>, next_layer: &mut Vec<T>, pivot: T) {
+    pub fn partition(cur_layer: &mut Vec<T>, next_layer: &mut Vec<T>, pivot: T, pivot_pos: usize) {
         let n = cur_layer.len();
 
         // Reserve space in the next layer,
@@ -31,9 +38,10 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
 
         for i in (0..n2).step_by(S::L) {
             unsafe {
-                S::partition_fast::<true>(
+                S::partition_fast::<SPLIT_PIVOTS_CUR_AND_NEXT>(
                     S::simd_from_slice(cur_layer.get_unchecked(i..i + S::L)),
                     threshold,
+                    pivot_pos,
                     cur_layer_ptr,
                     &mut cur_len,
                     next_layer_ptr,
@@ -44,10 +52,11 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
 
         if n2 < n {
             unsafe {
-                S::partition_slow::<true>(
+                S::partition_slow::<SPLIT_PIVOTS_CUR_AND_NEXT>(
                     S::simd_from_slice(cur_layer.get_unchecked(n2..n)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
+                    pivot_pos,
                     cur_layer_ptr,
                     &mut cur_len,
                     next_layer_ptr,
@@ -69,6 +78,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         next_key_layer: &mut Vec<T>,
         next_val_layer: &mut Vec<T>,
         pivot: T,
+        pivot_pos: usize,
     ) {
         let n = cur_key_layer.len();
 
@@ -104,6 +114,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
                     S::simd_from_slice(cur_key_layer.get_unchecked(i..i + S::L)),
                     S::simd_from_slice(cur_val_layer.get_unchecked(i..i + S::L)),
                     threshold,
+                    pivot_pos,
                     cur_key_layer_ptr,
                     cur_val_layer_ptr,
                     &mut cur_len,
@@ -121,6 +132,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
                     S::simd_from_slice(cur_val_layer.get_unchecked(n2..n)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
+                    pivot_pos,
                     cur_key_layer_ptr,
                     cur_val_layer_ptr,
                     &mut cur_len,

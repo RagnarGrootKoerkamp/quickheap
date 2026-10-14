@@ -317,7 +317,17 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         }
     }
 
-    fn recompute_min_max(&mut self) {}
+    fn recompute_min_max(&mut self) {
+        unimplemented!();
+    }
+
+    fn mark_equal(&mut self) {
+        unimplemented!();
+    }
+
+    fn invalidate_min_max(&mut self) {
+        unimplemented!();
+    }
 
     fn insert(&mut self, pos: usize, elem: T) {
         debug_assert!(self.total_size < K);

@@ -36,7 +36,7 @@ pub use quickheap::simd::Avx512;
 #[cfg(target_arch = "aarch64")]
 pub use quickheap::simd::Neon;
 
-pub mod layer_stats;
+pub mod stats;
 
 use std::marker::PhantomData;
 
@@ -72,6 +72,7 @@ pub trait ElemConstraint {
     fn one() -> Self;
     fn dec(&self) -> Self;
     fn minimum() -> Self;
+    fn maximum() -> Self;
     fn to_usize(&self) -> usize;
 }
 
@@ -82,6 +83,10 @@ impl ElemConstraint for i32 {
 
     fn minimum() -> Self {
         i32::MIN
+    }
+
+    fn maximum() -> Self {
+        i32::MAX
     }
 
     fn dec(&self) -> Self {
@@ -102,6 +107,10 @@ impl ElemConstraint for i64 {
         i64::MIN
     }
 
+    fn maximum() -> Self {
+        i64::MAX
+    }
+
     fn dec(&self) -> Self {
         self.saturating_sub(1)
     }
@@ -120,6 +129,10 @@ impl ElemConstraint for u32 {
         0
     }
 
+    fn maximum() -> Self {
+        u32::MAX
+    }
+
     fn dec(&self) -> Self {
         self.saturating_sub(1)
     }
@@ -136,6 +149,10 @@ impl ElemConstraint for u64 {
 
     fn minimum() -> Self {
         0
+    }
+
+    fn maximum() -> Self {
+        u64::MAX
     }
 
     fn dec(&self) -> Self {
@@ -342,12 +359,26 @@ impl<
         self.rebal_push_iteration += 1;
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
 
-        let layer = &mut self.buckets[target_layer];
-
-        if target_layer > 0 && self.equal_buckets[target_layer] && t < self.pivots[target_layer - 1]
+        if EQUAL
+            && target_layer > 0
+            && target_layer == self.pivots.len()
+            && self.equal_buckets[target_layer]
+            && t < self.pivots[target_layer - 1]
         {
-            self.equal_buckets[target_layer] = false;
+            // Push to top layer, create a new layer to leave the equal layer intact
+            if self.buckets.len() == (self.pivots.len() + 1) {
+                self.buckets.push(B::default(self.free_arena));
+                self.equal_buckets.push(false);
+            }
+
+            self.pivots.push(self.pivots[target_layer - 1].dec());
+            self.buckets[self.pivots.len()].push(t);
+
+            self.size += 1;
+            return;
         }
+
+        let layer = &mut self.buckets[target_layer];
 
         if !self.equal_buckets[target_layer]
             && SORT
@@ -413,7 +444,7 @@ impl<
     /// Pop the smallest element from the queue.
     pub fn pop(&mut self) -> Option<T> {
         #[cfg(feature = "layer_stats")]
-        layer_stats::layer_stats::record(self.pivots.len() + 1);
+        stats::layer_stats::record(self.pivots.len() + 1);
 
         self.rebal_pop_iteration += 1;
         self.global_deletions += 1;
@@ -509,6 +540,9 @@ impl<
     fn partition(&mut self, layer: usize) {
         let total_layers = self.pivots.len() + 1;
 
+        #[cfg(feature = "partition_stats")]
+        stats::partition_stats::partition(self.buckets[layer].len());
+
         // Reserve space for an additional L layers when needed.
         if total_layers + 2 * S::L >= self.pivots.capacity() {
             self.pivots.reserve(S::L);
@@ -527,7 +561,7 @@ impl<
         let n = cur_layer.len();
 
         // Sample a pivot using the pivot strategy
-        let (pivot, _) = P::pick_bucket(cur_layer);
+        let (pivot, pivot_pos) = P::pick_bucket(cur_layer);
 
         let old_pivot: T;
         let replace: bool;
@@ -546,8 +580,50 @@ impl<
         debug_assert!(self.equal_buckets[layer] == false);
         next_layer.clear();
 
-        // Check if the pivot is the same than the previous one
-        let mut equal_set = false;
+        // Check if the pivot is the min / max of a bucket
+        /*
+        if EQUAL && cur_layer.min().0 == cur_layer.max().0 {
+            #[cfg(feature = "partition_stats")]
+            stats::partition_stats::equal_bucket();
+            self.equal_buckets[layer] = true;
+            cur_layer.mark_equal();
+
+            if replace {
+                self.pivots[layer] = old_pivot;
+            } else {
+                debug_assert!(layer == self.pivots.len() - 1);
+                self.pivots.pop();
+            }
+            return;
+        }
+
+        if EQUAL && pivot == cur_layer.min().0 {
+            // println!("Pivot is min!");
+            #[cfg(feature = "partition_stats")]
+            stats::partition_stats::equal_bucket();
+            self.equal_buckets[layer + 1] = true; // Implicit equal bucket
+
+            PART::partition::<{ simd::ONLY_PIVOTS_TO_NEXT }>(
+                cur_layer, next_layer, pivot, pivot_pos,
+            );
+        } else if EQUAL && layer > 0 && pivot == cur_layer.max().0 {
+            // println!("Pivot is max!");
+            #[cfg(feature = "partition_stats")]
+            stats::partition_stats::equal_bucket();
+
+            self.pivots[layer - 1] = pivot;
+            self.pivots[layer] = pivot.dec();
+            self.equal_buckets[layer] = true; // Implicit equal bucket
+
+            PART::partition::<{ simd::ONLY_PIVOTS_TO_CUR }>(
+                cur_layer, next_layer, pivot, pivot_pos,
+            );
+        } else {
+            PART::partition::<{ simd::SPLIT_PIVOTS_CUR_AND_NEXT }>(
+                cur_layer, next_layer, pivot, pivot_pos,
+            );
+        } */
+
         if EQUAL && (layer > 0) && self.pivots[layer] == self.pivots[layer - 1] {
             if pivot == T::minimum() {
                 self.equal_buckets[layer] = true;
@@ -558,14 +634,21 @@ impl<
                     self.pivots.pop();
                 }
 
+                #[cfg(feature = "parition_stats")]
+                stats::partition_stats::equal_bucket();
                 return;
             }
 
+            stats::partition_stats::equal_bucket();
             self.pivots[layer] = pivot.dec();
             self.equal_buckets[layer] = true; // Implicit equal bucket
-            PART::partition::<false>(cur_layer, next_layer, pivot);
+            PART::partition::<{ simd::ONLY_PIVOTS_TO_CUR }>(
+                cur_layer, next_layer, pivot, pivot_pos,
+            );
         } else {
-            PART::partition::<true>(cur_layer, next_layer, pivot);
+            PART::partition::<{ simd::SPLIT_PIVOTS_CUR_AND_NEXT }>(
+                cur_layer, next_layer, pivot, pivot_pos,
+            );
         }
 
         debug_assert!(next_layer.len() + cur_layer.len() == n);
@@ -573,6 +656,8 @@ impl<
         // If all elements ended up in the current layer
         // because the pivot was the smallest one
         if next_layer.len() == 0 {
+            #[cfg(feature = "partition_stats")]
+            stats::partition_stats::redo_next_layer();
             if replace {
                 self.pivots[layer] = old_pivot;
             } else {
@@ -585,6 +670,9 @@ impl<
         // because the pivot was the largest one,
         // undo and try again.
         if cur_layer.len() == 0 {
+            #[cfg(feature = "partition_stats")]
+            stats::partition_stats::redo_cur_layer();
+
             std::mem::swap(cur_layer, next_layer);
             if replace {
                 self.equal_buckets[layer] = false;

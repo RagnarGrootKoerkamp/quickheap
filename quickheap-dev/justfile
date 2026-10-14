@@ -1,0 +1,2 @@
+profile-neon:
+    cd bench && samply record cargo run --profile profiling --example neon

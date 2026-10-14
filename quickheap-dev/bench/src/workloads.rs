@@ -268,7 +268,8 @@ impl Workload for RandomConstantSize {
     const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
-        let stride = T::stride();
+        // let stride = T::stride();
+        let stride = 2 << 14;
         let mut rng = fastrand::Rng::new();
         for _ in 0..(n + 50) {
             // TODO: Think of better solution
@@ -282,7 +283,7 @@ impl Workload for RandomConstantSize {
             .into_iter();
         move || {
             for value in values {
-                let _l = h.pop().unwrap().get();
+                let _ = h.pop().unwrap().get();
                 h.push(T::try_from(value));
             }
             black_box(h)
@@ -432,7 +433,6 @@ impl Workload for MostlyPushDecreasing {
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let stride = T::stride();
-        // let stride = 2 << 22;
         let mut rng = fastrand::Rng::new();
         let mut values = std::iter::repeat_with(|| rng.u64(0..stride))
             .take(10 * n as usize)

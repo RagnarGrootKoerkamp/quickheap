@@ -46,4 +46,6 @@ pub trait Bucket<T: PartialEq, const K: usize, const CAP: usize> {
     fn min(&mut self) -> (T, usize);
     fn max(&mut self) -> (T, usize);
     fn recompute_min_max(&mut self);
+    fn mark_equal(&mut self);
+    fn invalidate_min_max(&mut self);
 }

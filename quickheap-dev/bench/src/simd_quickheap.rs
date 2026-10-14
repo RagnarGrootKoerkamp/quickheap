@@ -42,7 +42,7 @@ impl<
 }
 
 impl<T: quickheap::Elem + workloads::Elem + Default, S: quickheap::simd::SimdElem<T>> Heap<T>
-    for quickheap::SimdQuickheap<T, S>
+    for quickheap::SimdQuickHeap<T, S>
 {
     type CountedType = workloads::CountComparisons<T>;
     type CountedHeap = NoHeap;

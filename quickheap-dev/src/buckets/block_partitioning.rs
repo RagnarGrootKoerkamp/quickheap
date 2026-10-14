@@ -42,8 +42,14 @@ impl<
     const CAP: usize,
 > Partition<T, B> for FlatPartitioning<S, K, CAP>
 {
-    #[inline]
-    fn partition<const TIE: bool>(cur_layer: &mut B, next_layer: &mut B, pivot: T) {
+    // #[inline(always)]
+    #[inline(never)] // TODO: Remove after profiling
+    fn partition<const MODE: usize>(
+        cur_layer: &mut B,
+        next_layer: &mut B,
+        pivot: T,
+        pivot_pos: usize,
+    ) {
         let n = cur_layer.len();
 
         // Reserve space in the next layer,
@@ -66,9 +72,10 @@ impl<
 
         for i in (0..n2).step_by(S::L) {
             unsafe {
-                S::partition_fast::<TIE>(
+                S::partition_fast::<MODE>(
                     S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
                     threshold,
+                    pivot_pos,
                     cur_layer_ptr,
                     &mut cur_len,
                     next_layer_ptr,
@@ -79,10 +86,11 @@ impl<
 
         if n2 < n {
             unsafe {
-                S::partition_slow::<TIE>(
+                S::partition_slow::<MODE>(
                     S::simd_from_slice(cur_layer.get_unchecked(n2, n - n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
+                    pivot_pos,
                     cur_layer_ptr,
                     &mut cur_len,
                     next_layer_ptr,
@@ -106,8 +114,14 @@ impl<
     const CAP: usize,
 > Partition<T, B> for BlockedPartitioning<S, K, CAP>
 {
-    #[inline]
-    fn partition<const TIE: bool>(cur_layer: &mut B, next_layer: &mut B, pivot: T) {
+    // #[inline]
+    #[inline(never)] // TODO: Remove after profiling
+    fn partition<const MODE: usize>(
+        cur_layer: &mut B,
+        next_layer: &mut B,
+        pivot: T,
+        pivot_pos: usize,
+    ) {
         let n = cur_layer.len();
 
         cur_layer.reset_iters();
@@ -134,9 +148,10 @@ impl<
             while i < K {
                 unsafe {
                     let v = S::simd_from_ptr(src.add(i));
-                    S::partition_fast::<TIE>(
+                    S::partition_fast::<MODE>(
                         v,
                         threshold,
+                        pivot_pos,
                         cur_write_ptr,
                         &mut cur_len,
                         next_write_ptr,
@@ -159,9 +174,10 @@ impl<
             let n2r = n_rem.next_multiple_of(S::L).saturating_sub(S::L);
             for _ in (0..n2r).step_by(S::L) {
                 unsafe {
-                    S::partition_fast::<TIE>(
+                    S::partition_fast::<MODE>(
                         S::simd_from_slice(cur_layer.get_next_unchecked(S::L)),
                         threshold,
+                        pivot_pos,
                         cur_write_ptr,
                         &mut cur_len,
                         next_write_ptr,
@@ -180,10 +196,11 @@ impl<
 
             if n2r < n_rem {
                 unsafe {
-                    S::partition_slow::<TIE>(
+                    S::partition_slow::<MODE>(
                         S::simd_from_slice(cur_layer.get_next_unchecked(n_rem - n2r)),
                         S::splat(S::from_usize(n - n2)),
                         threshold,
+                        pivot_pos,
                         cur_write_ptr,
                         &mut cur_len,
                         next_write_ptr,

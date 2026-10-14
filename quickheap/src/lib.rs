@@ -186,14 +186,14 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
         let n = cur_layer.len();
 
         // Sample a pivot using the pivot strategy
-        let pivot = MedianOfM::<3>::pick(cur_layer);
+        let (pivot, pivot_pos) = MedianOfM::<3>::pick(cur_layer);
 
         self.pivots.push(pivot);
 
         // Clear the next layer
         next_layer.clear();
 
-        VecPartitioning::<T, S>::partition(cur_layer, next_layer, pivot);
+        VecPartitioning::<T, S>::partition(cur_layer, next_layer, pivot, pivot_pos);
 
         debug_assert!(next_layer.len() + cur_layer.len() == n);
 
@@ -408,7 +408,7 @@ impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickHea
         debug_assert!(cur_val_layer.len() == n);
 
         // Sample a pivot using the pivot strategy
-        let pivot = MedianOfM::<3>::pick(cur_key_layer);
+        let (pivot, pivot_pos) = MedianOfM::<3>::pick(cur_key_layer);
 
         self.pivots.push(pivot);
 
@@ -422,6 +422,7 @@ impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickHea
             next_key_layer,
             next_val_layer,
             pivot,
+            pivot_pos,
         );
 
         debug_assert!(cur_key_layer.len() + next_key_layer.len() == n);

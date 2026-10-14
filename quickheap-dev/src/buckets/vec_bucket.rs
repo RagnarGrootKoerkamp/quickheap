@@ -64,7 +64,17 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         (self.data[max_pos], max_pos)
     }
 
-    fn recompute_min_max(&mut self) {}
+    fn recompute_min_max(&mut self) {
+        unimplemented!();
+    }
+
+    fn invalidate_min_max(&mut self) {
+        unimplemented!();
+    }
+
+    fn mark_equal(&mut self) {
+        unimplemented!();
+    }
 
     #[inline]
     fn push(&mut self, elem: T) {

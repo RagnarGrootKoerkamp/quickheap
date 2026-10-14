@@ -32,7 +32,8 @@ fn get_m_median_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, c
     (pivot, pivot_pos)
 }
 
-#[inline(always)]
+// #[inline(always)]
+#[inline(never)] // TODO: Remove after profiling
 fn get_m_median_bucket_const<
     T: Elem,
     B: buckets::Bucket<T, K, CAP>,
@@ -84,7 +85,8 @@ fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
 
 pub struct MedianOfM<const M: usize>;
 impl<const M: usize> PivotStrategy for MedianOfM<M> {
-    #[inline(always)]
+    // #[inline(always)]
+    #[inline(never)] // TODO: Remove after profiling
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
         layer: &B,
     ) -> (T, usize) {

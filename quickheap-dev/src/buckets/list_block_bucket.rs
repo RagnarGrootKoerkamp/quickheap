@@ -1,8 +1,14 @@
-use crate::buckets::{BlockedBucket, Bucket, FlatBucket, block::Block, block_arena::BlockArena};
+use crate::{
+    ElemConstraint,
+    buckets::{BlockedBucket, Bucket, FlatBucket, block::Block, block_arena::BlockArena},
+};
 use std::{fmt::Debug, ptr};
 
-pub struct ListBlockBucket<T: Default + Copy + Debug + PartialOrd, const K: usize, const CAP: usize>
-{
+pub struct ListBlockBucket<
+    T: Default + Copy + Debug + PartialOrd + ElemConstraint,
+    const K: usize,
+    const CAP: usize,
+> {
     head: *mut Block<T, K, CAP>,
     tail: *mut Block<T, K, CAP>,
 
@@ -10,12 +16,20 @@ pub struct ListBlockBucket<T: Default + Copy + Debug + PartialOrd, const K: usiz
     current_write: *mut Block<T, K, CAP>,
     current_read: *mut Block<T, K, CAP>,
 
+    valid_min_max: bool,
+    min: T,
+    min_pos: usize,
+    max: T,
+    max_pos: usize,
+
     current_read_idx: usize,
 
     free_arena: *mut BlockArena<T, K, CAP>,
 }
 
-impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> ListBlockBucket<T, K, CAP> {
+impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP: usize>
+    ListBlockBucket<T, K, CAP>
+{
     fn push_new_block(&mut self) {
         unsafe {
             let block_ptr = (*self.free_arena).alloc();
@@ -34,8 +48,8 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> ListBloc
     }
 }
 
-impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> BlockedBucket<T, K, CAP>
-    for ListBlockBucket<T, K, CAP>
+impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP: usize>
+    BlockedBucket<T, K, CAP> for ListBlockBucket<T, K, CAP>
 {
     #[inline]
     fn reset_iters(&mut self) {
@@ -112,22 +126,25 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> BlockedB
             while !after_write.is_null() {
                 curr = after_write;
                 after_write = (*after_write).next();
-
-                (*curr).reset();
                 (*self.free_arena).free(curr);
             }
         }
     }
 }
 
-impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
-    for ListBlockBucket<T, K, CAP>
+impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP: usize>
+    Bucket<T, K, CAP> for ListBlockBucket<T, K, CAP>
 {
     fn default(free_arena: *mut BlockArena<T, K, CAP>) -> Self {
         Self {
             head: ptr::null_mut(),
             tail: ptr::null_mut(),
             total_size: 0,
+            min: T::maximum(),
+            max: T::minimum(),
+            min_pos: 0,
+            max_pos: 0,
+            valid_min_max: false,
 
             current_read: Default::default(),
             current_write: Default::default(),
@@ -136,60 +153,87 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
         }
     }
 
-    fn recompute_min_max(&mut self) {}
+    #[inline(never)]
+    fn recompute_min_max(&mut self) {
+        let mut min = T::maximum();
+        let mut max = T::minimum();
+        let mut min_pos = 0;
+        let mut max_pos = 0;
 
-    fn min(&mut self) -> (T, usize) {
-        debug_assert!(self.total_size > 0);
+        let mut curr = self.head;
+        let mut i = 0;
+        while i < self.total_size {
+            unsafe {
+                let elem = (*curr).get(i % K);
 
-        let mut i = 1;
-        self.current_read = self.head;
-        let mut curr = self.next_read_block();
-
-        unsafe {
-            let mut min: T = *curr;
-            let mut min_pos = 0;
-
-            while i < self.total_size {
-                if i % K == 0 {
-                    curr = self.next_read_block();
-                }
-
-                if *(curr.add(i % K)) < min {
-                    min = *(curr.add(i % K));
+                if elem < min {
+                    min = elem;
                     min_pos = i;
                 }
 
-                i += 1;
+                if elem > max {
+                    max = elem;
+                    max_pos = i;
+                }
             }
 
-            (min, min_pos)
+            i += 1;
+            unsafe {
+                if (i % K) == 0 {
+                    curr = (*curr).next();
+                }
+            }
+        }
+
+        self.min = min;
+        self.min_pos = min_pos;
+        self.max = max;
+        self.max_pos = max_pos;
+        self.valid_min_max = true;
+    }
+
+    #[inline(never)]
+    fn min(&mut self) -> (T, usize) {
+        debug_assert!(self.total_size > 0);
+
+        if !self.valid_min_max {
+            self.recompute_min_max();
+        }
+
+        (self.min, self.min_pos)
+    }
+
+    #[inline(never)]
+    fn max(&mut self) -> (T, usize) {
+        debug_assert!(self.total_size > 0);
+        if !self.valid_min_max {
+            self.recompute_min_max();
+        }
+
+        (self.max, self.max_pos)
+    }
+
+    fn mark_equal(&mut self) {
+        self.min = T::maximum();
+        self.min_pos = 0;
+        self.max = T::minimum();
+        self.max_pos = 0;
+        self.valid_min_max = true;
+
+        if self.total_size == 0 {
+            return;
+        }
+
+        unsafe {
+            let e = (*self.head).get(0);
+            self.min = e;
+            self.max = e;
         }
     }
 
-    fn max(&mut self) -> (T, usize) {
-        let mut i = 1;
-        self.current_read = self.head;
-        let mut curr = self.next_read_block();
-
-        unsafe {
-            let mut max: T = *curr;
-            let mut max_pos = 0;
-
-            while i < self.total_size {
-                if i % K == 0 {
-                    curr = self.next_read_block();
-                }
-
-                if *(curr.add(i % K)) > max {
-                    max = *(curr.add(i % K));
-                    max_pos = i;
-                }
-
-                i += 1;
-            }
-
-            (max, max_pos)
-        }
+    #[inline(always)]
+    fn invalidate_min_max(&mut self) {
+        self.valid_min_max = false;
     }
 
     fn concat(&mut self, other: Self) {
@@ -322,6 +366,16 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     #[inline]
     fn push(&mut self, elem: T) {
+        if elem > self.max {
+            self.max = elem;
+            self.max_pos = self.total_size;
+        }
+
+        if elem < self.min {
+            self.min = elem;
+            self.min_pos = self.total_size;
+        }
+
         if self.total_size % K == 0 {
             self.push_new_block();
         }
@@ -356,6 +410,9 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
                 self.head = ptr::null_mut();
             }
 
+            if r == self.min || r == self.max {
+                self.recompute_min_max();
+            }
             Some(r)
         }
     }
@@ -399,6 +456,16 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     fn insert(&mut self, pos: usize, elem: T) {
         debug_assert!(self.total_size < K); // Only insert to the smallest block (at most N elements, N <= K)
 
+        if elem > self.max {
+            self.max = elem;
+            self.max_pos = self.total_size;
+        }
+
+        if elem < self.min {
+            self.min = elem;
+            self.min_pos = self.total_size;
+        }
+
         if self.total_size == 0 {
             debug_assert!(pos == 0);
             self.push(elem);
@@ -430,7 +497,16 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     fn remove(&mut self, i: usize) -> T {
         debug_assert!(self.total_size > 0);
         debug_assert!(i < K);
-        unsafe { (*self.head).remove(i) }
+        self.total_size -= 1;
+
+        unsafe {
+            let r = (*self.head).remove(i);
+            if r == self.min || r == self.max {
+                self.recompute_min_max();
+            }
+
+            r
+        }
     }
 
     #[inline]
