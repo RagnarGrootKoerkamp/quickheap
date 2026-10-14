@@ -501,6 +501,7 @@ macro_rules! impl_simd_elem_32 {
                 keys: Self::Simd,
                 vals: Self::Simd,
                 threshold: Self::Simd,
+                pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
                 cur_write_cnt: &mut usize,
@@ -551,6 +552,7 @@ macro_rules! impl_simd_elem_32 {
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
+                pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
                 cur_write_cnt: &mut usize,
@@ -563,7 +565,9 @@ macro_rules! impl_simd_elem_32 {
                     use std::mem::transmute;
 
                     let mut small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold,
+                        keys,
+                        threshold,
+                        *cur_write_cnt + *next_write_cnt + pivot_pos,
                     ) as u8;
                     let mut large = !small;
                     let in_range = len
@@ -756,6 +760,7 @@ macro_rules! impl_simd_elem_64 {
                 keys: $simd,
                 vals: $simd,
                 threshold: $simd,
+                pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
                 cur_write_cnt: &mut usize,
@@ -806,6 +811,7 @@ macro_rules! impl_simd_elem_64 {
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
+                pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
                 cur_write_cnt: &mut usize,
@@ -822,7 +828,9 @@ macro_rules! impl_simd_elem_64 {
                         .to_bitmask() as u8)
                         & 0xF;
                     let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold,
+                        keys,
+                        threshold,
+                        *cur_write_cnt + *next_write_cnt + pivot_pos,
                     ) as u8
                         & in_range;
                     let large = (small ^ 0xF) & in_range;
@@ -1032,6 +1040,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                 keys: Self::Simd,
                 vals: Self::Simd,
                 threshold: Self::Simd,
+                pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
                 cur_write_cnt: &mut usize,
@@ -1044,7 +1053,9 @@ macro_rules! impl_simd_elem_32_avx512 {
                     use std::mem::transmute;
 
                     let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        vals, threshold,
+                        vals,
+                        threshold,
+                        *cur_write_cnt + *next_write_cnt + pivot_pos,
                     ) as u16;
                     let large: u16 = !small;
                     let keys: __m512i = transmute(keys);
@@ -1102,6 +1113,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
+                pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
                 cur_write_cnt: &mut usize,
@@ -1118,7 +1130,9 @@ macro_rules! impl_simd_elem_32_avx512 {
                         .to_bitmask() as u16;
 
                     let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        vals, threshold,
+                        vals,
+                        threshold,
+                        *cur_write_cnt + *next_write_cnt + pivot_pos,
                     ) as u16
                         & in_range;
                     let large: u16 = (!small) & in_range;
@@ -1350,6 +1364,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                 keys: Self::Simd,
                 vals: Self::Simd,
                 threshold: Self::Simd,
+                pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
                 cur_write_cnt: &mut usize,
@@ -1422,6 +1437,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
+                pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
                 cur_write_cnt: &mut usize,
