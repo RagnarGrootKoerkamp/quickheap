@@ -42,8 +42,7 @@ impl<
     const CAP: usize,
 > Partition<T, B> for FlatPartitioning<S, K, CAP>
 {
-    // #[inline(always)]
-    #[inline(never)] // TODO: Remove after profiling
+    #[inline(always)]
     fn partition<const MODE: usize>(
         cur_layer: &mut B,
         next_layer: &mut B,
@@ -114,8 +113,7 @@ impl<
     const CAP: usize,
 > Partition<T, B> for BlockedPartitioning<S, K, CAP>
 {
-    // #[inline]
-    #[inline(never)] // TODO: Remove after profiling
+    #[inline]
     fn partition<const MODE: usize>(
         cur_layer: &mut B,
         next_layer: &mut B,

@@ -18,7 +18,7 @@ publish = false
 
 
 [features]
-default = ["partition_stats"]
+default = []
 partition_stats = []
 layer_stats = []
 

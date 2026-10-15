@@ -1557,8 +1557,7 @@ macro_rules! impl_simd_elem_32_neon {
                 t.wrapping_add(1)
             }
 
-            // #[inline(always)]
-            #[inline(never)] // TODO: Remove after profiling
+            #[inline(always)]
             fn small_mask<const MODE: usize>(keys: $simd, threshold: $simd, rand: usize) -> u64 {
                 let lanes = 0xFu64;
 
@@ -1606,8 +1605,7 @@ macro_rules! impl_simd_elem_32_neon {
                 a.to_array().into_iter().max().unwrap()
             } */
 
-            // #[inline(always)]
-            #[inline(never)] // TODO: Remove after profiling
+            #[inline(always)]
             unsafe fn partition_fast<const MODE: usize>(
                 vals: $simd,
                 threshold: $simd,
@@ -1642,8 +1640,7 @@ macro_rules! impl_simd_elem_32_neon {
                 }
             }
 
-            // #[inline(always)]
-            #[inline(never)] // TODO: Remove after profiling
+            #[inline(always)]
             unsafe fn partition_slow<const MODE: usize>(
                 vals: $simd,
                 len: $simd,
@@ -1828,8 +1825,7 @@ macro_rules! impl_simd_elem_64_neon {
                 t.wrapping_add(1)
             }
 
-            // #[inline(always)]
-            #[inline(never)] // TODO: Remove after profiling
+            #[inline(always)]
             fn small_mask<const MODE: usize>(keys: $simd, threshold: $simd, rand: usize) -> u64 {
                 let lanes = 0xFu64;
 
@@ -1890,8 +1886,7 @@ macro_rules! impl_simd_elem_64_neon {
                 a.to_array().into_iter().max().unwrap()
             } */
 
-            // #[inline(always)]
-            #[inline(never)] // TODO: Remove after profiling
+            #[inline(always)]
             unsafe fn partition_fast<const MODE: usize>(
                 vals: $simd,
                 threshold: $simd,
@@ -1926,8 +1921,7 @@ macro_rules! impl_simd_elem_64_neon {
                 }
             }
 
-            // #[inline(always)]
-            #[inline(never)] // TODO: Remove after profiling
+            #[inline(always)]
             unsafe fn partition_slow<const MODE: usize>(
                 vals: $simd,
                 len: $simd,

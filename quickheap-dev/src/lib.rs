@@ -354,7 +354,7 @@ impl<
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
         #[cfg(feature = "layer_stats")]
-        layer_stats::layer_stats::record(self.pivots.len() + 1);
+        stats::layer_stats::record(self.pivots.len() + 1);
 
         self.rebal_push_iteration += 1;
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
@@ -639,6 +639,7 @@ impl<
                 return;
             }
 
+            #[cfg(feature = "partition_stats")]
             stats::partition_stats::equal_bucket();
             self.pivots[layer] = pivot.dec();
             self.equal_buckets[layer] = true; // Implicit equal bucket
@@ -683,21 +684,6 @@ impl<
                 self.pivots.pop();
             }
         }
-    }
-
-    pub fn assert_equal_buck(bucket: &B) -> bool {
-        if bucket.len() <= 1 {
-            return true;
-        }
-
-        let elem = bucket.get(0);
-        for i in 1..bucket.len() {
-            if elem != bucket.get(i) {
-                return false;
-            }
-        }
-
-        true
     }
 
     pub fn introspect(&self) {

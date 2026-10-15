@@ -14,5 +14,6 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = ["c"]
 layer_stats = []
+partition_stats = []
 # C-ABI bindings (src/c.rs), used by the C++ bindings in cpp/.
 c = []

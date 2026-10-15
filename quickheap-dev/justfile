@@ -1,2 +1,8 @@
 profile-neon:
     cd bench && samply record cargo run --profile profiling --example neon
+
+avx:
+    cd bench && cargo run -r -F perf --example simd
+
+neon:
+    cd bench && cargo run -r --example neon

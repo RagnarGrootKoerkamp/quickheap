@@ -7,14 +7,13 @@ pub trait PivotStrategy {
     ) -> (T, usize);
 }
 
-#[inline]
+#[inline(always)]
 fn get_m_median_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
     layer: &B,
     mut m: usize,
 ) -> (T, usize) {
-    if m % 2 == 0 {
-        m += 1;
-    }
+    debug_assert!(m % 2 == 1);
+    // let n = layer.len().min(K);
     let n = layer.len();
     let k: usize = m / 2;
 
@@ -32,8 +31,7 @@ fn get_m_median_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, c
     (pivot, pivot_pos)
 }
 
-// #[inline(always)]
-#[inline(never)] // TODO: Remove after profiling
+#[inline(always)]
 fn get_m_median_bucket_const<
     T: Elem,
     B: buckets::Bucket<T, K, CAP>,
@@ -67,7 +65,7 @@ fn get_m_median_const<T: Elem, const M: usize>(layer: &Vec<T>) -> T {
 
 #[inline(always)]
 fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
-    assert!(M % 2 == 1, "M must be odd");
+    debug_assert!(M % 2 == 1, "M must be odd");
     let n = layer.len();
     let k: usize = M / 2;
 
@@ -85,8 +83,7 @@ fn get_median<T: Elem, const M: usize>(layer: &Vec<T>) -> (T, usize) {
 
 pub struct MedianOfM<const M: usize>;
 impl<const M: usize> PivotStrategy for MedianOfM<M> {
-    // #[inline(always)]
-    #[inline(never)] // TODO: Remove after profiling
+    #[inline(always)]
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
         layer: &B,
     ) -> (T, usize) {

@@ -192,9 +192,11 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
         self.valid_min_max = true;
     }
 
-    #[inline(never)]
+    #[inline(always)]
     fn min(&mut self) -> (T, usize) {
         debug_assert!(self.total_size > 0);
+
+        unreachable!();
 
         if !self.valid_min_max {
             self.recompute_min_max();
@@ -203,9 +205,12 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
         (self.min, self.min_pos)
     }
 
-    #[inline(never)]
+    #[inline(always)]
     fn max(&mut self) -> (T, usize) {
         debug_assert!(self.total_size > 0);
+
+        unreachable!();
+
         if !self.valid_min_max {
             self.recompute_min_max();
         }
@@ -385,7 +390,7 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
         self.total_size += 1;
     }
 
-    #[inline]
+    #[inline(always)]
     fn pop(&mut self) -> Option<T> {
         if self.total_size == 0 {
             return None;
@@ -411,13 +416,13 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
             }
 
             if r == self.min || r == self.max {
-                self.recompute_min_max();
+                self.valid_min_max = false;
             }
             Some(r)
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn get(&self, i: usize) -> T {
         debug_assert!(i < self.total_size);
         let mut curr_pos = i;
@@ -493,7 +498,7 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn remove(&mut self, i: usize) -> T {
         debug_assert!(self.total_size > 0);
         debug_assert!(i < K);
@@ -502,7 +507,7 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
         unsafe {
             let r = (*self.head).remove(i);
             if r == self.min || r == self.max {
-                self.recompute_min_max();
+                self.valid_min_max = false;
             }
 
             r

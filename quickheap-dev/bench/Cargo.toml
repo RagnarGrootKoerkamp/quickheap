@@ -10,8 +10,10 @@ authors = ["Ragnar Groot Koerkamp", "Johannes Breitling"]
 description = "A SIMD-accelerated priority queue"
 
 [features]
-# default = ["avx2", "ffi"]
-default = []
+default = ["avx2", "ffi"]
+
+layer_stats = ["quickheap-dev/layer_stats"]
+partition_stats = ["quickheap-dev/partition_stats"]
 
 # Enable SimdQuickHeap with AVX2 backend
 avx2 = []
