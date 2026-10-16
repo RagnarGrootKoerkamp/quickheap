@@ -57,12 +57,14 @@ pub type Simd = Neon;
 pub use quickheap::simd::SimdElem;
 
 use crate::buckets::block_partitioning::FlatPartitioning;
+use crate::pivot_strategies::PivotStrategy;
 use quickheap::Elem;
-use quickheap::partitioning::Partition;
+use quickheap::partitioning::{MultiPartition, Partition};
 use quickheap::simd;
 
 use crate::{
     buckets::{block_arena::BlockArena, vec_bucket::VecBucket},
+    pivot_strategies::RandomPivot,
     rebalancing_strategies::NoRebalancing,
 };
 
@@ -176,13 +178,14 @@ pub struct ConfigurableSimdQuickHeap<
     B: buckets::Bucket<T, K, CAP>,
     PART: Partition<T, B>,
     S: simd::SimdElem<T> = Simd,
-    P: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
+    PIVOT: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
     R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP> = rebalancing_strategies::NoRebalancing,
     const N: usize = 16,
     const K: usize = 128,
     const CAP: usize = 128,
     const SORT: bool = true,
     const EQUAL: bool = false,
+    const P: usize = 2,
 > {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
@@ -212,32 +215,11 @@ pub struct ConfigurableSimdQuickHeap<
     #[allow(dead_code)]
     rebal_pop_iteration: usize,
     #[allow(dead_code)]
-    _p: PhantomData<P>,
+    _p: PhantomData<PIVOT>,
     _r: PhantomData<R>,
     _part: PhantomData<PART>,
     _backend: PhantomData<S>,
 }
-
-/// A SIMD-based priority queue. Entrypoint of the crate.
-///
-/// Returns the *smallest* element first.
-///
-/// Works for `i32`, `u32`, `i64`, and `u64`.
-///
-/// Uses AVX-512 instructions when available at compile time.
-pub type SimdQuickHeap<T> = ConfigurableSimdQuickHeap<
-    T,
-    VecBucket<T, 128, 128>,
-    FlatPartitioning<Simd, 128, 128>,
-    Simd,
-    pivot_strategies::MedianOfM<3>,
-    NoRebalancing,
-    16,
-    128,
-    128,
-    true,
-    false,
->;
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<
@@ -245,14 +227,15 @@ impl<
     B: buckets::Bucket<T, K, CAP>,
     PART: Partition<T, B>,
     S: simd::SimdElem<T>,
-    P: pivot_strategies::PivotStrategy,
+    PIVOT: pivot_strategies::PivotStrategy,
     R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
     const N: usize,
     const K: usize,
     const CAP: usize,
     const SORT: bool,
     const EQUAL: bool,
-> Default for ConfigurableSimdQuickHeap<T, B, PART, S, P, R, N, K, CAP, SORT, EQUAL>
+    const P: usize,
+> Default for ConfigurableSimdQuickHeap<T, B, PART, S, PIVOT, R, N, K, CAP, SORT, EQUAL, P>
 {
     fn default() -> Self {
         let free_arena = Box::into_raw(Box::from(BlockArena::<T, K, CAP>::new()));
@@ -276,16 +259,17 @@ impl<
 impl<
     T: Elem + Debug + Default + Sub<Output = T> + ElemConstraint,
     B: buckets::Bucket<T, K, CAP>,
-    PART: Partition<T, B>,
+    PART: Partition<T, B> + MultiPartition<T, B>,
     S: simd::SimdElem<T>,
     R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
-    P: pivot_strategies::PivotStrategy,
+    PIVOT: pivot_strategies::PivotStrategy,
     const N: usize,
     const K: usize,
     const CAP: usize,
     const SORT: bool,
     const EQUAL: bool,
-> ConfigurableSimdQuickHeap<T, B, PART, S, P, R, N, K, CAP, SORT, EQUAL>
+    const P: usize,
+> ConfigurableSimdQuickHeap<T, B, PART, S, PIVOT, R, N, K, CAP, SORT, EQUAL, P>
 {
     /// Initializes the heap from a given list of layers
     pub fn from_vecs(layers: Vec<Vec<T>>) -> Self {
@@ -538,13 +522,27 @@ impl<
 
     #[inline(never)]
     fn partition(&mut self, layer: usize) {
+        if P == 2 {
+            self.dual_partition(layer);
+            return;
+        }
+
+        if self.buckets[layer].len() <= 128 {
+            self.dual_partition(layer);
+        } else {
+            self.multi_partition();
+        }
+    }
+
+    #[inline(never)]
+    fn dual_partition(&mut self, layer: usize) {
         let total_layers = self.pivots.len() + 1;
 
         #[cfg(feature = "partition_stats")]
         stats::partition_stats::partition(self.buckets[layer].len());
 
         // Reserve space for an additional L layers when needed.
-        if total_layers + 2 * S::L >= self.pivots.capacity() {
+        if total_layers + 2 + S::L >= self.pivots.capacity() {
             self.pivots.reserve(S::L);
         }
 
@@ -561,7 +559,7 @@ impl<
         let n = cur_layer.len();
 
         // Sample a pivot using the pivot strategy
-        let (pivot, pivot_pos) = P::pick_bucket(cur_layer);
+        let (pivot, pivot_pos) = PIVOT::pick_bucket(cur_layer);
 
         let old_pivot: T;
         let replace: bool;
@@ -579,50 +577,6 @@ impl<
         debug_assert!(self.equal_buckets[layer + 1] == false);
         debug_assert!(self.equal_buckets[layer] == false);
         next_layer.clear();
-
-        // Check if the pivot is the min / max of a bucket
-        /*
-        if EQUAL && cur_layer.min().0 == cur_layer.max().0 {
-            #[cfg(feature = "partition_stats")]
-            stats::partition_stats::equal_bucket();
-            self.equal_buckets[layer] = true;
-            cur_layer.mark_equal();
-
-            if replace {
-                self.pivots[layer] = old_pivot;
-            } else {
-                debug_assert!(layer == self.pivots.len() - 1);
-                self.pivots.pop();
-            }
-            return;
-        }
-
-        if EQUAL && pivot == cur_layer.min().0 {
-            // println!("Pivot is min!");
-            #[cfg(feature = "partition_stats")]
-            stats::partition_stats::equal_bucket();
-            self.equal_buckets[layer + 1] = true; // Implicit equal bucket
-
-            PART::partition::<{ simd::ONLY_PIVOTS_TO_NEXT }>(
-                cur_layer, next_layer, pivot, pivot_pos,
-            );
-        } else if EQUAL && layer > 0 && pivot == cur_layer.max().0 {
-            // println!("Pivot is max!");
-            #[cfg(feature = "partition_stats")]
-            stats::partition_stats::equal_bucket();
-
-            self.pivots[layer - 1] = pivot;
-            self.pivots[layer] = pivot.dec();
-            self.equal_buckets[layer] = true; // Implicit equal bucket
-
-            PART::partition::<{ simd::ONLY_PIVOTS_TO_CUR }>(
-                cur_layer, next_layer, pivot, pivot_pos,
-            );
-        } else {
-            PART::partition::<{ simd::SPLIT_PIVOTS_CUR_AND_NEXT }>(
-                cur_layer, next_layer, pivot, pivot_pos,
-            );
-        } */
 
         if EQUAL && (layer > 0) && self.pivots[layer] == self.pivots[layer - 1] {
             if pivot == T::minimum() {
@@ -682,6 +636,74 @@ impl<
                 debug_assert!(layer == self.pivots.len() - 1);
                 self.equal_buckets[layer] = false;
                 self.pivots.pop();
+            }
+        }
+    }
+
+    #[inline(never)]
+    fn multi_partition(&mut self) {
+        let total_layers = self.pivots.len() + 1;
+
+        // #[cfg(feature = "partition_stats")]
+        // stats::partition_stats::partition(self.buckets[layer].len());
+
+        // Reserve space for an additional L layers when needed.
+        if total_layers + P + S::L >= self.pivots.capacity() {
+            self.pivots.reserve(S::L);
+        }
+
+        while self.buckets.len() < total_layers + P - 1 {
+            self.equal_buckets.push(false);
+            self.buckets.push(B::default(self.free_arena));
+        }
+
+        // Alias the layers (to be split) and the next layer.
+        let layer = self.pivots.len();
+        let layers: &mut [B] = &mut self.buckets[layer..layer + P];
+
+        let n = layers[0].len();
+
+        // Sample pivots using the pivot strategy
+        let num_pivots = 2usize.pow(P as u32 - 1) - 1;
+        let mut pivots: [T; P] = [T::minimum(); P];
+        let mut pivot_pos: [usize; P] = [0; P];
+
+        let mut pivot_samples = vec![];
+
+        for _ in 0..num_pivots {
+            let p = RandomPivot::pick_bucket(&layers[0]);
+            pivot_samples.push(p);
+        }
+        pivot_samples.sort_unstable_by_key(|&p| p.0);
+
+        for i in 0..(P - 1) {
+            let idx = ((num_pivots + 1) / 2usize.pow(i as u32 + 1)) - 1;
+            let piv = pivot_samples[idx];
+            pivots[i] = piv.0;
+            pivot_pos[i] = piv.1;
+            self.pivots.push(piv.0);
+        }
+
+        // Clear the next layers
+        for i in 1..P {
+            layers[i].clear();
+        }
+
+        PART::multi_partition::<P>(layers, &pivots[0..(P - 1)], pivot_pos);
+
+        let mut sum = 0;
+        for i in 0..P {
+            sum += layers[i].len();
+        }
+
+        debug_assert!(sum == n);
+
+        // Remove the empty layers that are created in between
+        let last_layer_idx = self.pivots.len();
+        for b in 0..P {
+            if self.buckets[last_layer_idx - b].is_empty() && (last_layer_idx - b) > 0 {
+                self.buckets.remove(last_layer_idx - b);
+                self.pivots.remove(last_layer_idx - 1 - b);
             }
         }
     }

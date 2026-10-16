@@ -154,10 +154,10 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         let mut q = <ConfigurableSimdQuickHeap<
             T,
-            // VecBucket<T, 112, 128>,
-            // FlatPartitioning<S, 112, 128>,
-            ListBlockBucket<T, 112, 128>,
-            BlockedPartitioning<S, 112, 128>,
+            VecBucket<T, 112, 128>,
+            FlatPartitioning<S, 112, 128>,
+            // ListBlockBucket<T, 112, 128>,
+            // BlockedPartitioning<S, 112, 128>,
             S,
             MedianOfM<3>,
             NoRebalancing,
@@ -170,6 +170,7 @@ where
             128,
             true,
             false,
+            3,
         >>::default();
 
         for _ in 0..n {
@@ -199,11 +200,11 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         let mut q1 = <ConfigurableSimdQuickHeap<
             T,
-            // VecBucket<T, 112, 128>,
-            // FlatPartitioning<S, 112, 128>,
+            VecBucket<T, 112, 128>,
+            FlatPartitioning<S, 112, 128>,
             // VecBlockBucket<T, 112, 128>,
-            ListBlockBucket<T, 112, 128>,
-            BlockedPartitioning<S, 112, 128>,
+            // ListBlockBucket<T, 112, 128>,
+            // BlockedPartitioning<S, 112, 128>,
             S,
             MedianOfM<3>,
             NoRebalancing,
@@ -216,6 +217,7 @@ where
             128,
             true,
             false,
+            3,
         >>::default();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 

@@ -4,3 +4,4 @@ output/
 /bench/evals/plots
 perf/
 profile.json.gz
+.DS_Store

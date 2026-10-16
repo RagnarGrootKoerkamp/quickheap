@@ -1,4 +1,4 @@
-use quickheap::partitioning::Partition;
+use quickheap::partitioning::{MultiPartition, Partition};
 
 use crate::{Heap, impls::NoHeap, workloads};
 
@@ -9,17 +9,18 @@ impl<
         + Default
         + quickheap_dev::ElemConstraint,
     B: quickheap_dev::buckets::Bucket<T, K, CAP>,
-    PART: Partition<T, B>,
+    PART: Partition<T, B> + MultiPartition<T, B>,
     S: quickheap::simd::SimdElem<T>,
-    P: quickheap_dev::pivot_strategies::PivotStrategy,
+    PIVOT: quickheap_dev::pivot_strategies::PivotStrategy,
     R: quickheap_dev::rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
     const N: usize,
     const K: usize,
     const CAP: usize,
     const SORT: bool,
     const EQUAL: bool,
+    const P: usize,
 > Heap<T>
-    for quickheap_dev::ConfigurableSimdQuickHeap<T, B, PART, S, P, R, N, K, CAP, SORT, EQUAL>
+    for quickheap_dev::ConfigurableSimdQuickHeap<T, B, PART, S, PIVOT, R, N, K, CAP, SORT, EQUAL, P>
 {
     type CountedType = workloads::CountComparisons<T>;
     type CountedHeap = NoHeap;
@@ -29,7 +30,7 @@ impl<
     }
 
     fn push(&mut self, t: T) {
-        self.push(t)
+        self.push(t);
     }
 
     fn pop(&mut self) -> Option<T> {

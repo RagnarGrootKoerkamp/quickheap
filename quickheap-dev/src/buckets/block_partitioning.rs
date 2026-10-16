@@ -1,15 +1,33 @@
-use quickheap::partitioning::Partition;
+use quickheap::partitioning::{MultiPartition, Partition};
 use quickheap::simd;
 
 use crate::buckets::BlockedBucket;
 use crate::buckets::Bucket;
 use crate::buckets::FlatBucket;
 
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ptr;
 
 pub struct FlatPartitioning<S, const K: usize, const CAP: usize>(PhantomData<S>);
 pub struct BlockedPartitioning<S, const K: usize, const CAP: usize>(PhantomData<S>);
+
+#[inline(always)]
+fn prefetch_read<T>(p: *const T) {
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        use core::arch::x86_64::{_MM_HINT_T0, _mm_prefetch};
+        _mm_prefetch(p as *const i8, _MM_HINT_T0);
+    }
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        core::arch::asm!(
+            "prfm pldl1keep, [{0}]",
+            in(reg) p,
+            options(nostack, preserves_flags, readonly)
+        );
+    }
+}
 
 #[cold]
 #[inline(never)]
@@ -105,20 +123,75 @@ impl<
     }
 }
 
-#[inline(always)]
-fn prefetch_read<T>(p: *const T) {
-    #[cfg(target_arch = "x86_64")]
-    unsafe {
-        use core::arch::x86_64::{_MM_HINT_T0, _mm_prefetch};
-        _mm_prefetch(p as *const i8, _MM_HINT_T0);
-    }
-    #[cfg(target_arch = "aarch64")]
-    unsafe {
-        core::arch::asm!(
-            "prfm pldl1keep, [{0}]",
-            in(reg) p,
-            options(nostack, preserves_flags, readonly)
-        );
+impl<
+    T: PartialEq + Copy + Debug,
+    B: Bucket<T, K, CAP> + FlatBucket<T>,
+    S: simd::SimdElem<T>,
+    const K: usize,
+    const CAP: usize,
+> MultiPartition<T, B> for FlatPartitioning<S, K, CAP>
+{
+    #[inline(always)]
+    fn multi_partition<const P: usize>(layers: &mut [B], pivots: &[T], pivot_pos: [usize; P]) {
+        let n = layers[0].len();
+        debug_assert!(layers.len() == P);
+        debug_assert!(P > 1);
+
+        // Reserve space in the next layers,
+        // and make sure the current layer can hold a spare SIMD register.
+
+        layers[0].reserve(S::L);
+        unsafe {
+            layers[0].set_len(n + S::L);
+        }
+
+        for i in 0..P {
+            layers[i].reserve(n + S::L);
+            unsafe { layers[i].set_len(n + S::L) };
+        }
+
+        let n2 = n.next_multiple_of(S::L).saturating_sub(S::L);
+
+        // Partition a list into P using SIMD.
+
+        let mut lens = [0; P];
+        let thresholds: [S::Simd; P] = core::array::from_fn(|i| S::splat(pivots[i.min(P - 2)]));
+
+        let mut ptrs: [*mut T; P] = [ptr::null_mut(); P];
+        for i in 0..P {
+            ptrs[i] = layers[i].write_ptr();
+        }
+
+        for i in (0..n2).step_by(S::L) {
+            unsafe {
+                S::partition_multi_fast::<P>(
+                    S::simd_from_slice(layers[0].get_unchecked(i, S::L)),
+                    &thresholds[0..P - 1],
+                    pivot_pos[0],
+                    &mut ptrs,
+                    &mut lens,
+                );
+            }
+        }
+
+        if n2 < n {
+            unsafe {
+                S::partition_multi_slow::<P>(
+                    S::simd_from_slice(layers[0].get_unchecked(n2, n - n2)),
+                    S::splat(S::from_usize(n - n2)),
+                    &thresholds[0..P - 1],
+                    pivot_pos[0],
+                    &mut ptrs,
+                    &mut lens,
+                );
+            }
+        }
+
+        for i in 0..P {
+            unsafe {
+                layers[i].set_len(lens[i]);
+            }
+        }
     }
 }
 

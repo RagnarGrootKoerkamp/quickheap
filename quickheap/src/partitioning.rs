@@ -1,7 +1,6 @@
 use crate::simd;
 use std::marker::PhantomData;
 
-pub struct VecPartitioning<T, S>(PhantomData<T>, PhantomData<S>);
 pub trait Partition<T, B> {
     fn partition<const MODE: usize>(
         cur_layer: &mut B,
@@ -11,8 +10,14 @@ pub trait Partition<T, B> {
     );
 }
 
+pub trait MultiPartition<T, B> {
+    fn multi_partition<const P: usize>(layers: &mut [B], pivot: &[T], pivot_pos: [usize; P]);
+}
+
 use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
 
+/// Implementation for a plain vector
+pub struct VecPartitioning<T, S>(PhantomData<T>, PhantomData<S>);
 impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
     #[inline]
     pub fn partition(cur_layer: &mut Vec<T>, next_layer: &mut Vec<T>, pivot: T, pivot_pos: usize) {

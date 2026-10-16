@@ -189,6 +189,29 @@ pub trait SimdElem<T>: 'static {
         next_vals: *mut T,
         next_write_cnt: &mut usize,
     );
+
+    /// Bucket of a lane = number of pivots < value, so pivots.len() == K-1.
+    /// Appends each lane to writes[bucket] and bumps cnts[bucket].
+    /// Contract: every writes[b] needs >= LANES elements of slack
+    /// (full-vector store, only the first popcount lanes are kept).
+    unsafe fn partition_multi_fast<const K: usize>(
+        vals: Self::Simd,
+        pivots: &[Self::Simd],
+        rand: usize,
+        writes: &mut [*mut T; K],
+        cnts: &mut [usize; K],
+    );
+
+    /// Like partition_fast, but only the first `len` lanes of `vals` are valid
+    /// (`len` is splatted). Used for the tail. Invalid lanes are dropped.
+    unsafe fn partition_multi_slow<const K: usize>(
+        vals: Self::Simd,
+        len: Self::Simd,
+        pivots: &[Self::Simd],
+        rand: usize,
+        writes: &mut [*mut T; K],
+        cnts: &mut [usize; K],
+    );
 }
 
 /// Classify the element t against the decreasing list of pivots.
@@ -593,6 +616,8 @@ macro_rules! impl_simd_elem_32 {
                     *next_write_cnt += small.count_ones() as usize;
                 }
             }
+
+            avx2_partition_multi!($t, UNIQSHUF32, 0xFFu8, u8);
         }
     };
 }
@@ -844,6 +869,8 @@ macro_rules! impl_simd_elem_64 {
                     *next_write_cnt += small.count_ones() as usize;
                 }
             }
+
+            avx2_partition_multi!($t, UNIQSHUF64, 0xFu8, u8);
         }
     };
 }
@@ -1161,6 +1188,15 @@ macro_rules! impl_simd_elem_32_avx512 {
                 }
             }
         }
+
+        avx512_partition_multi!(
+            $t,
+            0xFFFFu16,
+            u16,
+            _mm512_maskz_compress_epi32,
+            _mm512_mask_compressstoreu_epi32,
+            i32
+        );
     };
 }
 
@@ -1476,6 +1512,15 @@ macro_rules! impl_simd_elem_64_avx512 {
                     *next_write_cnt += small_elems;
                 }
             }
+
+            avx512_partition_multi!(
+                $t,
+                0xFFu8,
+                u8,
+                _mm512_maskz_compress_epi64,
+                _mm512_mask_compressstoreu_epi64,
+                i64
+            );
         }
     };
 }
@@ -1736,6 +1781,8 @@ macro_rules! impl_simd_elem_32_neon {
                     *next_write_cnt += small.count_ones() as usize;
                 }
             }
+
+            neon_partition_multi!($t, NEON_SHUF32, 0xFu8);
         }
     };
 }
@@ -1860,11 +1907,9 @@ macro_rules! impl_simd_elem_64_neon {
                     use core::arch::aarch64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<MODE>(
-                        vals,
-                        threshold,
-                        (*next_write_cnt + *cur_write_cnt) + pivot_pos,
-                    ) as u8;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask::<MODE>(vals, threshold, pivot_pos)
+                            as u8;
                     let large: u8 = small ^ 0x3;
                     let v: uint8x16_t = transmute(vals);
 
@@ -2009,6 +2054,270 @@ macro_rules! impl_simd_elem_64_neon {
                         vqtbl1q_u8(v, key),
                     );
                     *next_write_cnt += small.count_ones() as usize;
+                }
+            }
+
+            neon_partition_multi!($t, NEON_SHUF64, 0x3u8);
+        }
+    };
+}
+
+/// Multiway partition for avx2, DESCENDING buckets:
+/// bucket 0 holds the largest elements, bucket K-1 the smallest.
+/// `pivots` must be sorted descending (pivots[0] is the largest), len K-1, splatted.
+/// Bucket b = (x > pivots[b]) & !(x > pivots[b-1]); lanes equal to a pivot
+/// are split between the two adjacent buckets by EQUAL_MASKS[rand % 16].
+/// Each writes[b] needs >= L elements of slack (full 16-byte store).
+#[cfg(target_feature = "avx2")]
+macro_rules! avx2_partition_multi {
+    ($t:ty, $shuf:ident, $full:expr, $mt:ty) => {
+        #[inline(always)]
+        unsafe fn partition_multi_fast<const K: usize>(
+            vals: Self::Simd,
+            pivots: &[Self::Simd],
+            rand: usize,
+            writes: &mut [*mut $t; K],
+            cnts: &mut [usize; K],
+        ) {
+            unsafe {
+                use core::arch::x86_64::*;
+                use std::mem::transmute;
+
+                debug_assert_eq!(pivots.len() + 1, K);
+                let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
+                let above = |p: Self::Simd| -> $mt {
+                    let gt = (p.simd_gt(vals).to_bitmask() as $mt) & $full;
+                    let eq = (p.simd_eq(vals).to_bitmask() as $mt) & $full;
+                    gt | (eq & tie)
+                };
+                let v: __m256i = transmute(vals);
+
+                let mut prev: $mt = 0;
+                for b in 0..K {
+                    let next: $mt = if b + 1 < K { above(pivots[b]) } else { $full };
+                    let m = next & !prev;
+                    let key: __m256i = transmute($shuf[((!m) & $full) as usize]);
+                    _mm256_storeu_si256(
+                        writes[b].add(cnts[b]) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(v, key),
+                    );
+                    cnts[b] += m.count_ones() as usize;
+                    prev = next;
+                }
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn partition_multi_slow<const K: usize>(
+            vals: Self::Simd,
+            len: Self::Simd,
+            pivots: &[Self::Simd],
+            rand: usize,
+            writes: &mut [*mut $t; K],
+            cnts: &mut [usize; K],
+        ) {
+            unsafe {
+                use core::arch::x86_64::*;
+                use std::mem::transmute;
+
+                debug_assert_eq!(pivots.len() + 1, K);
+                let in_range: $mt = (len
+                    .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                    .to_bitmask() as $mt)
+                    & $full;
+                let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
+                let above = |p: Self::Simd| -> $mt {
+                    let gt = (p.simd_gt(vals).to_bitmask() as $mt) & $full;
+                    let eq = (p.simd_eq(vals).to_bitmask() as $mt) & $full;
+                    gt | (eq & tie)
+                };
+                let v: __m256i = transmute(vals);
+
+                let mut prev: $mt = 0;
+                for b in 0..K {
+                    let next: $mt = if b + 1 < K { above(pivots[b]) } else { $full };
+                    let m = next & !prev & in_range;
+                    let key: __m256i = transmute($shuf[((!m) & $full) as usize]);
+                    _mm256_storeu_si256(
+                        writes[b].add(cnts[b]) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(v, key),
+                    );
+                    cnts[b] += m.count_ones() as usize;
+                    prev = next;
+                }
+            }
+        }
+    };
+}
+
+/// Multiway partition for avx512, DESCENDING buckets:
+/// bucket 0 holds the largest elements, bucket K-1 the smallest.
+/// `pivots` must be sorted descending (pivots[0] is the largest), len K-1, splatted.
+/// Bucket b = (x > pivots[b]) & !(x > pivots[b-1]); lanes equal to a pivot
+/// are split between the two adjacent buckets by EQUAL_MASKS[rand % 16].
+/// Each writes[b] needs >= L elements of slack (full 16-byte store).
+#[cfg(target_feature = "avx512f")]
+macro_rules! avx512_partition_multi {
+    // $mt: u16 (32-bit) or u8 (64-bit); $cz/$cs: compress intrinsics; $ct: i32/i64
+    ($t:ty, $full:expr, $mt:ty, $cz:ident, $cs:ident, $ct:ty) => {
+        #[inline(always)]
+        unsafe fn partition_multi_fast<const K: usize>(
+            vals: Self::Simd,
+            pivots: &[Self::Simd],
+            rand: usize,
+            writes: &mut [*mut $t; K],
+            cnts: &mut [usize; K],
+        ) {
+            unsafe {
+                use core::arch::x86_64::*;
+                use std::mem::transmute;
+
+                debug_assert_eq!(pivots.len() + 1, K);
+                let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
+                let above = |p: Self::Simd| -> $mt {
+                    let gt = (p.simd_gt(vals).to_bitmask() as $mt) & $full;
+                    let eq = (p.simd_eq(vals).to_bitmask() as $mt) & $full;
+                    gt | (eq & tie)
+                };
+                let v: __m512i = transmute(vals);
+
+                let mut prev: $mt = 0;
+                for b in 0..K {
+                    let next: $mt = if b + 1 < K { above(pivots[b]) } else { $full };
+                    let m = next & !prev;
+                    let dst = writes[b].add(cnts[b]);
+                    if CS {
+                        _mm512_storeu_si512(dst as *mut __m512i, $cz(m, v));
+                    } else {
+                        $cs(dst as *mut $ct, m, v);
+                    }
+                    cnts[b] += m.count_ones() as usize;
+                    prev = next;
+                }
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn partition_multi_slow<const K: usize>(
+            vals: Self::Simd,
+            len: Self::Simd,
+            pivots: &[Self::Simd],
+            rand: usize,
+            writes: &mut [*mut $t; K],
+            cnts: &mut [usize; K],
+        ) {
+            unsafe {
+                use core::arch::x86_64::*;
+                use std::mem::transmute;
+
+                debug_assert_eq!(pivots.len() + 1, K);
+                let in_range: $mt = (len
+                    .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                    .to_bitmask() as $mt)
+                    & $full;
+                let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
+                let above = |p: Self::Simd| -> $mt {
+                    let gt = (p.simd_gt(vals).to_bitmask() as $mt) & $full;
+                    let eq = (p.simd_eq(vals).to_bitmask() as $mt) & $full;
+                    gt | (eq & tie)
+                };
+                let v: __m512i = transmute(vals);
+
+                let mut prev: $mt = 0;
+                for b in 0..K {
+                    let next: $mt = if b + 1 < K { above(pivots[b]) } else { $full };
+                    let m = next & !prev & in_range;
+                    let dst = writes[b].add(cnts[b]);
+                    if CS {
+                        _mm512_storeu_si512(dst as *mut __m512i, $cz(m, v));
+                    } else {
+                        $cs(dst as *mut $ct, m, v);
+                    }
+                    cnts[b] += m.count_ones() as usize;
+                    prev = next;
+                }
+            }
+        }
+    };
+}
+
+/// Multiway partition for NEON, DESCENDING buckets:
+/// bucket 0 holds the largest elements, bucket K-1 the smallest.
+/// `pivots` must be sorted descending (pivots[0] is the largest), len K-1, splatted.
+/// Bucket b = (x > pivots[b]) & !(x > pivots[b-1]); lanes equal to a pivot
+/// are split between the two adjacent buckets by EQUAL_MASKS[rand % 16].
+/// Each writes[b] needs >= L elements of slack (full 16-byte store).
+#[cfg(target_arch = "aarch64")]
+macro_rules! neon_partition_multi {
+    ($t:ty, $shuf:ident, $full:expr) => {
+        #[inline(always)]
+        unsafe fn partition_multi_fast<const K: usize>(
+            vals: Self::Simd,
+            pivots: &[Self::Simd],
+            rand: usize,
+            writes: &mut [*mut $t; K],
+            cnts: &mut [usize; K],
+        ) {
+            unsafe {
+                use core::arch::aarch64::*;
+                use std::mem::transmute;
+
+                debug_assert_eq!(pivots.len() + 1, K);
+                let tie: u8 = (EQUAL_MASKS[rand % 16] as u8) & $full;
+                // Bit i = lane i is above pivot p (greater, or equal and picked by tie).
+                let above = |p: Self::Simd| -> u8 {
+                    let gt = (vals.simd_gt(p).to_bitmask() as u8) & $full;
+                    let eq = (vals.simd_eq(p).to_bitmask() as u8) & $full;
+                    gt | (eq & tie)
+                };
+                let v: uint8x16_t = transmute(vals);
+
+                let mut prev: u8 = 0;
+                for b in 0..K {
+                    let next: u8 = if b + 1 < K { above(pivots[b]) } else { $full };
+                    let m = next & !prev;
+                    let key = vld1q_u8($shuf[m as usize].as_ptr());
+                    vst1q_u8(writes[b].add(cnts[b]) as *mut u8, vqtbl1q_u8(v, key));
+                    cnts[b] += m.count_ones() as usize;
+                    prev = next;
+                }
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn partition_multi_slow<const K: usize>(
+            vals: Self::Simd,
+            len: Self::Simd,
+            pivots: &[Self::Simd],
+            rand: usize,
+            writes: &mut [*mut $t; K],
+            cnts: &mut [usize; K],
+        ) {
+            unsafe {
+                use core::arch::aarch64::*;
+                use std::mem::transmute;
+
+                debug_assert_eq!(pivots.len() + 1, K);
+                let in_range: u8 = (len
+                    .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                    .to_bitmask() as u8)
+                    & $full;
+                let tie: u8 = (EQUAL_MASKS[rand % 16] as u8) & $full;
+                let above = |p: Self::Simd| -> u8 {
+                    let gt = (vals.simd_gt(p).to_bitmask() as u8) & $full;
+                    let eq = (vals.simd_eq(p).to_bitmask() as u8) & $full;
+                    gt | (eq & tie)
+                };
+                let v: uint8x16_t = transmute(vals);
+
+                let mut prev: u8 = 0;
+                for b in 0..K {
+                    let next: u8 = if b + 1 < K { above(pivots[b]) } else { $full };
+                    let m = next & !prev & in_range;
+                    let key = vld1q_u8($shuf[m as usize].as_ptr());
+                    vst1q_u8(writes[b].add(cnts[b]) as *mut u8, vqtbl1q_u8(v, key));
+                    cnts[b] += m.count_ones() as usize;
+                    prev = next;
                 }
             }
         }
