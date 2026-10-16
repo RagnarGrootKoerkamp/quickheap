@@ -1187,16 +1187,16 @@ macro_rules! impl_simd_elem_32_avx512 {
                     *next_write_cnt += small_elems;
                 }
             }
-        }
 
-        avx512_partition_multi!(
-            $t,
-            0xFFFFu16,
-            u16,
-            _mm512_maskz_compress_epi32,
-            _mm512_mask_compressstoreu_epi32,
-            i32
-        );
+            avx512_partition_multi!(
+                $t,
+                0xFFFFu16,
+                u16,
+                _mm512_maskz_compress_epi32,
+                _mm512_mask_compressstoreu_epi32,
+                i32
+            );
+        }
     };
 }
 
@@ -2086,8 +2086,8 @@ macro_rules! avx2_partition_multi {
                 debug_assert_eq!(pivots.len() + 1, K);
                 let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
                 let above = |p: Self::Simd| -> $mt {
-                    let gt = (p.simd_gt(vals).to_bitmask() as $mt) & $full;
-                    let eq = (p.simd_eq(vals).to_bitmask() as $mt) & $full;
+                    let gt = (vals.simd_gt(p).to_bitmask() as $mt) & $full;
+                    let eq = (vals.simd_eq(p).to_bitmask() as $mt) & $full;
                     gt | (eq & tie)
                 };
                 let v: __m256i = transmute(vals);
@@ -2127,8 +2127,8 @@ macro_rules! avx2_partition_multi {
                     & $full;
                 let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
                 let above = |p: Self::Simd| -> $mt {
-                    let gt = (p.simd_gt(vals).to_bitmask() as $mt) & $full;
-                    let eq = (p.simd_eq(vals).to_bitmask() as $mt) & $full;
+                    let gt = (vals.simd_gt(p).to_bitmask() as $mt) & $full;
+                    let eq = (vals.simd_eq(p).to_bitmask() as $mt) & $full;
                     gt | (eq & tie)
                 };
                 let v: __m256i = transmute(vals);
@@ -2175,8 +2175,8 @@ macro_rules! avx512_partition_multi {
                 debug_assert_eq!(pivots.len() + 1, K);
                 let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
                 let above = |p: Self::Simd| -> $mt {
-                    let gt = (p.simd_gt(vals).to_bitmask() as $mt) & $full;
-                    let eq = (p.simd_eq(vals).to_bitmask() as $mt) & $full;
+                    let gt = (vals.simd_gt(p).to_bitmask() as $mt) & $full;
+                    let eq = (vals.simd_eq(p).to_bitmask() as $mt) & $full;
                     gt | (eq & tie)
                 };
                 let v: __m512i = transmute(vals);
@@ -2217,8 +2217,8 @@ macro_rules! avx512_partition_multi {
                     & $full;
                 let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
                 let above = |p: Self::Simd| -> $mt {
-                    let gt = (p.simd_gt(vals).to_bitmask() as $mt) & $full;
-                    let eq = (p.simd_eq(vals).to_bitmask() as $mt) & $full;
+                    let gt = (vals.simd_gt(p).to_bitmask() as $mt) & $full;
+                    let eq = (vals.simd_eq(p).to_bitmask() as $mt) & $full;
                     gt | (eq & tie)
                 };
                 let v: __m512i = transmute(vals);

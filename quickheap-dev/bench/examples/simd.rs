@@ -282,14 +282,14 @@ fn main() {
     // run_variant::<i64, ScalarQuickHeap<i64, 3, false, { Search::LinearScan }>>(pcs, &mut cnt);
 
     // Run the SIMD Variants
-    /* run_variant::<
+    run_variant::<
         i64, // Elem Type
         quickheap::SimdQuickHeap<i64, Avx512>,
-    >(&mut pcs, &mut cnt); */
+    >(&mut pcs, &mut cnt);
 
     cnt += 1;
 
-    /* run_variant::<
+    run_variant::<
         i64, // Elem Type
         quickheap_dev::ConfigurableSimdQuickHeap<
             i64,                                                    // Elem Type
@@ -299,29 +299,10 @@ fn main() {
             MedianOfM<3>,                                           // Pivot Strategy
             NoRebalancing,                                          // Rebalancing Strategy
             16,                                                     // Size smallest bucket
-            128,                                                    // Bucket Size
-            128,                                                    // Bucket Cap
+            256,                                                    // Bucket Size
+            256,                                                    // Bucket Cap
             true,                                                   // Last layer sorted
             false,                                                  // Use equal buckets
-        >,
-    >(&mut pcs, &mut cnt); */
-
-    cnt += 1;
-
-    run_variant::<
-        i64, // Elem Type
-        quickheap_dev::ConfigurableSimdQuickHeap<
-            i64,                                                       // Elem Type
-            VecBlockBucket<i64, 496, 512>,                             // Bucket
-            block_partitioning::BlockedPartitioning<Avx512, 496, 512>, // Partitioning Schema
-            Avx512,                                                    // SIMD Type
-            MedianOfM<3>,                                              // Pivot Strategy
-            NoRebalancing,                                             // Rebalancing Strategy
-            16,                                                        // Size smallest bucket
-            496,                                                       // Bucket Size
-            512,                                                       // Bucket Cap
-            true,                                                      // Last layer sorted
-            false,                                                     // Use equal buckets
         >,
     >(&mut pcs, &mut cnt);
 
@@ -330,17 +311,38 @@ fn main() {
     run_variant::<
         i64, // Elem Type
         quickheap_dev::ConfigurableSimdQuickHeap<
-            i64,                                                       // Elem Type
-            ListBlockBucket<i64, 496, 512>,                            // Bucket
-            block_partitioning::BlockedPartitioning<Avx512, 496, 512>, // Partitioning Schema
-            Avx512,                                                    // SIMD Type
-            MedianOfM<3>,                                              // Pivot Strategy
-            NoRebalancing,                                             // Rebalancing Strategy
-            16,                                                        // Size smallest bucket
-            496,                                                       // Bucket Size
-            512,                                                       // Bucket Cap
-            true,                                                      // Last layer sorted
-            false,                                                     // Use equal buckets
+            i64,                                                    // Elem Type
+            VecBucket<i64, 256, 256>,                               // Bucket
+            block_partitioning::FlatPartitioning<Avx512, 256, 256>, // Partitioning Schema
+            Avx512,                                                 // SIMD Type
+            MedianOfM<3>,                                           // Pivot Strategy
+            NoRebalancing,                                          // Rebalancing Strategy
+            16,                                                     // Size smallest bucket
+            256,                                                    // Bucket Size
+            256,                                                    // Bucket Cap
+            true,                                                   // Last layer sorted
+            false,                                                  // Use equal buckets
+            3,
+        >,
+    >(&mut pcs, &mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i64, // Elem Type
+        quickheap_dev::ConfigurableSimdQuickHeap<
+            i64,                                                    // Elem Type
+            VecBucket<i64, 256, 256>,                               // Bucket
+            block_partitioning::FlatPartitioning<Avx512, 256, 256>, // Partitioning Schema
+            Avx512,                                                 // SIMD Type
+            MedianOfM<3>,                                           // Pivot Strategy
+            NoRebalancing,                                          // Rebalancing Strategy
+            16,                                                     // Size smallest bucket
+            256,                                                    // Bucket Size
+            256,                                                    // Bucket Cap
+            true,                                                   // Last layer sorted
+            false,                                                  // Use equal buckets
+            4,
         >,
     >(&mut pcs, &mut cnt);
 }
