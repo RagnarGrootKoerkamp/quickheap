@@ -2,5 +2,5 @@ target/
 input/
 output/
 /bench/evals/plots
-/perf
+perf/
 profile.json.gz

@@ -24,6 +24,7 @@ pub trait BlockedBucket<T: PartialEq, const K: usize, const CAP: usize> {
     fn set_last_block_len(&mut self, len: usize);
     fn next_read_block(&mut self) -> *const T;
     fn get_next_unchecked(&mut self, n: usize) -> &[T];
+    fn peek_read_block(&self) -> *const T;
 }
 
 pub trait Bucket<T: PartialEq, const K: usize, const CAP: usize> {

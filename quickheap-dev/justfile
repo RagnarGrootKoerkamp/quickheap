@@ -6,3 +6,7 @@ avx:
 
 neon:
     cd bench && cargo run -r --example neon
+
+profile-avx:
+    cd bench && RUSTFLAGS="-C target-cpu=native -C inline-threshold=0" cargo build --profile profiling -F perf --example simd
+    samply record --save-only --unstable-presymbolicate -o ./perf/profile.json.gz ./target/profiling/examples/simd

@@ -130,6 +130,15 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
             }
         }
     }
+
+    #[inline]
+    fn peek_read_block(&self) -> *const T {
+        if self.current_read.is_null() {
+            ptr::null()
+        } else {
+            unsafe { (*self.current_read).as_ptr() }
+        }
+    }
 }
 
 impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP: usize>

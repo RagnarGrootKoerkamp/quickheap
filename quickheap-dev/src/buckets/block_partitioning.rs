@@ -105,6 +105,23 @@ impl<
     }
 }
 
+#[inline(always)]
+fn prefetch_read<T>(p: *const T) {
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        use core::arch::x86_64::{_MM_HINT_T0, _mm_prefetch};
+        _mm_prefetch(p as *const i8, _MM_HINT_T0);
+    }
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        core::arch::asm!(
+            "prfm pldl1keep, [{0}]",
+            in(reg) p,
+            options(nostack, preserves_flags, readonly)
+        );
+    }
+}
+
 impl<
     T: PartialEq + Copy,
     B: Bucket<T, K, CAP> + BlockedBucket<T, K, CAP>,
@@ -139,8 +156,13 @@ impl<
         for _ in 0..full_blocks {
             let src = cur_layer.next_read_block();
 
-            // prefetch the following source block (list/vec: peek next pointer)
-            // unsafe { _mm_prefetch(next_src as *const i8, _MM_HINT_T0) };
+            /*
+            let next_src = cur_layer.peek_read_block();
+            if !next_src.is_null() {
+                // Prefetch first 2 cache lines; the HW prefetcher continues the stream
+                prefetch_read(next_src);
+                prefetch_read(unsafe { (next_src as *const u8).add(64) });
+            } */
 
             let mut i = 0;
             while i < K {

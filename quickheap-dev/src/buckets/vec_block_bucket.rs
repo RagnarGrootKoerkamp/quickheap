@@ -1,5 +1,5 @@
 use crate::buckets::{BlockedBucket, Bucket, block::Block, block_arena::BlockArena};
-use std::fmt::Debug;
+use std::{fmt::Debug, ptr};
 
 pub struct VecBlockBucket<T, const K: usize, const CAP: usize> {
     data: Vec<*mut Block<T, K, CAP>>,
@@ -28,6 +28,15 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> BlockedB
         self.write_idx = 0;
         self.read_idx = 0;
         self.read_block_idx = 0;
+    }
+
+    #[inline]
+    fn peek_read_block(&self) -> *const T {
+        if self.read_idx >= self.data.len() {
+            return ptr::null();
+        }
+
+        unsafe { (*self.data[self.read_idx]).as_ptr() }
     }
 
     #[inline]

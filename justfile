@@ -40,9 +40,3 @@ plot:
 plot-nanos:
     cd bench/evals && ./plot.py nanos
     cd bench/evals && ./plot.py nanos all
-
-record-perf name:
-    samply record --save-only --unstable-presymbolicate -o ./perf/{{name}}.json.gz ./target/profiling/examples/perf
-
-build-perf:
-    cd bench && RUSTFLAGS="-C target-cpu=native -C inline-threshold=0" cargo build --profile profiling -F perf --example perf

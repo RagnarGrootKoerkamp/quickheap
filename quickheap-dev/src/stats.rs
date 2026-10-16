@@ -105,8 +105,10 @@ pub mod partition_stats {
     pub fn result() -> PartitionStats {
         DATA.with(|d| {
             let mut d = d.borrow_mut();
-            d.avg_num_elem_partitioned =
-                (d.total_partitioned_elements / d.partitions as u128) as usize;
+            if d.partitions > 0 {
+                d.avg_num_elem_partitioned =
+                    (d.total_partitioned_elements / d.partitions as u128) as usize;
+            }
             *d
         })
     }
