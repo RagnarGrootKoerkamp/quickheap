@@ -21,8 +21,6 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crate::simd::Avx2;
-
 #[cfg(feature = "c")]
 #[doc(hidden)]
 pub mod c;

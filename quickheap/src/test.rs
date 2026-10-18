@@ -8,6 +8,7 @@ trait GenElem: Copy + Ord + std::fmt::Debug {
     fn gen_random() -> Self;
     fn gen_min() -> Self;
     fn gen_max() -> Self;
+    #[allow(unused)]
     fn gen_zero() -> Self;
     fn wrapping_inc(self) -> Self;
     fn wrapping_dec(self) -> Self;

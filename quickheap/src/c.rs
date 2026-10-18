@@ -150,25 +150,23 @@ mod tests {
 
     #[test]
     fn roundtrip_i32() {
-        unsafe {
-            let h = quickheap_i32_new();
-            assert!(quickheap_i32_is_empty(h));
-            quickheap_i32_push(h, 4);
-            quickheap_i32_push(h, 1);
-            quickheap_i32_push(h, 7);
-            assert_eq!(quickheap_i32_len(h), 3);
+        let h = quickheap_i32_new();
+        assert!(quickheap_i32_is_empty(h));
+        quickheap_i32_push(h, 4);
+        quickheap_i32_push(h, 1);
+        quickheap_i32_push(h, 7);
+        assert_eq!(quickheap_i32_len(h), 3);
 
-            let mut out = 0i32;
-            assert!(quickheap_i32_pop(h, &mut out));
-            assert_eq!(out, 1);
-            assert!(quickheap_i32_pop(h, &mut out));
-            assert_eq!(out, 4);
-            assert!(quickheap_i32_pop(h, &mut out));
-            assert_eq!(out, 7);
-            assert!(!quickheap_i32_pop(h, &mut out));
-            assert!(quickheap_i32_is_empty(h));
+        let mut out = 0i32;
+        assert!(quickheap_i32_pop(h, &mut out));
+        assert_eq!(out, 1);
+        assert!(quickheap_i32_pop(h, &mut out));
+        assert_eq!(out, 4);
+        assert!(quickheap_i32_pop(h, &mut out));
+        assert_eq!(out, 7);
+        assert!(!quickheap_i32_pop(h, &mut out));
+        assert!(quickheap_i32_is_empty(h));
 
-            quickheap_i32_free(h);
-        }
+        quickheap_i32_free(h);
     }
 }

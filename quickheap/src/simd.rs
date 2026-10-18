@@ -2,41 +2,6 @@ use std::{fmt::Debug, mem::transmute};
 
 use wide::{CmpEq, CmpGt, CmpLt};
 
-use wide::i32x4;
-use wide::u32x4;
-
-use wide::i64x2;
-use wide::u64x2;
-
-use wide::i32x8;
-use wide::u32x8;
-
-use wide::i64x4;
-use wide::u64x4;
-
-use wide::i64x8;
-use wide::u64x8;
-
-use wide::i32x16;
-use wide::u32x16;
-
-const AVX2_ALT_I32: i32x8 = unsafe { transmute([0i32, 1, 0, 1, 0, 1, 0, 1]) };
-const AVX2_ALT_U32: u32x8 = unsafe { transmute([0i32, 1, 0, 1, 0, 1, 0, 1]) };
-const AVX2_ALT_I64: i64x4 = unsafe { transmute([0i64, 1, 0, 1]) };
-const AVX2_ALT_U64: u64x4 = unsafe { transmute([0i64, 1, 0, 1]) };
-
-const NEON_ALT_I32: i32x4 = unsafe { transmute([0i32, 1, 0, 1]) };
-const NEON_ALT_U32: u32x4 = unsafe { transmute([0i32, 1, 0, 1]) };
-const NEON_ALT_I64: i64x2 = unsafe { transmute([0i64, 1]) };
-const NEON_ALT_U64: u64x2 = unsafe { transmute([0i64, 1]) };
-
-const AVX512_ALT_I32: i32x16 =
-    unsafe { transmute([0i32, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]) };
-const AVX512_ALT_U32: u32x16 =
-    unsafe { transmute([0i32, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]) };
-const AVX512_ALT_I64: i64x8 = unsafe { transmute([0i64, 1, 0, 1, 0, 1, 0, 1]) };
-const AVX512_ALT_U64: u64x8 = unsafe { transmute([0i64, 1, 0, 1, 0, 1, 0, 1]) };
-
 /// Marker type selecting the AVX2 (256-bit) SIMD backend for [`ConfigurableSimdQuickHeap`].
 ///
 /// [`ConfigurableSimdQuickHeap`]: crate::ConfigurableSimdQuickHeap
@@ -2325,31 +2290,31 @@ macro_rules! neon_partition_multi {
 }
 
 #[cfg(target_feature = "avx2")]
-impl_simd_elem_32!(i32, wide::i32x8, AVX2_ALT_I32);
+impl_simd_elem_32!(i32, wide::i32x8);
 #[cfg(target_feature = "avx2")]
-impl_simd_elem_32!(u32, wide::u32x8, AVX2_ALT_U32);
+impl_simd_elem_32!(u32, wide::u32x8);
 #[cfg(target_feature = "avx2")]
-impl_simd_elem_64!(i64, wide::i64x4, AVX2_ALT_I64);
+impl_simd_elem_64!(i64, wide::i64x4);
 #[cfg(target_feature = "avx2")]
-impl_simd_elem_64!(u64, wide::u64x4, AVX2_ALT_U64);
+impl_simd_elem_64!(u64, wide::u64x4);
 
 #[cfg(target_feature = "avx512f")]
-impl_simd_elem_32_avx512!(i32, wide::i32x16, AVX512_ALT_I32);
+impl_simd_elem_32_avx512!(i32, wide::i32x16);
 #[cfg(target_feature = "avx512f")]
-impl_simd_elem_32_avx512!(u32, wide::u32x16, AVX512_ALT_U32);
+impl_simd_elem_32_avx512!(u32, wide::u32x16);
 #[cfg(target_feature = "avx512f")]
-impl_simd_elem_64_avx512!(i64, wide::i64x8, AVX512_ALT_I64);
+impl_simd_elem_64_avx512!(i64, wide::i64x8);
 #[cfg(target_feature = "avx512f")]
-impl_simd_elem_64_avx512!(u64, wide::u64x8, AVX512_ALT_U64);
+impl_simd_elem_64_avx512!(u64, wide::u64x8);
 
 #[cfg(target_arch = "aarch64")]
-impl_simd_elem_32_neon!(i32, wide::i32x4, NEON_ALT_I32);
+impl_simd_elem_32_neon!(i32, wide::i32x4);
 #[cfg(target_arch = "aarch64")]
-impl_simd_elem_32_neon!(u32, wide::u32x4, NEON_ALT_U32);
+impl_simd_elem_32_neon!(u32, wide::u32x4);
 #[cfg(target_arch = "aarch64")]
-impl_simd_elem_64_neon!(i64, wide::i64x2, NEON_ALT_I64);
+impl_simd_elem_64_neon!(i64, wide::i64x2);
 #[cfg(target_arch = "aarch64")]
-impl_simd_elem_64_neon!(u64, wide::u64x2, NEON_ALT_U64);
+impl_simd_elem_64_neon!(u64, wide::u64x2);
 
 /// Methods to generate random balanced equal masks for the tiebreaker
 const fn mix(mut x: u64) -> u64 {
