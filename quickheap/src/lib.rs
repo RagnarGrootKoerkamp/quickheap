@@ -274,7 +274,6 @@ pub struct KVSimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
     /// This can be longer than `layer` to reuse allocations.
     keys: Vec<Vec<T>>,
     values: Vec<Vec<T>>,
-    popped_values: Vec<bool>,
     size: usize,
     _backend: PhantomData<S>,
 }
@@ -287,7 +286,6 @@ impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickHea
             pivots: Vec::with_capacity(128),
             keys: (0..128).map(|_| vec![]).collect(),
             values: (0..128).map(|_| vec![]).collect(),
-            popped_values: vec![false; n],
             size: 0,
             _backend: PhantomData,
         }
@@ -372,12 +370,7 @@ impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickHea
             }
         }
 
-        if self.popped_values[val.to_usize()] {
-            return self.pop();
-        }
-
         self.size -= 1;
-        self.popped_values[val.to_usize()] = true;
 
         Some((key, val))
     }
