@@ -5,7 +5,7 @@
 //!
 //! The [`SimdQuickHeap`] is the main entrypoint and supports `u32`, `i32`, `u64`, and `i64` keys.
 //!
-//! If your data is larger, the [`KVSimdQuickHeap`] is slightly less efficient buts supports key-value pairs `(u32,u32)`, `(i32,i32)`, `(u64, u64)`, and `(i64,i64)`.
+//! If your data is larger, the [`KvSimdQuickHeap`] is slightly less efficient buts supports key-value pairs `(u32,u32)`, `(i32,i32)`, `(u64, u64)`, and `(i64,i64)`.
 //!
 //! Create a new instance using [`SimdQuickHeap::default`].
 //! [`SimdQuickHeap::push`] pushes a new value to the queue, and [`SimdQuickHeap::pop`] returns the *smallest* element in the priority queue.
@@ -257,7 +257,7 @@ impl_index_elem!(u64);
 ///
 /// - `T`: the element type.
 /// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
-pub struct KVSimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
+pub struct KvSimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -278,7 +278,7 @@ pub struct KVSimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
     _backend: PhantomData<S>,
 }
 
-impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickHeap<T, S> {
+impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S> {
     const N: usize = 16;
 
     pub fn new() -> Self {

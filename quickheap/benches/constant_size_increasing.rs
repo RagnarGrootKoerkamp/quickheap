@@ -1,4 +1,4 @@
-use quickheap::{KVSimdQuickHeap, SimdQuickHeap};
+use quickheap::{KvSimdQuickHeap, SimdQuickHeap};
 use std::{hint::black_box, time::Instant};
 
 fn quickheap_u32() {
@@ -56,7 +56,7 @@ fn quickheap_u64() {
 fn kv_quickheap_u32() {
     const N: usize = 1000000;
     const C: u32 = 1 << 9;
-    let mut heap = KVSimdQuickHeap::<u32>::new();
+    let mut heap = KvSimdQuickHeap::<u32>::new();
     let mut last = 0;
     for _ in 0..N {
         let key = last + rand::random_range(0..C);
@@ -85,7 +85,7 @@ fn kv_quickheap_u32() {
 fn kv_quickheap_u64() {
     const N: usize = 1000000;
     const C: u64 = 1 << 20;
-    let mut heap = KVSimdQuickHeap::<u64>::new();
+    let mut heap = KvSimdQuickHeap::<u64>::new();
     let mut last = 0;
     for _ in 0..N {
         let key = last + rand::random_range(0..C);
