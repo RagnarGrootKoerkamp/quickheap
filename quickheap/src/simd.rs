@@ -1018,7 +1018,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                     use std::mem::transmute;
 
                     let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        vals, threshold, pivot_pos,
+                        keys, threshold, pivot_pos,
                     ) as u16;
                     let large: u16 = !small;
                     let keys: __m512i = transmute(keys);
@@ -1093,7 +1093,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                         .to_bitmask() as u16;
 
                     let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        vals, threshold, pivot_pos,
+                        keys, threshold, pivot_pos,
                     ) as u16
                         & in_range;
                     let large: u16 = (!small) & in_range;
@@ -1343,7 +1343,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                     use std::mem::transmute;
 
                     let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        vals, threshold, pivot_pos,
+                        keys, threshold, pivot_pos,
                     ) as u8;
                     let large: u8 = !small;
                     let keys: __m512i = transmute(keys);
