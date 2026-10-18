@@ -1,7 +1,7 @@
-use std::cmp::Reverse;
+use std::{cmp::Reverse, collections::BTreeSet};
 
-use crate::SimdQuickHeap;
 use crate::simd::SimdElem;
+use crate::{KvSimdQuickHeap, SimdQuickHeap};
 
 /// Element-type capabilities needed by the generators.
 trait GenElem: Copy + Ord + std::fmt::Debug {
@@ -132,20 +132,104 @@ impl<T: GenElem> Generator<T> for MostlyMinGen {
     }
 }
 
-fn heapsort_with_gen<T, S, G, const L: usize>()
+/// Common interface so every workload runs against both heap variants.
+trait TestHeap<T>: Sized {
+    fn new() -> Self;
+    fn push(&mut self, key: T);
+    fn pop(&mut self) -> Option<T>;
+    fn len(&self) -> usize;
+}
+
+impl<T: GenElem + Default, S: SimdElem<T>> TestHeap<T> for SimdQuickHeap<T, S> {
+    fn new() -> Self {
+        Self::default()
+    }
+    fn push(&mut self, key: T) {
+        self.push(key);
+    }
+    fn pop(&mut self) -> Option<T> {
+        self.pop()
+    }
+    fn len(&self) -> usize {
+        self.len()
+    }
+}
+
+/// Give each insertion a distinct value and verify every returned key/value pair.
+/// Equal keys may be returned in any order.
+struct CheckedKv<T: GenElem, S: SimdElem<T>> {
+    heap: KvSimdQuickHeap<T, S>,
+    entries: BTreeSet<(T, T)>,
+    next_value: T,
+}
+
+impl<T: GenElem + Default, S: SimdElem<T>> TestHeap<T> for CheckedKv<T, S> {
+    fn new() -> Self {
+        Self {
+            heap: KvSimdQuickHeap::new(),
+            entries: BTreeSet::new(),
+            next_value: T::gen_min(),
+        }
+    }
+
+    fn push(&mut self, key: T) {
+        let value = self.next_value;
+        self.next_value = value.wrapping_inc();
+        assert!(self.entries.insert((key, value)));
+        self.heap.push(key, value);
+    }
+
+    fn pop(&mut self) -> Option<T> {
+        match self.heap.pop() {
+            Some((key, value)) => {
+                assert!(
+                    self.entries.remove(&(key, value)),
+                    "unexpected pair: ({key:?}, {value:?})"
+                );
+                Some(key)
+            }
+            None => {
+                assert!(self.entries.is_empty());
+                None
+            }
+        }
+    }
+
+    fn len(&self) -> usize {
+        assert_eq!(self.heap.len(), self.entries.len());
+        self.heap.len()
+    }
+}
+
+fn heapsort_with_gen<T, Q, G, const L: usize>()
 where
     T: GenElem + Default,
-    S: SimdElem<T>,
+    Q: TestHeap<T>,
     G: Generator<T>,
 {
     let g = &mut G::new();
-    for n in [10, 100, 1000, 10000, 100000] {
-        let mut q = <SimdQuickHeap<T, S>>::default();
+    for n in [
+        0,
+        1,
+        L - 1,
+        L,
+        L + 1,
+        2 * L - 1,
+        2 * L,
+        2 * L + 1,
+        10,
+        100,
+        1000,
+        10000,
+        100000,
+    ] {
+        let mut q = Q::new();
 
         for _ in 0..n {
             let t = g.get();
             q.push(t);
         }
+        assert_eq!(q.len(), n);
         let mut last: Option<T> = None;
         for _ in 0..n {
             let x = q.pop().unwrap();
@@ -155,18 +239,34 @@ where
             g.popped(x);
             last = Some(x);
         }
+        assert_eq!(q.len(), 0);
+        assert_eq!(q.pop(), None);
     }
 }
 
-fn wiggle_with_gen<T, S, G, const L: usize>()
+fn wiggle_with_gen<T, Q, G, const L: usize>()
 where
     T: GenElem + Default,
-    S: SimdElem<T>,
+    Q: TestHeap<T>,
     G: Generator<T>,
 {
     let g = &mut G::new();
-    for n in [10, 100, 1000, 10000, 100000] {
-        let mut q1 = SimdQuickHeap::<T, S>::default();
+    for n in [
+        0,
+        1,
+        L - 1,
+        L,
+        L + 1,
+        2 * L - 1,
+        2 * L,
+        2 * L + 1,
+        10,
+        100,
+        1000,
+        10000,
+        100000,
+    ] {
+        let mut q1 = Q::new();
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
         // (push pop push) xn
@@ -187,6 +287,8 @@ where
             q1.push(x);
             q2.push(Reverse(x));
         }
+
+        assert_eq!(q1.len(), n);
 
         // (pop push pop) xn
         for _ in 0..n {
@@ -209,23 +311,38 @@ where
                 g.popped(v);
             }
         }
+        assert_eq!(q1.len(), 0);
+        assert_eq!(q1.pop(), None);
     }
 }
 
 #[rustfmt::skip]
+macro_rules! heap_tests {
+    ($elem:ty, $heap:ty, $l:expr) => {
+        #[test] fn heapsort_random()      { heapsort_with_gen::<$elem, $heap, RandomGen, $l>(); }
+        #[test] fn heapsort_increasing()  { heapsort_with_gen::<$elem, $heap, IncreasingGen<$elem>, $l>(); }
+        #[test] fn heapsort_decreasing()  { heapsort_with_gen::<$elem, $heap, DecreasingGen<$elem>, $l>(); }
+        #[test] fn heapsort_mostly_max()  { heapsort_with_gen::<$elem, $heap, MostlyMaxGen, $l>(); }
+        #[test] fn heapsort_mostly_min()  { heapsort_with_gen::<$elem, $heap, MostlyMinGen, $l>(); }
+
+        #[test] fn wiggle_random()        { wiggle_with_gen::<$elem, $heap, RandomGen, $l>(); }
+        #[test] fn wiggle_increasing()    { wiggle_with_gen::<$elem, $heap, IncreasingGen<$elem>, $l>(); }
+        #[test] fn wiggle_decreasing()    { wiggle_with_gen::<$elem, $heap, DecreasingGen<$elem>, $l>(); }
+        #[test] fn wiggle_mostly_max()    { wiggle_with_gen::<$elem, $heap, MostlyMaxGen, $l>(); }
+        #[test] fn wiggle_mostly_min()    { wiggle_with_gen::<$elem, $heap, MostlyMinGen, $l>(); }
+    };
+}
+
 macro_rules! all_tests {
     ($elem:ty, $simd:ty, $l:expr) => {
-        #[test] fn heapsort_random()      { heapsort_with_gen::<$elem, $simd, RandomGen, $l>(); }
-        #[test] fn heapsort_increasing()  { heapsort_with_gen::<$elem, $simd, IncreasingGen<$elem>, $l>(); }
-        #[test] fn heapsort_decreasing()  { heapsort_with_gen::<$elem, $simd, DecreasingGen<$elem>, $l>(); }
-        #[test] fn heapsort_mostly_max()  { heapsort_with_gen::<$elem, $simd, MostlyMaxGen, $l>(); }
-        #[test] fn heapsort_mostly_min()  { heapsort_with_gen::<$elem, $simd, MostlyMinGen, $l>(); }
-
-        #[test] fn wiggle_random()        { wiggle_with_gen::<$elem, $simd, RandomGen, $l>(); }
-        #[test] fn wiggle_increasing()    { wiggle_with_gen::<$elem, $simd, IncreasingGen<$elem>, $l>(); }
-        #[test] fn wiggle_decreasing()    { wiggle_with_gen::<$elem, $simd, DecreasingGen<$elem>, $l>(); }
-        #[test] fn wiggle_mostly_max()    { wiggle_with_gen::<$elem, $simd, MostlyMaxGen, $l>(); }
-        #[test] fn wiggle_mostly_min()    { wiggle_with_gen::<$elem, $simd, MostlyMinGen, $l>(); }
+        mod key_only {
+            use super::*;
+            heap_tests!($elem, SimdQuickHeap<$elem, $simd>, $l);
+        }
+        mod kv {
+            use super::*;
+            heap_tests!($elem, CheckedKv<$elem, $simd>, $l);
+        }
     };
 }
 
