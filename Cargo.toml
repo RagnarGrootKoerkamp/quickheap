@@ -4,21 +4,8 @@ members = [
     "quickheap-dev",
     "quickheap-dev/bench",
 ]
-
 resolver = "3"
-
 default-members = ["quickheap"]
-
-[workspace.package]
-# name = "quickheap"
-version = "0.1.0"
-edition = "2024"
-license = "MIT"
-repository = "https://github.com/RagnarGrootKoerkamp/quickheap"
-keywords = ["priority-queue", "heap", "simd"]
-categories = ["algorithms", "data-structures"]
-authors = ["Ragnar Groot Koerkamp", "Marvin Williams", "Johannes Breitling"]
-description = "A SIMD-accelerated priority queue"
 
 [profile.bench]
 debug = true
