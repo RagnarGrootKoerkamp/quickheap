@@ -26,7 +26,6 @@ use std::fmt::Debug;
 #[cfg(test)]
 mod test;
 
-#[cfg(target_feature = "avx2")]
 pub use quickheap::simd::Avx2;
 #[cfg(target_feature = "avx512f")]
 pub use quickheap::simd::Avx512;
@@ -38,15 +37,8 @@ pub mod stats;
 use std::marker::PhantomData;
 
 /// Tag to use with [`ConfigurableSimdQuickHeap`]: picks the widest available backend
-/// (AVX-512 > AVX2 > NEON).
-#[cfg(target_feature = "avx512f")]
-pub type Simd = Avx512;
-
-#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
-pub type Simd = Avx2;
-
-#[cfg(target_arch = "aarch64")]
-pub type Simd = Neon;
+/// AVX-512, AVX2, or NEON
+pub type Simd = quickheap::Simd;
 
 /// The SIMD tag ([`Avx2`] or [`Avx512`]) must implement `SimdElem<T>`.
 ///

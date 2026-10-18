@@ -1,7 +1,7 @@
 pub struct MedianOfM<const M: usize>;
 impl<const M: usize> MedianOfM<M> {
     #[inline(always)]
-    pub fn pick<T: Copy + Ord>(layer: &Vec<T>) -> (T, usize) {
+    pub fn pick<T: Copy + Ord>(layer: &[T]) -> (T, usize) {
         let n = layer.len();
         let k = M / 2;
         let mut pivots: [(T, usize); M] = std::array::from_fn(|_| {

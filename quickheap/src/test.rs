@@ -100,7 +100,7 @@ impl<T: GenElem> Generator<T> for DecreasingGen<T> {
     }
 }
 
-/// 99.9 % T::MAX, 0.1 % uniformly random.
+/// approximately 99.85 % T::MAX, approximately 0.0015 % uniformly random.
 struct MostlyMaxGen;
 impl<T: GenElem> Generator<T> for MostlyMaxGen {
     fn new() -> Self {
@@ -108,7 +108,7 @@ impl<T: GenElem> Generator<T> for MostlyMaxGen {
     }
     fn popped(&mut self, _x: T) {}
     fn get(&mut self) -> T {
-        if rand::random::<u16>() == 0 {
+        if rand::random::<u16>() < 100 {
             T::gen_random()
         } else {
             T::gen_max()
@@ -116,7 +116,7 @@ impl<T: GenElem> Generator<T> for MostlyMaxGen {
     }
 }
 
-/// 99.9 % T::MIN, 0.1 % uniformly random.
+/// approximately 99.85 % T::MIN, approximately 0.0015 % uniformly random.
 struct MostlyMinGen;
 impl<T: GenElem> Generator<T> for MostlyMinGen {
     fn new() -> Self {
@@ -124,7 +124,7 @@ impl<T: GenElem> Generator<T> for MostlyMinGen {
     }
     fn popped(&mut self, _x: T) {}
     fn get(&mut self) -> T {
-        if rand::random::<u16>() == 0 {
+        if rand::random::<u16>() < 100 {
             T::gen_random()
         } else {
             T::gen_min()

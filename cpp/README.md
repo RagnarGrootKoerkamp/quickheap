@@ -20,14 +20,14 @@ Prefer including `quickheap.hpp` unless you specifically need the raw C API.
 ## Building
 
 First build the Rust library with the `c` feature enabled, which produces a
-shared (and static) library exposing the `quickheap_*` symbols:
+shared library exposing the `quickheap_*` symbols:
 
 ```bash
 cargo build --package quickheap --release --features c
 ```
 
-This produces `target/release/libquickheap.{so,dylib}` (and
-`libquickheap.a`).
+This produces `target/release/libquickheap.so` on Linux or
+`target/release/libquickheap.dylib` on macOS.
 
 Then compile [`example.cpp`](example.cpp) against it:
 
