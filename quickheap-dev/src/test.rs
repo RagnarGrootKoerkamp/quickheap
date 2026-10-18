@@ -1,19 +1,14 @@
 use std::cmp::Reverse;
-use std::ops::{Index, Sub};
+use std::ops::Sub;
 
 use crate::{
     ConfigurableSimdQuickHeap, ElemConstraint, SimdElem,
     buckets::{
-        block_partitioning::{BlockedPartitioning, FlatPartitioning},
-        list_block_bucket::ListBlockBucket,
-        vec_block_bucket::VecBlockBucket,
+        block_partitioning::FlatPartitioning,
         vec_bucket::VecBucket,
     },
     pivot_strategies::MedianOfM,
-    rebalancing_strategies::{
-        ExponentialUpperBoundRebalancing, NaiveLogRebalancing, NoRebalancing, PivotForgetting,
-        RandomizedRebalancing,
-    },
+    rebalancing_strategies::NoRebalancing,
 };
 
 /// Element-type capabilities needed by the generators.

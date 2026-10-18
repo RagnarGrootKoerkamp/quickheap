@@ -22,22 +22,23 @@ boost = ["dep:boost-heap-sys"]
 perf = ["dep:perfcnt"]
 
 [dependencies]
+clap = { version = "4.6.0", features = ["derive"] }
 csv = "1"
-serde = { version = "1", features = ["derive"] }
 dary_heap = "0.3.7"
 fastrand = "2.3.0"
 fibonacci_heap = "1.1.0"
 indexset = "0.16.0"
 itertools = "0.14.0"
+min_max_traits = "0.1.0"
 orx-priority-queue = "1.7.0"
 pheap = "0.3.0"
 radix-heap = "0.4.2"
 rand = "0.10.0"
-random = "0.14.0"
 rand_distr = "0.6.0"
+random = "0.14.0"
+serde = { version = "1", features = ["derive"] }
 weakheap = "0.1.0"
 wide = "1.2.0"
-min_max_traits = "0.1.0"
 
 perfcnt = { version = "0.8.0", optional = true }
 
@@ -48,7 +49,6 @@ sequence-heap-sys = { path = "../ext/sequence-heap-sys", optional = true }
 boost-heap-sys = { path = "../ext/boost-heap-sys", optional = true }
 original-quickheap-sys = { path = "../ext/original-quickheap-sys", optional = true }
 radix-heap-sys = { path = "../ext/radix-heap-sys", optional = true }
-clap = { version = "4.6.0", features = ["derive"] }
 
 # Specialized examples require their SIMD backend and optional instrumentation.
 [[example]]

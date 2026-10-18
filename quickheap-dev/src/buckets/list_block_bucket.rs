@@ -1,6 +1,6 @@
 use crate::{
     ElemConstraint,
-    buckets::{BlockedBucket, Bucket, FlatBucket, block::Block, block_arena::BlockArena},
+    buckets::{BlockedBucket, Bucket, block::Block, block_arena::BlockArena},
 };
 use std::{fmt::Debug, ptr};
 

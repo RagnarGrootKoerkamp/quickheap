@@ -1,9 +1,10 @@
 use quickheap::partitioning::{MultiPartition, Partition};
+use quickheap_dev::ElemConstraint;
 
 use crate::{Heap, impls::NoHeap, workloads};
 
 impl<
-    T: workloads::Elem + std::ops::Sub<Output = T> + Default + quickheap_dev::ElemConstraint,
+    T: workloads::Elem + Default + std::ops::Sub<Output = T> + ElemConstraint,
     B: quickheap_dev::buckets::Bucket<T, K, CAP>,
     PART: Partition<T, B> + MultiPartition<T, B>,
     S: quickheap::simd::SimdElem<T>,

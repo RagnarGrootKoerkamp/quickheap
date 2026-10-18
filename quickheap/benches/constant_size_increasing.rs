@@ -1,3 +1,4 @@
+//! A small standalone bench similar to MonotonConstantSize.
 use quickheap::{KvSimdQuickHeap, SimdQuickHeap};
 use std::{hint::black_box, time::Instant};
 

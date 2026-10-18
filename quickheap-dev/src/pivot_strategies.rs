@@ -9,7 +9,7 @@ pub trait PivotStrategy {
 #[inline(always)]
 fn get_m_median_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
     layer: &B,
-    mut m: usize,
+    m: usize,
 ) -> (T, usize) {
     debug_assert!(m % 2 == 1);
     // let n = layer.len().min(K);

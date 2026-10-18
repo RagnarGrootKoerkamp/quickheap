@@ -1,4 +1,5 @@
 #![feature(where_clause_attrs)]
+#![allow(unused)]
 
 use bench::DevSimdQuickHeap;
 use bench::scalar_quickheap::Search;
@@ -416,7 +417,9 @@ fn bench_comparisons() {
     bench::<T, impls::WeakHeap<T>>();
 }
 
-fn bench_ablation<T: Elem + 'static>()
+fn bench_ablation<
+    T: Elem + 'static + std::ops::Sub<Output = T> + quickheap_dev::ElemConstraint + Default,
+>()
 where
     #[cfg(feature = "avx2")]
     Avx2: SimdElem<T>,

@@ -1,7 +1,5 @@
 use std::{fmt::Debug, mem::transmute};
 
-use wide::{CmpEq, CmpGt, CmpLt};
-
 /// Marker type selecting the AVX2 (256-bit) SIMD backend.
 pub struct Avx2;
 

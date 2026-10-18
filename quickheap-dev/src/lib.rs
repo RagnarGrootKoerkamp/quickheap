@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! # SimdQuickHeap: A fast SIMD-based priority queue
 //!
 //! Just use the [`SimdQuickHeap`] type and it's [`default`](SimdQuickHeap::default), [`push`](SimdQuickHeap::push), and [`pop`](SimdQuickHeap::pop) functions.
@@ -8,10 +9,6 @@
 //!
 //! By default, it uses AVX2, or AVX-512 when available during compile time.
 //! To force one or the other, use `SimdQuickHeap<T, Avx2>` or `SimdQuickHeap<T, Avx512>`.
-
-#[cfg(feature = "c")]
-#[doc(hidden)]
-pub mod c;
 
 #[doc(hidden)]
 pub mod pivot_strategies;
@@ -56,16 +53,11 @@ pub type Simd = Neon;
 /// For now, this means you can only use `u32`, `i32`, `u64`, and `i64`.
 pub use quickheap::simd::SimdElem;
 
-use crate::buckets::block_partitioning::FlatPartitioning;
 use crate::pivot_strategies::PivotStrategy;
 use quickheap::partitioning::{MultiPartition, Partition};
 use quickheap::simd;
 
-use crate::{
-    buckets::{block_arena::BlockArena, vec_bucket::VecBucket},
-    pivot_strategies::RandomPivot,
-    rebalancing_strategies::NoRebalancing,
-};
+use crate::{buckets::block_arena::BlockArena, pivot_strategies::RandomPivot};
 
 use std::ops::Sub;
 
@@ -591,7 +583,7 @@ impl<
                     self.pivots.pop();
                 }
 
-                #[cfg(feature = "parition_stats")]
+                #[cfg(feature = "partition_stats")]
                 stats::partition_stats::equal_bucket();
                 return;
             }
