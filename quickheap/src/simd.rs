@@ -494,7 +494,7 @@ macro_rules! impl_simd_elem_32 {
 
                     let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
                         keys, threshold, pivot_pos,
-                    );
+                    ) as u8;
                     let large = !small;
                     let keys: __m256i = transmute(keys);
                     let vals: __m256i = transmute(vals);
