@@ -50,7 +50,6 @@ pub mod simd;
 #[cfg(test)]
 mod test;
 
-#[doc(hidden)]
 pub use simd::SimdElem;
 
 pub use simd::Avx2;
@@ -67,17 +66,13 @@ pub type Simd = simd::Avx512;
 #[cfg(target_arch = "aarch64")]
 pub type Simd = simd::Neon;
 
-/// Wrapper trait for `Copy + Ord`.
-pub trait Elem: Copy + Ord {}
-impl<T: Copy + Ord> Elem for T {}
-
 use crate::{partitioning::VecPartitioning, pivots::MedianOfM};
 
 /// The key-only SimdQuickHeap implementation
 ///
-/// - `T`: the element type.
-/// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
-pub struct SimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
+/// - `T`: the element type: `u32`, `i32`, `u64`, or `i64`.
+/// - `S`: an optional tag to select the SIMD backend: [`Avx2`], [`Avx512`], or [`Neon`].
+pub struct SimdQuickHeap<T: Copy + Ord, S: simd::SimdElem<T> = Simd> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -98,7 +93,7 @@ pub struct SimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
 }
 
 /// Return a default instance with plenty (128) layers of empty buckets.
-impl<T: Elem + Default, S: simd::SimdElem<T>> Default for SimdQuickHeap<T, S> {
+impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> Default for SimdQuickHeap<T, S> {
     fn default() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
@@ -109,7 +104,7 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> Default for SimdQuickHeap<T, S> {
     }
 }
 
-impl<T: Elem + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
+impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
     const N: usize = 16;
 
     /// Return the total capacity over all buckets.
@@ -117,17 +112,17 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
         self.buckets.iter().map(|b| b.capacity()).sum()
     }
 
-    /// Return the number of elements currently in the heap.
+    /// Return the number of elements currently in the priority queue.
     pub fn len(&self) -> usize {
         self.size
     }
 
-    /// Return whether the heap contains no elements.
+    /// Return whether the priority queue contains no elements.
     pub fn is_empty(&self) -> bool {
         self.size == 0
     }
 
-    /// Push `t` onto the heap.
+    /// Push `t` onto the priority queue.
     pub fn push(&mut self, t: T) {
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
 
@@ -145,7 +140,7 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
         self.size += 1;
     }
 
-    /// Pop the smallest element from the queue.
+    /// Pop the smallest element from the priority queue.
     pub fn pop(&mut self) -> Option<T> {
         // If the total size is 0, return none
         if self.size == 0 {
@@ -238,7 +233,7 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
 ///
 /// - `T`: the element type.
 /// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
-pub struct KvSimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
+pub struct KvSimdQuickHeap<T: Copy + Ord, S: simd::SimdElem<T> = Simd> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -259,7 +254,7 @@ pub struct KvSimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
     _backend: PhantomData<S>,
 }
 
-impl<T: Elem + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S> {
+impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S> {
     const N: usize = 16;
 
     pub fn new() -> Self {
