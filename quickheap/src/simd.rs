@@ -339,7 +339,7 @@ pub fn simd_max_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> Option<(T, usize)
 
 #[cfg(target_feature = "avx2")]
 macro_rules! impl_simd_elem_32 {
-    ($t:ty, $simd:ty, $alt:expr) => {
+    ($t:ty, $simd:ty) => {
         impl SimdElem<$t> for Avx2 {
             const L: usize = 8;
             const MAX: $t = <$t>::MAX;
@@ -591,7 +591,7 @@ macro_rules! impl_simd_elem_32 {
 
 #[cfg(target_feature = "avx2")]
 macro_rules! impl_simd_elem_64 {
-    ($t:ty, $simd:ty, $alt:expr) => {
+    ($t:ty, $simd:ty) => {
         impl SimdElem<$t> for Avx2 {
             const L: usize = 4;
             const MAX: $t = <$t>::MAX;
@@ -844,7 +844,7 @@ macro_rules! impl_simd_elem_64 {
 
 #[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_32_avx512 {
-    ($t:ty, $simd:ty, $alt:expr) => {
+    ($t:ty, $simd:ty) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
             const L: usize = 16;
             const MAX: $t = <$t>::MAX;
@@ -1169,7 +1169,7 @@ macro_rules! impl_simd_elem_32_avx512 {
 
 #[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_64_avx512 {
-    ($t:ty, $simd:ty, $alt:expr) => {
+    ($t:ty, $simd:ty) => {
         impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
             const L: usize = 8;
             const MAX: $t = <$t>::MAX;
@@ -1494,7 +1494,7 @@ macro_rules! impl_simd_elem_64_avx512 {
 
 #[cfg(target_arch = "aarch64")]
 macro_rules! impl_simd_elem_32_neon {
-    ($t:ty, $simd:ty, $alt:expr) => {
+    ($t:ty, $simd:ty) => {
         impl SimdElem<$t> for Neon {
             const L: usize = 4;
             const MAX: $t = <$t>::MAX;
@@ -1756,7 +1756,7 @@ macro_rules! impl_simd_elem_32_neon {
 
 #[cfg(target_arch = "aarch64")]
 macro_rules! impl_simd_elem_64_neon {
-    ($t:ty, $simd:ty, $alt:expr) => {
+    ($t:ty, $simd:ty) => {
         impl SimdElem<$t> for Neon {
             const L: usize = 2;
             const MAX: $t = <$t>::MAX;
@@ -1817,19 +1817,6 @@ macro_rules! impl_simd_elem_64_neon {
                 }
 
                 unreachable!();
-
-                /*
-                if threshold != <$simd>::splat(<$t>::MAX) {
-
-                    // (
-                    //    (threshold + $alt).simd_gt(keys).to_bitmask() as u64,
-                    //) & lanes
-                } else {
-                    let lt = (threshold.simd_gt(keys).to_bitmask() as u64) & lanes;
-                    let eq = (keys.simd_eq(threshold).to_bitmask() as u64) & lanes;
-                    lt | (eq & 0b1010)
-                }
-                 */
             }
 
             /*

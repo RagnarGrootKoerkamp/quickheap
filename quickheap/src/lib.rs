@@ -34,6 +34,11 @@ pub mod simd;
 #[cfg(test)]
 mod test;
 
+pub use simd::Avx2;
+pub use simd::Avx512;
+#[cfg(target_arch = "aarch64")]
+pub use simd::Neon;
+pub use simd::SimdElem;
 #[cfg(target_feature = "avx512f")]
 pub type Simd = simd::Avx512;
 
@@ -44,7 +49,6 @@ pub type Simd = simd::Avx2;
 pub type Simd = simd::Neon;
 
 /// Wrapper trait for `Copy + Ord`.
-#[doc(hidden)]
 pub trait Elem: Copy + Ord {}
 impl<T: Copy + Ord> Elem for T {}
 
