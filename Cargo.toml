@@ -1,6 +1,10 @@
 [workspace]
-members = ["quickheap"]
-exclude = ["quickheap-dev"]
+members = [
+    "quickheap",
+    "quickheap-dev",
+    "quickheap-dev/bench",
+]
+
 resolver = "3"
 
 default-members = ["quickheap"]
@@ -20,4 +24,11 @@ description = "A SIMD-accelerated priority queue"
 debug = true
 
 [profile.release]
+debug = false
+codegen-units = 1
+lto = "fat"
+
+[profile.profiling]
+inherits = "release"
 debug = true
+strip = false

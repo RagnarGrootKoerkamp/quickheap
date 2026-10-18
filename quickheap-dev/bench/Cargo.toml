@@ -2,12 +2,6 @@
 name = "bench"
 version = "0.1.0"
 edition = "2024"
-license = "MIT"
-repository = "https://github.com/ragnargrootkoerkamp/quickheap"
-keywords = ["priority-queue", "heap", "simd"]
-categories = ["algorithms", "data-structures"]
-authors = ["Ragnar Groot Koerkamp", "Johannes Breitling"]
-description = "A SIMD-accelerated priority queue"
 
 [features]
 default = ["avx2", "ffi"]
@@ -36,7 +30,6 @@ fibonacci_heap = "1.1.0"
 indexset = "0.16.0"
 itertools = "0.14.0"
 orx-priority-queue = "1.7.0"
-perfcnt = { version = "0.8.0", optional = true }
 pheap = "0.3.0"
 radix-heap = "0.4.2"
 rand = "0.10.0"
@@ -46,8 +39,10 @@ weakheap = "0.1.0"
 wide = "1.2.0"
 min_max_traits = "0.1.0"
 
-quickheap-dev = { path = "../" }
+perfcnt = { version = "0.8.0", optional = true }
+
 quickheap = { path = "../../quickheap" }
+quickheap-dev = { path = "../" }
 s3q-sys = { path = "../ext/s3q-sys", optional = true}
 sequence-heap-sys = { path = "../ext/sequence-heap-sys", optional = true }
 boost-heap-sys = { path = "../ext/boost-heap-sys", optional = true }

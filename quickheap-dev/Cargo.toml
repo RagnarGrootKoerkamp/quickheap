@@ -1,27 +1,13 @@
-[workspace]
-resolver = "3"
-members = [
-    ".",
-    "bench",
-    "ext/s3q-sys",
-    "ext/sequence-heap-sys",
-    "ext/boost-heap-sys",
-    "ext/original-quickheap-sys",
-    "ext/radix-heap-sys",
-]
-
 [package]
 name = "quickheap-dev"
 version = "0.1.0"
 edition = "2024"
 publish = false
 
-
 [features]
 default = []
 partition_stats = []
 layer_stats = []
-
 
 [dependencies]
 quickheap = { path = "../quickheap" }
@@ -29,13 +15,3 @@ ensure_simd = "0.1.0"
 fastrand = "2.4.1"
 rand = "0.10.1"
 wide = "1.2.0"
-
-[profile.release]
-debug = true
-codegen-units = 1
-lto = "fat"
-
-[profile.profiling]
-inherits = "release"
-debug = true
-strip = false
