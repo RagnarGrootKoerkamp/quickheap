@@ -6,11 +6,12 @@ pub struct Avx2;
 /// Marker type selecting the AVX-512 (512-bit) SIMD backend.
 ///
 /// `CS` controls how compressed results are written:
-/// - `Avx512<true>` (the default) uses `_mm512_mask_compressstoreu_epi*`.
 /// - `Avx512<true>` uses `_mm512_maskz_compress_epi*` followed by `_mm512_storeu_si512`.
+/// - `Avx512<false>` uses `_mm512_mask_compressstoreu_epi*`. Not default since it's very slow on Zen4.
+///
 ///
 /// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"`.
-pub struct Avx512<const CS: bool = false>;
+pub struct Avx512<const CS: bool = true>;
 
 /// Marker type selecting the NEON (128-bit) SIMD backend.
 pub struct Neon;
