@@ -15,3 +15,9 @@ keywords = ["priority-queue", "heap", "simd"]
 categories = ["algorithms", "data-structures"]
 authors = ["Ragnar Groot Koerkamp", "Marvin Williams", "Johannes Breitling"]
 description = "A SIMD-accelerated priority queue"
+
+[profile.bench]
+debug = true
+
+[profile.release]
+debug = true
