@@ -1,22 +1,38 @@
 //! # SimdQuickHeap: A fast SIMD-based priority queue
 //!
-//! Just use the [`SimdQuickHeap`] type and the and it's [`default`](SimdQuickHeap::default), [`push`](SimdQuickHeap::push), and [`pop`](SimdQuickHeap::pop) functions.
+//! Implementation of the `SimdQuickHeap`.
+//! See also the [repo](https://github.com/ragnargrootkoerkamp/quickheap) and [the paper](https://doi.org/10.4230/LIPIcs.ESA.2026.16).
+//!
+//! The [`SimdQuickHeap`] is the main entrypoint and supports `u32`, `i32`, `u64`, and `i64` keys.
+//!
+//! If your data is larger, the [`KVSimdQuickHeap`] is slightly less efficient buts supports key-value pairs `(u32,u32)`, `(i32,i32)`, `(u64, u64)`, and `(i64,i64)`.
+//!
+//! Create a new instance using [`SimdQuickHeap::default`].
+//! [`SimdQuickHeap::push`] pushes a new value to the queue, and [`SimdQuickHeap::pop`] returns the *smallest* element in the priority queue.
 //!
 //! ## Example
 //! ```
 //! let mut q = quickheap::SimdQuickHeap::<u64>::default();
 //! q.push(4);
 //! q.push(1);
+//! q.push(1); // Duplicate elements allowed!
 //! q.push(7);
-//! assert_eq!(q.pop(), Some(1));
+//! assert_eq!(q.pop(), Some(1)); // Returns the smallest element.
 //! q.push(7);
 //! q.push(3);
+//! assert_eq!(q.pop(), Some(1));
 //! assert_eq!(q.pop(), Some(3));
 //! assert_eq!(q.pop(), Some(4));
 //! assert_eq!(q.pop(), Some(7));
 //! assert_eq!(q.pop(), Some(7));
 //! assert_eq!(q.pop(), None);
+//! q.push(2); // Pushing new minimal values is allowed.
 //! ```
+//!
+//! ## SIMD
+//!
+//! The Simd backend is automatically chosen based on the target architecture during compilation.
+//! If needed, `SimdQuickHeap::<T, AVX2>` can be used to explicitly use the AVX2 rather than AVX512 implementation.
 
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -34,17 +50,20 @@ pub mod simd;
 #[cfg(test)]
 mod test;
 
+#[doc(hidden)]
+pub use simd::SimdElem;
+
 pub use simd::Avx2;
 pub use simd::Avx512;
-#[cfg(target_arch = "aarch64")]
 pub use simd::Neon;
-pub use simd::SimdElem;
-#[cfg(target_feature = "avx512f")]
-pub type Simd = simd::Avx512;
 
+/// The default Simd backend, decided at compile time based on the target architecture.
 #[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
 pub type Simd = simd::Avx2;
-
+/// The default Simd backend, decided at compile time based on the target architecture.
+#[cfg(target_feature = "avx512f")]
+pub type Simd = simd::Avx512;
+/// The default Simd backend, decided at compile time based on the target architecture.
 #[cfg(target_arch = "aarch64")]
 pub type Simd = simd::Neon;
 
@@ -54,7 +73,7 @@ impl<T: Copy + Ord> Elem for T {}
 
 use crate::{partitioning::VecPartitioning, pivots::MedianOfM};
 
-/// The SimdQuickHeap implementation
+/// The key-only SimdQuickHeap implementation
 ///
 /// - `T`: the element type.
 /// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
@@ -234,11 +253,11 @@ impl_index_elem!(u32);
 impl_index_elem!(i64);
 impl_index_elem!(u64);
 
-/// The KVSimdQuickHeap implementation
+/// The key-value pair SimdQuickHeap implementation
 ///
 /// - `T`: the element type.
 /// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
-pub struct KVSimdQuickHeap<T: Elem, S: simd::SimdElem<T>> {
+pub struct KVSimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -263,7 +282,7 @@ pub struct KVSimdQuickHeap<T: Elem, S: simd::SimdElem<T>> {
 impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickHeap<T, S> {
     const N: usize = 16;
 
-    pub fn new(n: usize) -> Self {
+    pub fn new() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
             keys: (0..128).map(|_| vec![]).collect(),

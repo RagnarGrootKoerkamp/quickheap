@@ -2,24 +2,19 @@ use std::{fmt::Debug, mem::transmute};
 
 use wide::{CmpEq, CmpGt, CmpLt};
 
-/// Marker type selecting the AVX2 (256-bit) SIMD backend for [`ConfigurableSimdQuickHeap`].
-///
-/// [`ConfigurableSimdQuickHeap`]: crate::ConfigurableSimdQuickHeap
+/// Marker type selecting the AVX2 (256-bit) SIMD backend.
 pub struct Avx2;
 
-/// Marker type selecting the AVX-512 (512-bit) SIMD backend for [`ConfigurableSimdQuickHeap`].
+/// Marker type selecting the AVX-512 (512-bit) SIMD backend.
 ///
-/// The const generic `CS` controls how compressed results are written:
+/// `CS` controls how compressed results are written:
 /// - `Avx512<true>` (the default) uses `_mm512_mask_compressstoreu_epi*`.
 /// - `Avx512<true>` uses `_mm512_maskz_compress_epi*` followed by `_mm512_storeu_si512`.
 ///
-/// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"` and the `avx512` feature.
-///
-/// [`ConfigurableSimdQuickHeap`]: crate::ConfigurableSimdQuickHeap
+/// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"`.
 pub struct Avx512<const CS: bool = false>;
 
 /// Marker type selecting the NEON (128-bit) SIMD backend.
-#[cfg(target_arch = "aarch64")]
 pub struct Neon;
 
 pub const ONLY_PIVOTS_TO_CUR: usize = 0;
@@ -155,9 +150,9 @@ pub trait SimdElem<T>: 'static {
         next_write_cnt: &mut usize,
     );
 
-    /// Bucket of a lane = number of pivots < value, so pivots.len() == K-1.
-    /// Appends each lane to writes[bucket] and bumps cnts[bucket].
-    /// Contract: every writes[b] needs >= LANES elements of slack
+    /// Bucket of a lane = `number of pivots < value`, so `pivots.len() == K-1`.
+    /// Appends each lane to `writes[bucket]` and bumps `cnts[bucket]`.
+    /// Contract: every `writes[b]` needs `>= LANES` elements of slack
     /// (full-vector store, only the first popcount lanes are kept).
     unsafe fn partition_multi_fast<const K: usize>(
         vals: Self::Simd,
