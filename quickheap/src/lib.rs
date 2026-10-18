@@ -310,21 +310,6 @@ impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KVSimdQuickHea
         self.size == 0
     }
 
-    /// Decrease key of element `value` to `new_key`
-    pub fn decrease_key(&mut self, _: T, new_key: T, value: T) {
-        self.push(new_key, value);
-        self.size -= 1; // Decrease size because it is a duplicate element
-
-        // 3 Ideas:
-        // - Normal (just reinsert, check on pop)
-        // - Deletion Marker
-        //  - Problem: Same marker might not end in the same (if equal to pivot?)
-        //  - Clean up bucket when 1/3 is deletion marker
-        //  - Sort whole partition by value
-        //  - Rebuild subtree after clean up?
-        // - Deletion marker with Bloom Filter
-    }
-
     /// Push `t` onto the heap.
     pub fn push(&mut self, key: T, value: T) {
         let target_layer = simd::push_position::<T, S>(&self.pivots, key);
