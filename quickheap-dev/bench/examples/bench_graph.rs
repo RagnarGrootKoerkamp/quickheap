@@ -1,3 +1,4 @@
+use bench::DevSimdQuickHeap;
 use bench::dijkstra::DijkstraQuery;
 use bench::graph::Graph;
 use bench::prim::PrimMST;
@@ -6,7 +7,7 @@ use clap::Parser;
 #[cfg(feature = "avx512")]
 use quickheap::Avx512;
 #[cfg(feature = "avx2")]
-use quickheap::{Avx2, ConfigurableSimdQuickHeap};
+use quickheap::{Avx2, SimdQuickHeap};
 
 use bench::*;
 use serde::Serialize;
@@ -154,9 +155,13 @@ fn main() {
 
     // QUICKHEAP
     #[cfg(feature = "avx2")]
-    bench::<ConfigurableSimdQuickHeap<u64, Avx2>>(&graphs);
+    bench::<SimdQuickHeap<u64, Avx2>>(&graphs);
     #[cfg(feature = "avx512")]
-    bench::<ConfigurableSimdQuickHeap<u64, Avx512<true>>>(&graphs);
+    bench::<SimdQuickHeap<u64, Avx512>>(&graphs);
+    #[cfg(feature = "avx2")]
+    bench::<DevSimdQuickHeap<u64, Avx2>>(&graphs);
+    #[cfg(feature = "avx512")]
+    bench::<DevSimdQuickHeap<u64, Avx512<true>>>(&graphs);
 
     // SCALAR QUICKHEAP
     bench::<scalar_quickheap::ScalarQuickHeap<u64, 3, false, { Search::LinearScan }>>(&graphs);

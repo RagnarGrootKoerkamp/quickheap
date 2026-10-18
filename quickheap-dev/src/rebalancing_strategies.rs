@@ -1,9 +1,7 @@
 use crate::{
-    ElemConstraint,
+    Elem, ElemConstraint,
     buckets::{Bucket, block_arena::BlockArena},
 };
-
-use quickheap::Elem;
 
 use fastrand;
 use std::ops::Sub;
@@ -41,7 +39,7 @@ impl<T: Ord, B: Bucket<T, K, CAP>, const K: usize, const CAP: usize>
 
 pub struct NaiveLogRebalancing<const THRESH: usize, const IT: usize>;
 impl<
-    T: Copy + Ord,
+    T: Elem,
     B: Bucket<T, K, CAP>,
     const K: usize,
     const CAP: usize,
@@ -88,7 +86,7 @@ impl<
 
 pub struct PivotForgetting<const F: usize, const IT: usize>;
 impl<
-    T: Copy + Ord,
+    T: Elem,
     B: Bucket<T, K, CAP>,
     const F: usize,
     const IT: usize,

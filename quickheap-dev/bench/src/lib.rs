@@ -18,6 +18,7 @@ pub mod sequence_heap;
 
 pub mod scalar_quickheap;
 pub mod simd_quickheap;
+pub use simd_quickheap::DevSimdQuickHeap;
 
 #[cfg(feature = "avx2")]
 pub use quickheap::SimdQuickHeap;
@@ -52,17 +53,15 @@ mod test {
     use crate::impls::NoHeap;
     use crate::reimplemented_quickheap::ReimplementedQuickHeap;
     #[cfg(feature = "avx512")]
-    use crate::simd::Avx512;
+    use quickheap::Avx512;
     #[cfg(feature = "avx2")]
-    use quickheap::buckets::vec_bucket::VecBucket;
-    #[cfg(feature = "avx2")]
-    use quickheap::pivot_strategies::{MedianOfM, RandomPivot};
+    use quickheap_dev::pivot_strategies::{MedianOfM, RandomPivot};
 
     use crate::scalar_quickheap::{ScalarQuickHeap, Search};
     use crate::workloads::{Elem, Workload};
 
     #[cfg(feature = "avx2")]
-    use quickheap::{Avx2, ConfigurableSimdQuickHeap, rebalancing_strategies};
+    use quickheap_dev::{Avx2, rebalancing_strategies};
 
     use std::marker::PhantomData;
 
@@ -125,9 +124,8 @@ mod test {
         TestHeap::<
             T,
             Base,
-            ConfigurableSimdQuickHeap<
+            DevSimdQuickHeap<
                 T,
-                VecBucket<T>,
                 Avx2,
                 MedianOfM<3>,
                 rebalancing_strategies::NoRebalancing,
@@ -140,9 +138,8 @@ mod test {
         TestHeap::<
             T,
             Base,
-            ConfigurableSimdQuickHeap<
+            DevSimdQuickHeap<
                 T,
-                VecBucket<T>,
                 Avx2,
                 RandomPivot,
                 rebalancing_strategies::NoRebalancing,
@@ -152,13 +149,33 @@ mod test {
             >,
         >::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<false>, 8, 3, true>>::run(n);
+        TestHeap::<
+            T,
+            Base,
+            DevSimdQuickHeap<
+                T,
+                Avx512<false>,
+                MedianOfM<3>,
+                rebalancing_strategies::NoRebalancing,
+                8,
+            >,
+        >::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<false>, 16, 1, true>>::run(n);
+        TestHeap::<T, Base, DevSimdQuickHeap<T, Avx512<false>, RandomPivot>>::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<true>, 8, 3, true>>::run(n);
+        TestHeap::<
+            T,
+            Base,
+            DevSimdQuickHeap<
+                T,
+                Avx512<true>,
+                MedianOfM<3>,
+                rebalancing_strategies::NoRebalancing,
+                8,
+            >,
+        >::run(n);
         #[cfg(feature = "avx512")]
-        TestHeap::<T, Base, ConfigurableSimdQuickHeap<T, Avx512<true>, 16, 1, true>>::run(n);
+        TestHeap::<T, Base, DevSimdQuickHeap<T, Avx512<true>, RandomPivot>>::run(n);
 
         #[cfg(feature = "ffi")]
         TestHeap::<T, Base, sequence_heap::SequenceHeapU32>::run(n);

@@ -58,7 +58,6 @@ pub use quickheap::simd::SimdElem;
 
 use crate::buckets::block_partitioning::FlatPartitioning;
 use crate::pivot_strategies::PivotStrategy;
-use quickheap::Elem;
 use quickheap::partitioning::{MultiPartition, Partition};
 use quickheap::simd;
 
@@ -69,6 +68,10 @@ use crate::{
 };
 
 use std::ops::Sub;
+
+/// Wrapper around `Copy + Ord`.
+pub trait Elem: Copy + Ord {}
+impl<T: Copy + Ord> Elem for T {}
 
 pub trait ElemConstraint {
     fn one() -> Self;

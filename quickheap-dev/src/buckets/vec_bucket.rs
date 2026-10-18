@@ -1,7 +1,7 @@
 use crate::buckets::{Bucket, FlatBucket, block_arena::BlockArena};
 use std::fmt::Debug;
 
-pub struct VecBucket<T, const K: usize, const CAP: usize> {
+pub struct VecBucket<T, const K: usize = 256, const CAP: usize = 256> {
     data: Vec<T>,
 }
 

@@ -1,12 +1,11 @@
 use rand::rng;
 use std::time;
 
-use quickheap::ConfigurableSimdQuickHeap;
+use bench::DevSimdQuickHeap;
 
 use quickheap::Avx512;
-use quickheap::buckets::vec_bucket::VecBucket;
-use quickheap::pivot_strategies::MedianOfM;
-use quickheap::rebalancing_strategies::NoRebalancing;
+use quickheap_dev::pivot_strategies::MedianOfM;
+use quickheap_dev::rebalancing_strategies::NoRebalancing;
 
 use rand::seq::SliceRandom;
 
@@ -84,9 +83,8 @@ fn main() {
         good_layers.reverse();
         bad_layers.reverse();
 
-        let mut worst_h = ConfigurableSimdQuickHeap::<
+        let mut worst_h = DevSimdQuickHeap::<
             i64,
-            VecBucket<i64>,
             Avx512,
             MedianOfM<3>,
             NoRebalancing,
@@ -95,28 +93,16 @@ fn main() {
             false,
         >::from_vecs(bad_layers);
 
-        let mut best_h = ConfigurableSimdQuickHeap::<
-            i64,
-            VecBucket<i64>,
-            Avx512,
-            MedianOfM<3>,
-            NoRebalancing,
-            K,
-            true,
-            false,
-        >::from_vecs(good_layers);
+        let mut best_h =
+            DevSimdQuickHeap::<i64, Avx512, MedianOfM<3>, NoRebalancing, K, true, false>::from_vecs(
+                good_layers,
+            );
 
         init_values.shuffle(&mut shuffle_rng);
-        let mut real_h = ConfigurableSimdQuickHeap::<
-            i64,
-            VecBucket<i64>,
-            Avx512,
-            MedianOfM<3>,
-            NoRebalancing,
-            K,
-            true,
-            false,
-        >::from_vecs(vec![init_values]);
+        let mut real_h =
+            DevSimdQuickHeap::<i64, Avx512, MedianOfM<3>, NoRebalancing, K, true, false>::from_vecs(
+                vec![init_values],
+            );
 
         // println!("Initialization finished.");
 

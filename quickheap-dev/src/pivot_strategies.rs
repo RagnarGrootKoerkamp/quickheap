@@ -1,5 +1,4 @@
-use crate::buckets;
-use quickheap::Elem;
+use crate::{Elem, buckets};
 
 pub trait PivotStrategy {
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(

@@ -1,15 +1,13 @@
 #![feature(where_clause_attrs)]
 
+use bench::DevSimdQuickHeap;
 use bench::scalar_quickheap::Search;
 use clap::Parser;
 #[cfg(feature = "avx512")]
 use quickheap::Avx512;
-use quickheap::ConfigurableSimdQuickHeap;
-#[cfg(feature = "avx2")]
-use quickheap::buckets::vec_bucket::VecBucket;
-use quickheap::pivot_strategies::{MedianOfM, RandomPivot};
 #[cfg(feature = "avx2")]
 use quickheap::{Avx2, SimdElem};
+use quickheap_dev::pivot_strategies::{MedianOfM, RandomPivot};
 
 #[allow(unused)]
 #[cfg(feature = "perf")]
@@ -272,7 +270,7 @@ struct Args {
     memory: bool,
 }
 
-fn bench_plots<T: Elem + 'static>()
+fn bench_plots<T: Elem + Default + std::ops::Sub<Output = T> + quickheap_dev::ElemConstraint>()
 where
     #[cfg(feature = "avx2")]
     Avx2: SimdElem<T>,
@@ -282,13 +280,17 @@ where
     Avx512<true>: SimdElem<T>,
 {
     // QUICKHEAP
+    #[cfg(feature = "avx2")]
+    bench::<T, SimdQuickHeap<T, Avx2>>();
+    #[cfg(feature = "avx512")]
+    bench::<T, SimdQuickHeap<T, Avx512>>();
     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
 
     #[cfg(feature = "avx2")]
-    bench::<T, ConfigurableSimdQuickHeap<T, Avx2, MedianOfM<3>>>();
+    bench::<T, DevSimdQuickHeap<T, Avx2>>();
 
     #[cfg(feature = "avx512")]
-    bench::<T, ConfigurableSimdQuickHeap<T, Avx512<true>, MedianOfM<3>>>();
+    bench::<T, DevSimdQuickHeap<T, Avx512<true>>>();
 
     // ENGINEERED
     #[cfg(feature = "ffi")]
@@ -323,10 +325,13 @@ fn bench_table() {
 
     // SIMD QUICKHEAP
     #[cfg(feature = "avx2")]
-    bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx2, MedianOfM<3>>>();
-
+    bench::<T, SimdQuickHeap<T, Avx2>>();
     #[cfg(feature = "avx512")]
-    bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx512<true>, MedianOfM<3>>>();
+    bench::<T, SimdQuickHeap<T, Avx512>>();
+    #[cfg(feature = "avx2")]
+    bench::<T, DevSimdQuickHeap<T, Avx2>>();
+    #[cfg(feature = "avx512")]
+    bench::<T, DevSimdQuickHeap<T, Avx512<true>>>();
 
     return;
 
@@ -422,16 +427,16 @@ where
 {
     #[cfg(feature = "avx2")]
     {
-        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx2, RandomPivot>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx2, MedianOfM<3>>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx2, MedianOfM<5>>>();
+        bench::<T, DevSimdQuickHeap<T, Avx2, RandomPivot>>();
+        bench::<T, DevSimdQuickHeap<T, Avx2>>();
+        bench::<T, DevSimdQuickHeap<T, Avx2, MedianOfM<5>>>();
     }
 
     #[cfg(feature = "avx512")]
     {
-        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx512<true>, RandomPivot>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx512<true>, MedianOfM<3>>>();
-        bench::<T, ConfigurableSimdQuickHeap<T, VecBucket<T>, Avx512<true>, MedianOfM<5>>>();
+        bench::<T, DevSimdQuickHeap<T, Avx512<true>, RandomPivot>>();
+        bench::<T, DevSimdQuickHeap<T, Avx512<true>>>();
+        bench::<T, DevSimdQuickHeap<T, Avx512<true>, MedianOfM<5>>>();
     }
 }
 
