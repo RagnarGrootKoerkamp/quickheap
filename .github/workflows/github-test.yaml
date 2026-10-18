@@ -38,5 +38,5 @@ jobs:
       - run: cargo test --package quickheap -r
       # Build the shared library and compile/run the C++ example against it.
       - run: cargo build --package quickheap --release --features c
-      - run: g++ -std=c++17 -I cpp quickheap/cpp/example.cpp -L target/release -lquickheap -o quickheap_example
+      - run: g++ -std=c++17 cpp/example.cpp -L target/release -lquickheap -o quickheap_example
       - run: LD_LIBRARY_PATH=target/release ./quickheap_example

@@ -1,6 +1,6 @@
 # QuickHeap C++ bindings
 
-> (This is LLM generated)
+> This file, and most of the content in this directory, is LLM generated.
 
 This directory provides C++ bindings for `SimdQuickHeap`, built on top of a
 thin `extern "C"` layer (`src/c.rs`, enabled via the `c` Cargo feature).
@@ -23,7 +23,7 @@ First build the Rust library with the `c` feature enabled, which produces a
 shared (and static) library exposing the `quickheap_*` symbols:
 
 ```bash
-cargo build --release --features c
+cargo build --package quickheap --release --features c
 ```
 
 This produces `target/release/libquickheap.{so,dylib}` (and
@@ -32,8 +32,8 @@ This produces `target/release/libquickheap.{so,dylib}` (and
 Then compile [`example.cpp`](example.cpp) against it:
 
 ```bash
-g++ -std=c++17 -I cpp cpp/example.cpp \
-    -L target/release -lquickheap \
+g++ -std=c++17 example.cpp \
+    -L ../target/release -lquickheap \
     -o quickheap_example
 ```
 
@@ -41,9 +41,9 @@ And run it (adjusting the dynamic linker path for your platform):
 
 ```bash
 # Linux
-LD_LIBRARY_PATH=target/release ./quickheap_example
+LD_LIBRARY_PATH=../target/release ./quickheap_example
 # macOS
-DYLD_LIBRARY_PATH=target/release ./quickheap_example
+DYLD_LIBRARY_PATH=../target/release ./quickheap_example
 ```
 
 ## Example usage
@@ -86,7 +86,7 @@ cbindgen --config cbindgen.toml --output cpp/quickheap.h
 
 ## Notes
 
-- Like the rest of the crate, this requires AVX2 or AVX-512 to be available
+- Like the rest of the crate, this requires AVX2, AVX-512, or NEON to be available
   at compile time (see the top-level [README](../README.md)).
 - All functions in `quickheap.h` assert (Rust panic) rather than segfault on
   null-pointer misuse; linking against a `panic = "abort"` profile is
