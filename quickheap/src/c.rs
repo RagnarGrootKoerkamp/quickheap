@@ -6,9 +6,9 @@
 //! supported element types (`i32`, `u32`, `i64`, `u64`).
 //!
 //! Each heap must be created with `quickheap_<ty>_new` and released with
-//! `quickheap_<ty>_free`. Passing a null pointer to any function is
-//! undefined behaviour (checked with an assertion in debug builds via the
-//! panics below).
+//! `quickheap_<ty>_free`. Pointer-taking functions require live handles and
+//! valid output pointers as documented below. Null pointers trigger an
+//! assertion in all builds. Panics in these non-unwinding C functions abort.
 
 #![allow(non_snake_case)]
 
@@ -43,7 +43,7 @@ macro_rules! define_heap_c_api {
 
         #[doc = concat!("Free a heap previously created with [`", stringify!($new), "`].")]
         #[unsafe(no_mangle)]
-        pub extern "C" fn $free(ptr: *mut $Opaque) {
+        pub unsafe extern "C" fn $free(ptr: *mut $Opaque) {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
             unsafe {
                 drop(Box::from_raw(ptr));
@@ -52,7 +52,7 @@ macro_rules! define_heap_c_api {
 
         #[doc = "Push `value` onto the heap."]
         #[unsafe(no_mangle)]
-        pub extern "C" fn $push(ptr: *mut $Opaque, value: $Elem) {
+        pub unsafe extern "C" fn $push(ptr: *mut $Opaque, value: $Elem) {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
             let heap = unsafe { &mut *ptr };
             heap.push(value);
@@ -60,7 +60,7 @@ macro_rules! define_heap_c_api {
 
         #[doc = "Pop the smallest value from the heap into `*out_value`.\n\nReturns `true` and writes the popped value on success, or returns\n`false` (leaving `*out_value` untouched) if the heap is empty."]
         #[unsafe(no_mangle)]
-        pub extern "C" fn $pop(ptr: *mut $Opaque, out_value: *mut $Elem) -> bool {
+        pub unsafe extern "C" fn $pop(ptr: *mut $Opaque, out_value: *mut $Elem) -> bool {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
             assert!(!out_value.is_null(), "Output pointer must not be null");
             let heap = unsafe { &mut *ptr };
@@ -75,21 +75,21 @@ macro_rules! define_heap_c_api {
 
         #[doc = "Return the number of elements currently in the heap."]
         #[unsafe(no_mangle)]
-        pub extern "C" fn $len(ptr: *const $Opaque) -> usize {
+        pub unsafe extern "C" fn $len(ptr: *const $Opaque) -> usize {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
             unsafe { &*ptr }.len()
         }
 
         #[doc = "Return whether the heap is empty."]
         #[unsafe(no_mangle)]
-        pub extern "C" fn $is_empty(ptr: *const $Opaque) -> bool {
+        pub unsafe extern "C" fn $is_empty(ptr: *const $Opaque) -> bool {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
             unsafe { &*ptr }.is_empty()
         }
 
         #[doc = "Return the total capacity currently allocated over all internal buckets."]
         #[unsafe(no_mangle)]
-        pub extern "C" fn $capacity(ptr: *const $Opaque) -> usize {
+        pub unsafe extern "C" fn $capacity(ptr: *const $Opaque) -> usize {
             assert!(!ptr.is_null(), "Heap pointer must not be null");
             unsafe { &*ptr }.capacity()
         }
@@ -150,23 +150,25 @@ mod tests {
 
     #[test]
     fn roundtrip_i32() {
-        let h = quickheap_i32_new();
-        assert!(quickheap_i32_is_empty(h));
-        quickheap_i32_push(h, 4);
-        quickheap_i32_push(h, 1);
-        quickheap_i32_push(h, 7);
-        assert_eq!(quickheap_i32_len(h), 3);
+        unsafe {
+            let h = quickheap_i32_new();
+            assert!(quickheap_i32_is_empty(h));
+            quickheap_i32_push(h, 4);
+            quickheap_i32_push(h, 1);
+            quickheap_i32_push(h, 7);
+            assert_eq!(quickheap_i32_len(h), 3);
 
-        let mut out = 0i32;
-        assert!(quickheap_i32_pop(h, &mut out));
-        assert_eq!(out, 1);
-        assert!(quickheap_i32_pop(h, &mut out));
-        assert_eq!(out, 4);
-        assert!(quickheap_i32_pop(h, &mut out));
-        assert_eq!(out, 7);
-        assert!(!quickheap_i32_pop(h, &mut out));
-        assert!(quickheap_i32_is_empty(h));
+            let mut out = 0i32;
+            assert!(quickheap_i32_pop(h, &mut out));
+            assert_eq!(out, 1);
+            assert!(quickheap_i32_pop(h, &mut out));
+            assert_eq!(out, 4);
+            assert!(quickheap_i32_pop(h, &mut out));
+            assert_eq!(out, 7);
+            assert!(!quickheap_i32_pop(h, &mut out));
+            assert!(quickheap_i32_is_empty(h));
 
-        quickheap_i32_free(h);
+            quickheap_i32_free(h);
+        }
     }
 }
