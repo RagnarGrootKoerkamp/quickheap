@@ -234,25 +234,6 @@ impl<T: Elem + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
     }
 }
 
-pub trait IndexElem {
-    fn to_usize(&self) -> usize;
-}
-
-macro_rules! impl_index_elem {
-    ($t: ty) => {
-        impl IndexElem for $t {
-            fn to_usize(&self) -> usize {
-                *self as usize
-            }
-        }
-    };
-}
-
-impl_index_elem!(i32);
-impl_index_elem!(u32);
-impl_index_elem!(i64);
-impl_index_elem!(u64);
-
 /// The key-value pair SimdQuickHeap implementation
 ///
 /// - `T`: the element type.
@@ -278,7 +259,7 @@ pub struct KvSimdQuickHeap<T: Elem, S: simd::SimdElem<T> = Simd> {
     _backend: PhantomData<S>,
 }
 
-impl<T: Elem + Debug + Default + IndexElem, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S> {
+impl<T: Elem + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S> {
     const N: usize = 16;
 
     pub fn new() -> Self {
