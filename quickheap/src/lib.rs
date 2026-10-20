@@ -5,7 +5,7 @@
 //!
 //! The [`SimdQuickHeap`] is the main entrypoint and supports `u32`, `i32`, `u64`, and `i64` keys.
 //!
-//! If your data is larger, the [`KvSimdQuickHeap`] is slightly less efficient buts supports key-value pairs `(u32,u32)`, `(i32,i32)`, `(u64, u64)`, and `(i64,i64)`.
+//! If your data is larger, the [`KvSimdQuickHeap`] is slightly less efficient but supports key-value pairs `(u32,u32)`, `(i32,i32)`, `(u64, u64)`, and `(i64,i64)`.
 //!
 //! Create a new instance using [`SimdQuickHeap::default`].
 //! [`SimdQuickHeap::push`] pushes a new value to the queue, and [`SimdQuickHeap::pop`] returns the *smallest* element in the priority queue.
@@ -29,10 +29,20 @@
 //! q.push(2); // Pushing new minimal values is allowed.
 //! ```
 //!
+//! With key/value pairs:
+//! ```
+//! let mut q = quickheap::KvSimdQuickHeap::<u64>::default();
+//! q.push(1, 123);
+//! q.push(2, 0);
+//! assert_eq!(q.pop(), Some((1, 123)));
+//! assert_eq!(q.pop(), Some((2, 0)));
+//! ```
+//!
 //! ## SIMD
 //!
-//! The Simd backend is automatically chosen based on the target architecture during compilation.
-//! If needed, `SimdQuickHeap::<T, AVX2>` can be used to explicitly use the AVX2 rather than AVX512 implementation.
+//! The Simd backend is automatically chosen based on the target architecture during compilation
+//! when compiling with `RUSTFLAGS="-C target-cpu=native"`.
+//! If needed, `SimdQuickHeap::<T, Avx2>` explicitly selects AVX2 instead of AVX-512.
 
 use std::fmt::Debug;
 use std::marker::PhantomData;
