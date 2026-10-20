@@ -67,7 +67,7 @@ pub use simd::Avx512;
 pub use simd::Neon;
 
 /// The default Simd backend, decided at compile time based on the target architecture.
-#[cfg(all(target_arch = "x86_64", not(target_feature = "avx512f")))]
+#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 pub type Simd = simd::Avx2;
 /// The default Simd backend, decided at compile time based on the target architecture.
 #[cfg(target_feature = "avx512f")]
@@ -264,6 +264,12 @@ pub struct KvSimdQuickHeap<T: Copy + Ord, S: simd::SimdElem<T> = Simd> {
     _backend: PhantomData<S>,
 }
 
+impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> Default for KvSimdQuickHeap<T, S> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S> {
     const N: usize = 16;
 
@@ -431,7 +437,7 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
         }
     }
 
-    fn sort_key_and_values(keys: &mut Vec<T>, vals: &mut Vec<T>) {
+    fn sort_key_and_values(keys: &mut [T], vals: &mut [T]) {
         let n = keys.len();
         let mut idx: Vec<usize> = (0..n).collect();
         idx.sort_unstable_by_key(|&i| std::cmp::Reverse(keys[i]));
