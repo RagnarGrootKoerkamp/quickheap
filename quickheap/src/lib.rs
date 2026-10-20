@@ -175,7 +175,7 @@ impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
         let min = layer.pop().unwrap();
 
         // Update the active layer.
-        if layer.is_empty() && self.pivots.len() > 0 {
+        if layer.is_empty() && !self.pivots.is_empty() {
             self.pivots.pop();
 
             // Sort the new final layer decreasing if it's already small.
@@ -224,14 +224,14 @@ impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
         debug_assert!(next_layer.len() + cur_layer.len() == n);
 
         // If all elements ended up in the current layer
-        if next_layer.len() == 0 {
+        if next_layer.is_empty() {
             self.pivots.pop();
         }
 
         // If we extracted all elements to the next layer
         // because the pivot was the largest one,
         // undo and try again.
-        if cur_layer.len() == 0 {
+        if cur_layer.is_empty() {
             std::mem::swap(cur_layer, next_layer);
 
             self.pivots.pop();
@@ -343,7 +343,7 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
         let val = val_layer.pop().unwrap();
 
         // Update the active layer.
-        if key_layer.is_empty() && self.pivots.len() > 0 {
+        if key_layer.is_empty() && !self.pivots.is_empty() {
             debug_assert!(val_layer.is_empty());
 
             self.pivots.pop();
@@ -414,16 +414,16 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
         debug_assert!(cur_val_layer.len() + next_val_layer.len() == n);
 
         // If all elements ended up in the current layer
-        if next_key_layer.len() == 0 {
-            debug_assert!(next_val_layer.len() == 0);
+        if next_key_layer.is_empty() {
+            debug_assert!(next_val_layer.is_empty());
             self.pivots.pop();
         }
 
         // If we extracted all elements to the next layer
         // because the pivot was the largest one,
         // undo and try again.
-        if cur_key_layer.len() == 0 {
-            debug_assert!(cur_val_layer.len() == 0);
+        if cur_key_layer.is_empty() {
+            debug_assert!(cur_val_layer.is_empty());
             std::mem::swap(cur_key_layer, next_key_layer);
             std::mem::swap(cur_val_layer, next_val_layer);
 
