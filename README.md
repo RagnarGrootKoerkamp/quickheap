@@ -59,17 +59,19 @@ assert_eq!(q.pop(), Some((1, 123)));
 assert_eq!(q.pop(), Some((2, 0)));
 ```
 
+Note that a single queue over `u64` is be faster than a key-value queue over `(u32, u32)`.
+
 ### C++ Bindings
 
 See [`cpp/README.md`](cpp/README.md) for an example of using the C++ bindings.
 
-## Results
+## Performance
 
 See [`quickheap-dev/README.md`](quickheap-dev/README.md) for further information on
 running the benchmarks.
 
 Below you can see the results on an AMD Zen 4 EPYC 9684X for 32-bit and 64-bit
-data. We first push `n` elements and then measure how long it takes on
+data. In this `MonotoneConstantSize` bench, we first push `n` elements and then measure how long it takes on
 average to do a pair of push and pop operations. Note that the y-axis is
 logarithmic and normalized by both the number of elements and `log_2(n)` as
 well, so that the $n \log_2 n$ comparison-based sorting bound would come out as
@@ -82,9 +84,11 @@ heap](https://doc.rust-lang.org/std/collections/struct.BinaryHeap.html) and the
 
 ![plot with results](./plot.svg)
 
-In absolute terms of time for the average time per element (for both pushing and
-popping it), the comparison is as follows when the queue has a constant size of
-$n$ elements.
+### Extended comparison
+
+In absolute terms of time for the average time per element (ns per push+pop),
+the comparison is as follows when the queue has a constant size of
+$n$ `u64` elements.
 The last column shows the number of L2 cache misses per element for $n=2^{25}$.
 The top half of the table is shown in the plot above, while the bottom half
 contains additional implementations that are consistently slower.
@@ -114,3 +118,16 @@ contains additional implementations that are consistently slower.
 | BoostBinomialHeap      |    465.4 |    739.2 |   1525.8 |   2671.6 |     34.01 |
 | BoostSkewHeap          |    103.3 |    229.0 |    764.1 |   2754.1 |     35.84 |
 | ReimplementedQuickHeap |     58.6 |     76.9 |     95.8 |    115.9 |      0.04 |
+
+### Data types
+
+For $n=2^{20}$ elements, we get the following timings with AVX512:
+
+| Data type   | ns/elem |
+|-------------|---------|
+| `u32`       | 24.1    |
+| `u64`       | 26.7    |
+| `(u32,u32)` | 36.4    |
+| `(u64,u64)` | 41.8    |
+
+(This is uses a more recent version and thus `26.7` is slightly faster than the `29.4` in the table above.)
