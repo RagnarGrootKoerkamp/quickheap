@@ -63,11 +63,11 @@ Note that a single queue over `u64` is be faster than a key-value queue over `(u
 
 ### C++ Bindings
 
-See [`cpp/README.md`](cpp/README.md) for an example of using the C++ bindings.
+See [`cpp/README.md`](https://github.com/RagnarGrootKoerkamp/quickheap/blob/master/cpp/README.md) for an example of using the C++ bindings.
 
 ## Performance
 
-See [`quickheap-dev/README.md`](quickheap-dev/README.md) for further information on
+See [`quickheap-dev/README.md`](https://github.com/RagnarGrootKoerkamp/quickheap/blob/master/quickheap-dev/README.md) for further information on
 running the benchmarks.
 
 Below you can see the results on an AMD Zen 4 EPYC 9684X for 32-bit and 64-bit
@@ -82,7 +82,7 @@ than the standard library [binary
 heap](https://doc.rust-lang.org/std/collections/struct.BinaryHeap.html) and the
 8-ary heap of [`orx-priority-queue`](https://crates.io/crates/orx-priority-queue).
 
-![plot with results](./plot.svg)
+![plot with results](https://raw.githubusercontent.com/RagnarGrootKoerkamp/quickheap/master/plot.svg)
 
 ### Extended comparison
 

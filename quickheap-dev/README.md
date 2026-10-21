@@ -1,11 +1,11 @@
 ## Running the benchmarks
 
-The main entrypoint for running all benchmarks is the [`run-all.sh`](run-all.sh)
-script (or `just bench-all`). This runs `bench/example/{bench,bench_graph}.rs`
+The main entrypoint for running all benchmarks is the [`bench/run-all.sh`](bench/run-all.sh)
+script (or `just bench-all`). This runs `bench/examples/{bench,bench_graph}.rs`
 and writes to `bench/evals/data/*.csv`. (`just bench-small` runs a
 smaller/faster subset.)
 
-After that is done, `just plot-all` creates plots in `bench/evals/plots/*.{png,svg,pdf}`.
+After that is done, `just plot` creates plots in `bench/evals/plots/*.{png,svg,pdf}`.
 
 We benchmark both Rust libraries and (LLM-generated) FFI wrappers around
 external C++ implementations that can be found in [ext/](ext/).
