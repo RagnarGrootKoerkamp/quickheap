@@ -44,7 +44,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         for i in (0..n2).step_by(S::L) {
             unsafe {
                 S::partition_fast::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                    S::simd_from_slice(cur_layer.get_unchecked(i..i + S::L)),
+                    S::simd_from_ptr(cur_layer_ptr.add(i)),
                     threshold,
                     pivot_pos,
                     cur_layer_ptr,
@@ -58,7 +58,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         if n2 < n {
             unsafe {
                 S::partition_slow::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                    S::simd_from_slice(cur_layer.get_unchecked(n2..n)),
+                    S::simd_from_ptr(cur_layer_ptr.add(n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
                     pivot_pos,

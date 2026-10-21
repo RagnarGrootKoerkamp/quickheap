@@ -1,4 +1,6 @@
-use std::{fmt::Debug, mem::transmute};
+use std::fmt::Debug;
+#[cfg(target_feature = "avx2")]
+use std::mem::transmute;
 
 /// Marker type selecting the AVX2 (256-bit) SIMD backend.
 pub struct Avx2;
@@ -6,11 +8,10 @@ pub struct Avx2;
 /// Marker type selecting the AVX-512 (512-bit) SIMD backend.
 ///
 /// `CS` controls how compressed results are written:
-/// - `Avx512<true>` uses `_mm512_maskz_compress_epi*` followed by `_mm512_storeu_si512`.
+/// - `Avx512<true>` (the default) uses `_mm512_maskz_compress_epi*` followed by `_mm512_storeu_si512`.
 /// - `Avx512<false>` uses `_mm512_mask_compressstoreu_epi*`. Not default since it's very slow on Zen4.
 ///
-///
-/// Requires compiling with `RUSTFLAGS="-C target-feature=+avx512f"`.
+/// Requires compiling with AVX512F and AVX512BW, e.g. `RUSTFLAGS="-C target-feature=+avx512f,+avx512bw"`.
 pub struct Avx512<const CS: bool = true>;
 
 /// Marker type selecting the NEON (128-bit) SIMD backend.
@@ -51,7 +52,8 @@ pub(crate) static NEON_SHUF32: [[u8; 16]; 16] = build_neon_shuf::<4, 16>();
 pub(crate) static NEON_SHUF64: [[u8; 16]; 4] = build_neon_shuf::<2, 4>();
 
 /// A SIMD backend strategy for element type `T`.
-pub trait SimdElem<T>: 'static {
+#[allow(clippy::too_many_arguments)]
+pub unsafe trait SimdElem<T>: 'static {
     /// Number of SIMD lanes.
     const L: usize;
     /// Maximum value for `T`.
@@ -65,6 +67,8 @@ pub trait SimdElem<T>: 'static {
     /// `slice` must have at least `L` elements accessible (may read past `slice.len()`).
     unsafe fn simd_from_slice(slice: &[T]) -> Self::Simd;
 
+    /// # Safety
+    /// `ptr` must address at least `L` initialized, readable elements.
     unsafe fn simd_from_ptr(ptr: *const T) -> Self::Simd;
 
     /// Returns bitmask where bit `i` = `a[i] < b[i]`.
@@ -175,7 +179,7 @@ pub trait SimdElem<T>: 'static {
 
 /// Classify the element t against the decreasing list of pivots.
 #[inline(always)]
-pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &Vec<T>, t: T) -> usize {
+pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -> usize {
     if pivots.len() <= 64 {
         let t_simd = S::splat(t);
 
@@ -223,7 +227,7 @@ pub fn insert_index<T: Copy + Ord, S: SimdElem<T>>(layer: &[T], elem: T) -> usiz
 }
 
 #[inline(never)]
-pub fn position_min<T: Copy + Ord, S: SimdElem<T>>(v: &mut Vec<T>) -> usize {
+pub fn position_min<T: Copy + Ord, S: SimdElem<T>>(v: &mut [T]) -> usize {
     let mut min_pos = [0; 2];
     let mut min_val = [S::MAX; 2];
     for (i, &[l, r]) in v.as_chunks::<2>().0.iter().enumerate() {
@@ -250,8 +254,8 @@ pub fn position_min<T: Copy + Ord, S: SimdElem<T>>(v: &mut Vec<T>) -> usize {
     }
 }
 
-/// Returns `(min, index of first occurrence)`. For an empty slice returns `(S::MAX, 0)`.
 /*
+/// Returns `(min, index of first occurrence)`. For an empty slice returns `(S::MAX, 0)`.
 #[inline(never)]
 pub fn simd_min_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> (T, usize) {
     let full = s.len() / S::L * S::L;
@@ -334,7 +338,7 @@ pub fn simd_max_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> Option<(T, usize)
 #[cfg(target_feature = "avx2")]
 macro_rules! impl_simd_elem_32 {
     ($t:ty, $simd:ty) => {
-        impl SimdElem<$t> for Avx2 {
+        unsafe impl SimdElem<$t> for Avx2 {
             const L: usize = 8;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
@@ -586,7 +590,7 @@ macro_rules! impl_simd_elem_32 {
 #[cfg(target_feature = "avx2")]
 macro_rules! impl_simd_elem_64 {
     ($t:ty, $simd:ty) => {
-        impl SimdElem<$t> for Avx2 {
+        unsafe impl SimdElem<$t> for Avx2 {
             const L: usize = 4;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
@@ -839,7 +843,7 @@ macro_rules! impl_simd_elem_64 {
 #[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_32_avx512 {
     ($t:ty, $simd:ty) => {
-        impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
+        unsafe impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
             const L: usize = 16;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
@@ -1164,7 +1168,7 @@ macro_rules! impl_simd_elem_32_avx512 {
 #[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_64_avx512 {
     ($t:ty, $simd:ty) => {
-        impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
+        unsafe impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
             const L: usize = 8;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
@@ -1489,7 +1493,7 @@ macro_rules! impl_simd_elem_64_avx512 {
 #[cfg(target_arch = "aarch64")]
 macro_rules! impl_simd_elem_32_neon {
     ($t:ty, $simd:ty) => {
-        impl SimdElem<$t> for Neon {
+        unsafe impl SimdElem<$t> for Neon {
             const L: usize = 4;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
@@ -1751,7 +1755,7 @@ macro_rules! impl_simd_elem_32_neon {
 #[cfg(target_arch = "aarch64")]
 macro_rules! impl_simd_elem_64_neon {
     ($t:ty, $simd:ty) => {
-        impl SimdElem<$t> for Neon {
+        unsafe impl SimdElem<$t> for Neon {
             const L: usize = 2;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
@@ -2297,7 +2301,6 @@ impl_simd_elem_64_neon!(i64, wide::i64x2);
 #[cfg(target_arch = "aarch64")]
 impl_simd_elem_64_neon!(u64, wide::u64x2);
 
-/// Methods to generate random balanced equal masks for the tiebreaker
 const fn mix(mut x: u64) -> u64 {
     x = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
     x = (x ^ (x >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
@@ -2305,14 +2308,10 @@ const fn mix(mut x: u64) -> u64 {
     x ^ (x >> 31)
 }
 
-const fn balanced(mut x: u64) -> u64 {
-    while x.count_ones() > 32 {
-        x &= x - 1;
-    } // clear lowest set bit
-    while x.count_ones() < 32 {
-        x |= !x & x.wrapping_add(1);
-    } // set lowest zero bit
-    x
+/// Mask with one selected lane in every adjacent pair.
+const fn balanced(x: u64) -> u64 {
+    let even = x & 0x5555_5555_5555_5555;
+    even | ((!even & 0x5555_5555_5555_5555) << 1)
 }
 
 const fn build<const N: usize>() -> [u64; N] {
@@ -2332,6 +2331,7 @@ static EQUAL_MASKS: [u64; 16] = build::<16>();
 /// For each of 256 masks of which elements are different than their predecessor,
 /// a shuffle that sends those new elements to the beginning.
 #[rustfmt::skip]
+#[cfg(target_feature = "avx2")]
 pub(crate) const UNIQSHUF32: [[i32; 8]; 256] = unsafe {transmute([
 0,1,2,3,4,5,6,7,
 1,2,3,4,5,6,7,0,
@@ -2593,6 +2593,7 @@ pub(crate) const UNIQSHUF32: [[i32; 8]; 256] = unsafe {transmute([
 
 /// Masks for 32-bit shuffle instructions on 64-bit data.
 #[rustfmt::skip]
+#[cfg(target_feature = "avx2")]
 pub(crate) const UNIQSHUF64: [[i32; 8]; 16] = unsafe {
 transmute([
 0, 1, 2, 3, 4, 5, 6, 7, //0000
