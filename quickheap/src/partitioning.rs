@@ -20,7 +20,10 @@ use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
 pub struct VecPartitioning<T, S>(PhantomData<T>, PhantomData<S>);
 impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
     #[inline]
+    /// Partition `cur_layer` into the `cur_layer` and `next_layer`.
+    /// Elements equal to `pivot` can go either way.
     pub fn partition(cur_layer: &mut Vec<T>, next_layer: &mut Vec<T>, pivot: T, pivot_pos: usize) {
+        assert!(next_layer.is_empty(), "destination layer must be empty");
         let n = cur_layer.len();
 
         // Reserve space in the next layer,
@@ -77,6 +80,9 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
     }
 
     #[inline]
+    /// Partition matching key/value layers.
+    ///
+    /// `cur_key_layer` and `cur_val_layer` must have equal length.
     pub fn partition_kv(
         cur_key_layer: &mut Vec<T>,
         cur_val_layer: &mut Vec<T>,
@@ -85,6 +91,15 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         pivot: T,
         pivot_pos: usize,
     ) {
+        assert_eq!(
+            cur_key_layer.len(),
+            cur_val_layer.len(),
+            "key/value lengths must match"
+        );
+        assert!(
+            next_key_layer.is_empty() && next_val_layer.is_empty(),
+            "destination layers must be empty"
+        );
         let n = cur_key_layer.len();
 
         // Reserve space in the next layer,
@@ -116,8 +131,8 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         for i in (0..n2).step_by(S::L) {
             unsafe {
                 S::partition_fast_kv(
-                    S::simd_from_slice(cur_key_layer.get_unchecked(i..i + S::L)),
-                    S::simd_from_slice(cur_val_layer.get_unchecked(i..i + S::L)),
+                    S::simd_from_ptr(cur_key_layer_ptr.add(i)),
+                    S::simd_from_ptr(cur_val_layer_ptr.add(i)),
                     threshold,
                     pivot_pos,
                     cur_key_layer_ptr,
@@ -133,8 +148,8 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         if n2 < n {
             unsafe {
                 S::partition_slow_kv(
-                    S::simd_from_slice(cur_key_layer.get_unchecked(n2..n)),
-                    S::simd_from_slice(cur_val_layer.get_unchecked(n2..n)),
+                    S::simd_from_ptr(cur_key_layer_ptr.add(n2)),
+                    S::simd_from_ptr(cur_val_layer_ptr.add(n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
                     pivot_pos,

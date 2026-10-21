@@ -21,11 +21,9 @@ env:
 jobs:
   # Arbitrary name for this step.
   test:
-    # TODO: Run on both x86-64 ubuntu and aarch64 macos.
     strategy:
       matrix:
-        # os: [ubuntu-latest, macos-latest]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:

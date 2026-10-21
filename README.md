@@ -13,7 +13,12 @@ and **does not suffer from bad cache-locality** when the size of the queue excee
 the cache.
 
 Currently, it only supports `i32`, `u32`, `i64`, and `u64` keys and key-value pairs and requires
-either AVX2, AVX-512, or NEON.
+either AVX2, AVX-512, or NEON for SIMD acceleration, so build using e.g.:
+
+```sh
+RUSTFLAGS="-C target-cpu=native" cargo build --release
+```
+
 See the paper for details and benchmarks:
 
 > SimdQuickHeap: The QuickHeap Reconsidered  
@@ -50,8 +55,8 @@ With `(u64,u64)` key-value pairs:
 let mut q = quickheap::KvSimdQuickHeap::<u64>::default();
 q.push(1, 123);
 q.push(2, 0);
-assert_eq!(q.pop(), Some((1, 123));
-assert_eq!(q.pop(), Some((2, 0));
+assert_eq!(q.pop(), Some((1, 123)));
+assert_eq!(q.pop(), Some((2, 0)));
 ```
 
 ### C++ Bindings

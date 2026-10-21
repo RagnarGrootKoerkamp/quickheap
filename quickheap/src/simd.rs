@@ -193,15 +193,7 @@ pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -> usize
         }
         target_layer.min(pivots.len())
     } else {
-        pivots
-            .binary_search_by(|p| {
-                if *p < t {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            })
-            .unwrap_err()
+        pivots.partition_point(|&p| t < p)
     }
 }
 
@@ -214,11 +206,6 @@ pub fn insert_index<T: Copy + Ord, S: SimdElem<T>>(layer: &[T], elem: T) -> usiz
     while i < layer.len() {
         let vals = unsafe { (layer.as_ptr().add(i) as *const S::Simd).read_unaligned() };
         let ones = S::simd_lt_bitmask(vals, elem_simd).count_ones() as usize;
-
-        /*
-        if ones == 0 {
-            return target_idx;
-        } */
 
         target_idx += ones;
         i += S::L;

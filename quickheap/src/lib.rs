@@ -242,7 +242,7 @@ impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
 /// The key-value pair SimdQuickHeap implementation
 ///
 /// - `T`: the element type.
-/// - `S`: the SIMD tag: [`Avx2`] or [`Avx512`]. Default AVX-512 if available.
+/// - `S`: an optional backend tag: [`Avx2`], [`Avx512`], or [`Neon`].
 pub struct KvSimdQuickHeap<T: Copy + Ord, S: simd::SimdElem<T> = Simd> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
