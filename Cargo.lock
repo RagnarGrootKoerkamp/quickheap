@@ -489,6 +489,7 @@ name = "quickheap"
 version = "0.1.0"
 dependencies = [
  "ensure_simd",
+ "fastrand",
  "rand 0.10.3",
  "wide",
 ]
