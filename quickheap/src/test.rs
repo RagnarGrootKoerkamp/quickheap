@@ -353,6 +353,8 @@ mod u64 {
 
     #[cfg(target_feature = "avx512f")]
     mod avx512 { use super::super::*; all_tests!(u64, crate::simd::Avx512, 8); }
+    #[cfg(target_feature = "avx512f")]
+    mod avx512_compressstore { use super::super::*; all_tests!(u64, crate::Avx512<false>, 8); }
 
     #[cfg(target_arch = "aarch64")]
     mod neon   { use super::super::*; all_tests!(u64, crate::simd::Neon, 2); }
@@ -365,6 +367,8 @@ mod i64 {
 
     #[cfg(target_feature = "avx512f")]
     mod avx512 { use super::super::*; all_tests!(i64, crate::simd::Avx512, 8); }
+    #[cfg(target_feature = "avx512f")]
+    mod avx512_compressstore { use super::super::*; all_tests!(i64, crate::Avx512<false>, 8); }
 
     #[cfg(target_arch = "aarch64")]
     mod neon   { use super::super::*; all_tests!(i64, crate::simd::Neon, 2); }
@@ -377,6 +381,8 @@ mod i32 {
 
     #[cfg(target_feature = "avx512f")]
     mod avx512 { use super::super::*; all_tests!(i32, crate::simd::Avx512, 16); }
+    #[cfg(target_feature = "avx512f")]
+    mod avx512_compressstore { use super::super::*; all_tests!(i32, crate::Avx512<false>, 16); }
 
     #[cfg(target_arch = "aarch64")]
     mod neon   { use super::super::*; all_tests!(i32, crate::simd::Neon, 4); }
@@ -389,6 +395,8 @@ mod u32 {
 
     #[cfg(target_feature = "avx512f")]
     mod avx512 { use super::super::*; all_tests!(u32, crate::simd::Avx512, 16); }
+    #[cfg(target_feature = "avx512f")]
+    mod avx512_compressstore { use super::super::*; all_tests!(u32, crate::Avx512<false>, 16); }
 
     #[cfg(target_arch = "aarch64")]
     mod neon   { use super::super::*; all_tests!(u32, crate::simd::Neon, 4); }
