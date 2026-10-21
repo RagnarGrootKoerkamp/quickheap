@@ -178,15 +178,18 @@ pub unsafe trait SimdElem<T>: 'static {
 }
 
 /// Classify the element t against the decreasing list of pivots.
+///
+/// # Safety
+/// `pivots` is initialized with a capacity of 128, so reading out-of-bounds is fine.
 #[inline(always)]
-pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -> usize {
+pub unsafe fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -> usize {
     if pivots.len() <= 64 {
         let t_simd = S::splat(t);
 
         let mut target_layer = 0;
         let mut i = 0;
         while i < pivots.len() {
-            // NOTE: This reads beyond the length but within the capacity.
+            // The caller must provide initialized padding for this full SIMD load.
             let vals = unsafe { (pivots.as_ptr().add(i) as *const S::Simd).read_unaligned() };
             target_layer += S::simd_lt_bitmask(t_simd, vals).trailing_ones() as usize;
             i += S::L;
@@ -197,8 +200,14 @@ pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -> usize
     }
 }
 
+/// Count elements smaller than `elem` using full SIMD loads.
+///
+/// # Safety
+/// The backing allocation must contain initialized, readable elements through
+/// `layer.len().next_multiple_of(S::L)`. Padding lanes must not compare smaller
+/// than `elem`, since they contribute to the returned count.
 #[inline(always)]
-pub fn insert_index<T: Copy + Ord, S: SimdElem<T>>(layer: &[T], elem: T) -> usize {
+pub unsafe fn insert_index<T: Copy + Ord, S: SimdElem<T>>(layer: &[T], elem: T) -> usize {
     let elem_simd = S::splat(elem);
 
     let mut i = 0;

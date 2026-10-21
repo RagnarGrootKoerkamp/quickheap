@@ -134,7 +134,7 @@ impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
 
     /// Push `t` onto the priority queue.
     pub fn push(&mut self, t: T) {
-        let target_layer = simd::push_position::<T, S>(&self.pivots, t);
+        let target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, t) };
 
         let layer = &mut self.buckets[target_layer];
 
@@ -302,7 +302,7 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
 
     /// Push `t` onto the heap.
     pub fn push(&mut self, key: T, value: T) {
-        let target_layer = simd::push_position::<T, S>(&self.pivots, key);
+        let target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, key) };
 
         let key_layer = &mut self.keys[target_layer];
         let value_layer = &mut self.values[target_layer];
