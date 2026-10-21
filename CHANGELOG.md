@@ -8,8 +8,9 @@
 
 - Separate development version from released crate.
 - Support for (key,value) pairs of `u32`, `i32`, `u64` and `i64`.
-- Update docs for P99 talk.
-- Add (LLM generated) C++ bindings.
+- Updated docs for P99 talk.
+- Added (LLM generated) C++ bindings.
+- Various cleanups
 
 ## 0.1.0
 
