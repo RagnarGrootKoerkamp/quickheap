@@ -11,6 +11,11 @@ categories = ["algorithms", "data-structures"]
 authors = ["Ragnar Groot Koerkamp", "Marvin Williams", "Johannes Breitling"]
 description = "A SIMD-accelerated priority queue"
 
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+rustflags = ["-C", "target-feature=+avx2"]
+rustdoc-args = ["-C", "target-feature=+avx2"]
+
 
 [dependencies]
 rand = "0.10.1"
