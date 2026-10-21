@@ -276,9 +276,7 @@ where
     #[cfg(feature = "avx2")]
     Avx2: SimdElem<T>,
     #[cfg(feature = "avx512")]
-    Avx512<false>: SimdElem<T>,
-    #[cfg(feature = "avx512")]
-    Avx512<true>: SimdElem<T>,
+    Avx512: SimdElem<T>,
 {
     // QUICKHEAP
     #[cfg(feature = "avx2")]
@@ -291,7 +289,7 @@ where
     bench::<T, DevSimdQuickHeap<T, Avx2>>();
 
     #[cfg(feature = "avx512")]
-    bench::<T, DevSimdQuickHeap<T, Avx512<true>>>();
+    bench::<T, DevSimdQuickHeap<T, Avx512>>();
 
     // ENGINEERED
     #[cfg(feature = "ffi")]
@@ -332,7 +330,7 @@ fn bench_table() {
     #[cfg(feature = "avx2")]
     bench::<T, DevSimdQuickHeap<T, Avx2>>();
     #[cfg(feature = "avx512")]
-    bench::<T, DevSimdQuickHeap<T, Avx512<true>>>();
+    bench::<T, DevSimdQuickHeap<T, Avx512>>();
 
     return;
 
@@ -437,9 +435,9 @@ where
 
     #[cfg(feature = "avx512")]
     {
-        bench::<T, DevSimdQuickHeap<T, Avx512<true>, RandomPivot>>();
-        bench::<T, DevSimdQuickHeap<T, Avx512<true>>>();
-        bench::<T, DevSimdQuickHeap<T, Avx512<true>, MedianOfM<5>>>();
+        bench::<T, DevSimdQuickHeap<T, Avx512, RandomPivot>>();
+        bench::<T, DevSimdQuickHeap<T, Avx512>>();
+        bench::<T, DevSimdQuickHeap<T, Avx512, MedianOfM<5>>>();
     }
 }
 
