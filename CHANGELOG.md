@@ -6,6 +6,8 @@
 
 ## git
 
+## 0.2.0
+
 - Separate development version from released crate.
 - Support for (key,value) pairs of `u32`, `i32`, `u64` and `i64`.
 - Updated docs for P99 talk.
