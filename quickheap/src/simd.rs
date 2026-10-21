@@ -200,28 +200,6 @@ pub unsafe fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -
     }
 }
 
-/// Count elements smaller than `elem` using full SIMD loads.
-///
-/// # Safety
-/// The backing allocation must contain initialized, readable elements through
-/// `layer.len().next_multiple_of(S::L)`. Padding lanes must not compare smaller
-/// than `elem`, since they contribute to the returned count.
-#[inline(always)]
-pub unsafe fn insert_index<T: Copy + Ord, S: SimdElem<T>>(layer: &[T], elem: T) -> usize {
-    let elem_simd = S::splat(elem);
-
-    let mut i = 0;
-    let mut target_idx = 0;
-    while i < layer.len() {
-        let vals = unsafe { (layer.as_ptr().add(i) as *const S::Simd).read_unaligned() };
-        let ones = S::simd_lt_bitmask(vals, elem_simd).count_ones() as usize;
-
-        target_idx += ones;
-        i += S::L;
-    }
-    target_idx
-}
-
 #[inline(never)]
 pub fn position_min<T: Copy + Ord, S: SimdElem<T>>(v: &mut [T]) -> usize {
     let mut min_pos = [0; 2];
