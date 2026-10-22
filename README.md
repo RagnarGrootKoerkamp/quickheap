@@ -131,3 +131,16 @@ For $n=2^{20}$ elements, we get the following timings with AVX512:
 | `(u64,u64)` | 41.8    |
 
 (This is uses a more recent version and thus `26.7` is slightly faster than the `29.4` in the table above.)
+
+## Repository organisation
+- [`./quickheap`](./quickheap) contains the main crate.
+- [`./cpp`](./cpp) contains C++ bindings.
+- [`./quickheap-dev`](./quickheap-dev) contains the development crate, where we
+  experiment with additional features.
+- [`./quickheap-dev/ext`](./quickheap-dev/ext) contains submodules and Rust bindings for
+  external C++ implementations.
+- [`./quickheap-dev/bench`](./quickheap-dev/bench) wraps all implementations.
+  [`./quickheap-dev/bench/examples/bench.rs`](./quickheap-dev/bench/examples/bench.rs)
+  is the main benchmark entrypoint.
+- [`./quickheap-dev/bench/evals`](./quickheap-dev/bench/evals) contains the
+  experiment results and plotting code.
