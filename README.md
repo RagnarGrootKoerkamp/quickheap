@@ -25,8 +25,9 @@ See the paper for details and benchmarks:
 > Johannes Breitling, Ragnar Groot Koerkamp, Marvin Williams, ESA 2026  
 > https://doi.org/10.4230/LIPIcs.ESA.2026.16
 
-An older blog post can be found [here](https://curiouscoding.nl/posts/quickheap)
-and P99 slides are [here](https://curiouscoding.nl/slides/simdquickheap.pdf).
+An older blog post can be found [here](https://curiouscoding.nl/posts/quickheap).
+See also the [recording](https://www.youtube.com/watch?v=kdMsdFybWV0) and 
+[slides](https://curiouscoding.nl/slides/simdquickheap.pdf) of the P99 talk.
 
 ## Example
 
