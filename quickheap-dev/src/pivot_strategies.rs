@@ -1,4 +1,4 @@
-use crate::{Elem, buckets};
+use crate::{Elem, ElemConstraint, buckets};
 
 pub trait PivotStrategy {
     fn pick_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
@@ -12,7 +12,6 @@ fn get_m_median_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, c
     m: usize,
 ) -> (T, usize) {
     debug_assert!(m % 2 == 1);
-    // let n = layer.len().min(K);
     let n = layer.len();
     let k: usize = m / 2;
 
@@ -48,6 +47,15 @@ fn get_m_median_bucket_const<
     });
     pivots.select_nth_unstable(k);
     (pivots[k].0, pivots[k].1)
+}
+
+#[inline(always)]
+fn get_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP: usize>(
+    layer: &B,
+) -> (T, usize) {
+    let n = layer.len();
+    let pos = rand::random_range(0..n);
+    (layer.get(pos), pos)
 }
 
 #[inline(always)]
@@ -161,5 +169,107 @@ impl PivotStrategy for TablePivot {
             return get_m_median_bucket(layer, 47);
         }
         get_m_median_bucket(layer, TablePivot::LOOKUP[i])
+    }
+}
+
+const MAX_SAMPLES: usize = 128;
+
+pub trait MultiPivotStrategy<const P: usize> {
+    const NUM_PIVOTS: usize;
+    const NUM_SAMPLES: usize;
+    const MAX_SAMPLES: usize = 1;
+
+    fn pick_bucket<
+        T: Elem + ElemConstraint,
+        B: buckets::Bucket<T, K, CAP>,
+        const K: usize,
+        const CAP: usize,
+    >(
+        layer: &B,
+    ) -> ([T; P], [usize; P]);
+}
+
+pub struct GeoMultiMedianOfM<const M: usize>;
+impl<const P: usize, const M: usize> MultiPivotStrategy<P> for GeoMultiMedianOfM<M> {
+    const NUM_PIVOTS: usize = 2usize.pow(P as u32 - 1) - 1;
+    const NUM_SAMPLES: usize = M * 2usize.pow(P as u32 - 1) - 1;
+
+    fn pick_bucket<
+        T: Elem + ElemConstraint,
+        B: buckets::Bucket<T, K, CAP>,
+        const K: usize,
+        const CAP: usize,
+    >(
+        layer: &B,
+    ) -> ([T; P], [usize; P]) {
+        let num_pivots: usize = <Self as MultiPivotStrategy<P>>::NUM_PIVOTS;
+        let num_samples: usize = <Self as MultiPivotStrategy<P>>::NUM_SAMPLES;
+
+        const {
+            assert!(P > 1);
+            assert!(<Self as MultiPivotStrategy<P>>::NUM_SAMPLES <= MAX_SAMPLES);
+        }
+
+        let mut pivots: [T; P] = [T::minimum(); P];
+        let mut pivot_pos: [usize; P] = [0; P];
+
+        let mut pivot_samples: [(T, usize); MAX_SAMPLES] = [(T::minimum(), 0); MAX_SAMPLES];
+
+        for i in 0..num_samples {
+            pivot_samples[i] = get_bucket(layer);
+        }
+
+        pivot_samples[0..num_samples].sort_unstable_by_key(|&p| p.0);
+
+        for i in 0..(P - 1) {
+            let idx = ((num_pivots + 1) / 2usize.pow(i as u32 + 1)) - 1;
+            let piv = pivot_samples[M * idx];
+            pivots[i] = piv.0;
+            pivot_pos[i] = piv.1;
+        }
+
+        (pivots, pivot_pos)
+    }
+}
+
+pub struct EqualMultiMedianOfM<const M: usize>;
+impl<const P: usize, const M: usize> MultiPivotStrategy<P> for EqualMultiMedianOfM<M> {
+    const NUM_PIVOTS: usize = P - 1;
+    const NUM_SAMPLES: usize = M * (P - 1);
+
+    fn pick_bucket<
+        T: Elem + ElemConstraint,
+        B: buckets::Bucket<T, K, CAP>,
+        const K: usize,
+        const CAP: usize,
+    >(
+        layer: &B,
+    ) -> ([T; P], [usize; P]) {
+        let num_pivots: usize = <Self as MultiPivotStrategy<P>>::NUM_PIVOTS;
+        let num_samples: usize = <Self as MultiPivotStrategy<P>>::NUM_SAMPLES;
+
+        const {
+            assert!(P > 1);
+            assert!(<Self as MultiPivotStrategy<P>>::NUM_SAMPLES <= MAX_SAMPLES);
+        }
+
+        let mut pivots: [T; P] = [T::minimum(); P];
+        let mut pivot_pos: [usize; P] = [0; P];
+
+        let mut pivot_samples: [(T, usize); MAX_SAMPLES] = [(T::minimum(), 0); MAX_SAMPLES];
+
+        for i in 0..num_samples {
+            pivot_samples[i] = get_bucket(layer);
+        }
+
+        pivot_samples[0..num_samples].sort_unstable_by_key(|&p| std::cmp::Reverse(p.0));
+
+        for i in 0..(P - 1) {
+            let piv = pivot_samples[M * i];
+            pivots[i] = piv.0;
+            pivot_pos[i] = piv.1;
+        }
+
+        (pivots, pivot_pos)
     }
 }

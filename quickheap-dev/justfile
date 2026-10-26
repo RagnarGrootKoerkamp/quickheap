@@ -6,8 +6,8 @@ profile-neon:
 avx:
     cd bench && cargo run -r -F perf --example simd
 
-neon:
-    cd bench && cargo run -r --example neon
+neon flag='':
+    cd bench && cargo run -r -F neon {{flag}} --example neon
 
 profile-avx:
     cd bench && RUSTFLAGS="-C target-cpu=native -C inline-threshold=0" cargo build --profile profiling -F perf --example simd

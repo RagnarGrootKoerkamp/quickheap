@@ -3,11 +3,8 @@ use std::ops::Sub;
 
 use crate::{
     ConfigurableSimdQuickHeap, ElemConstraint, SimdElem,
-    buckets::{
-        block_partitioning::FlatPartitioning,
-        vec_bucket::VecBucket,
-    },
-    pivot_strategies::MedianOfM,
+    buckets::{block_partitioning::FlatPartitioning, vec_bucket::VecBucket},
+    pivot_strategies::{EqualMultiMedianOfM, GeoMultiMedianOfM, MedianOfM},
     rebalancing_strategies::NoRebalancing,
 };
 
@@ -155,6 +152,7 @@ where
             // BlockedPartitioning<S, 112, 128>,
             S,
             MedianOfM<3>,
+            EqualMultiMedianOfM<1>,
             NoRebalancing,
             // NaiveLogRebalancing<4, 2048>,
             // PivotForgetting<3, 2048>,
@@ -202,6 +200,7 @@ where
             // BlockedPartitioning<S, 112, 128>,
             S,
             MedianOfM<3>,
+            EqualMultiMedianOfM<2>,
             NoRebalancing,
             // NaiveLogRebalancing<4, 2048>,
             // PivotForgetting<3, 2048>,

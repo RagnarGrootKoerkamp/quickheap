@@ -182,7 +182,7 @@ pub unsafe trait SimdElem<T>: 'static {
 /// # Safety
 /// `pivots` is initialized with a capacity of 128, so reading out-of-bounds is fine.
 #[inline(always)]
-pub unsafe fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -> usize {
+pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -> usize {
     if pivots.len() <= 64 {
         let t_simd = S::splat(t);
 
@@ -190,8 +190,11 @@ pub unsafe fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -
         let mut i = 0;
         while i < pivots.len() {
             // The caller must provide initialized padding for this full SIMD load.
-            let vals = unsafe { (pivots.as_ptr().add(i) as *const S::Simd).read_unaligned() };
-            target_layer += S::simd_lt_bitmask(t_simd, vals).trailing_ones() as usize;
+            unsafe {
+                let vals = (pivots.as_ptr().add(i) as *const S::Simd).read_unaligned();
+                target_layer += S::simd_lt_bitmask(t_simd, vals).trailing_ones() as usize;
+            }
+
             i += S::L;
         }
         target_layer.min(pivots.len())

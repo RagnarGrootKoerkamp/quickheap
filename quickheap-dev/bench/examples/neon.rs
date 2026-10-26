@@ -31,7 +31,7 @@ use std::time;
 
 struct WorkloadResult {
     workload_name: String,
-    result: Vec<(u64, f64, usize, usize, usize, usize, usize)>,
+    result: Vec<(u64, f64, usize, usize, usize, usize, f64)>,
 }
 
 fn run_variant<T: Elem, H: Heap<T>>(idx: &mut usize) {
@@ -71,15 +71,16 @@ fn run_variant<T: Elem, H: Heap<T>>(idx: &mut usize) {
 
     writer
         .write_all(
-            "workload,n,nanoseconds,partitions,redos_cur,redos_next,equal_buckets,avg_elems_partitioned\n".as_bytes(),
+            "workload,n,nanoseconds,partitions,redos,equal_buckets,avg_elems_partitioned,entropy\n"
+                .as_bytes(),
         )
         .unwrap();
 
     for wr in r {
-        for (n, t, p, pc, pn, eq, avgelem) in wr.result {
+        for (n, t, p, redos, eq, avgelem, entropy) in wr.result {
             let line = format!(
-                "{},{},{:.1},{},{},{},{},{}\n",
-                wr.workload_name, n, t, p, pc, pn, eq, avgelem
+                "{},{},{:.1},{},{},{},{},{:.1}\n",
+                wr.workload_name, n, t, p, redos, eq, avgelem, entropy
             );
             writer.write_all(line.as_bytes()).unwrap();
         }
@@ -92,7 +93,7 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>() -> WorkloadResu
     let workload_name = type_name::<W>().replace("bench::workloads::", "");
     println!("Workload {}", workload_name);
 
-    let mut result: Vec<(u64, f64, usize, usize, usize, usize, usize)> = vec![];
+    let mut result: Vec<(u64, f64, usize, usize, usize, usize, f64)> = vec![];
 
     // TODO: Bigger n
 
@@ -102,13 +103,13 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>() -> WorkloadResu
     // let ns: Vec<u64> = vec![2u64.pow(22)];
     // let ns: Vec<u64> = (10..=23).step_by(5).map(|i| (2u64).pow(i)).collect();
 
-    const REPEATS: usize = 3;
+    const REPEATS: usize = 5;
     let mut times: [f64; REPEATS] = [0f64; REPEATS];
     let mut partitions: [usize; REPEATS] = [0; REPEATS];
-    let mut redos_cur: [usize; REPEATS] = [0; REPEATS];
-    let mut redos_next: [usize; REPEATS] = [0; REPEATS];
+    let mut redos: [usize; REPEATS] = [0; REPEATS];
     let mut equal_buckets: [usize; REPEATS] = [0; REPEATS];
     let mut avg_partitioined_elems: [usize; REPEATS] = [0; REPEATS];
+    let mut avg_entropy: [f64; REPEATS] = [0f64; REPEATS];
 
     for n in ns {
         for i in 0..REPEATS {
@@ -122,18 +123,18 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>() -> WorkloadResu
 
             times[i] = elapsed;
             partitions[i] = result.partitions;
-            redos_cur[i] = result.redos_cur_layer_empty;
-            redos_next[i] = result.redos_next_layer_empty;
+            redos[i] = result.redos;
             equal_buckets[i] = result.equal_buckets_found;
             avg_partitioined_elems[i] = result.avg_num_elem_partitioned;
+            avg_entropy[i] = result.entropy;
         }
 
         times.sort_by(|a, b| a.partial_cmp(b).unwrap());
         partitions.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        redos_cur.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        redos_next.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        redos.sort_by(|a, b| a.partial_cmp(b).unwrap());
         equal_buckets.sort_by(|a, b| a.partial_cmp(b).unwrap());
         avg_partitioined_elems.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        avg_entropy.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         let ops = n as f64 * W::NORMALIZATION as f64;
         let norm_time = times[REPEATS / 2] as f64 / ops;
@@ -142,10 +143,10 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>() -> WorkloadResu
             n,
             norm_time,
             partitions[REPEATS / 2],
-            redos_cur[REPEATS / 2],
-            redos_next[REPEATS / 2],
+            redos[REPEATS / 2],
             equal_buckets[REPEATS / 2],
             avg_partitioined_elems[REPEATS / 2],
+            avg_entropy[REPEATS / 2],
         ));
     }
 
@@ -165,507 +166,75 @@ fn main() {
     // cnt += 1;
 
     // Run the SIMD Variants
-    /*run_variant::<
+    /* run_variant::<
         i64, // Elem Type
         quickheap::SimdQuickHeap<
             i64,  // Elem Type
             Neon, // Simd
         >,
-    >(&mut cnt);
-    cnt += 1;*/
-
-    /*
-    run_variant::<
-        i32, // Elem Type
-        quickheap_dev::ConfigurableSimdQuickHeap<
-            i32,                      // Elem Type
-            VecBucket<i32, 128, 128>, // Bucket
-            FlatPartitioning<Neon, 128, 128>,
-            Neon,          // Simd
-            MedianOfM<3>,  // Pivot Strategy
-            NoRebalancing, // Rebalancing Strategy
-            16,            // Size smallest bucket
-            128,           // Bucket Size
-            128,           // Bucket Cap
-            true,          // Last layer sorted
-            true,          // Use equal buckets
-        >,
-    >(&mut cnt);
-
-    cnt += 1; */
-
-    /* - - - - - -  - - - - */
-
-    run_variant::<
-        i64, // Elem Type
-        quickheap_dev::ConfigurableSimdQuickHeap<
-            i64,                      // Elem Type
-            VecBucket<i64, 128, 128>, // Bucket
-            FlatPartitioning<Neon, 128, 128>,
-            Neon,          // Simd
-            MedianOfM<3>,  // Pivot Strategy
-            NoRebalancing, // Rebalancing Strategy
-            16,            // Size smallest bucket
-            128,           // Bucket Size
-            128,           // Bucket Cap
-            true,          // Last layer sorted
-            false,         // Use equal buckets
-        >,
-    >(&mut cnt);
-
-    run_variant::<
-        i64, // Elem Type
-        quickheap_dev::ConfigurableSimdQuickHeap<
-            i64,                            // Elem Type
-            ListBlockBucket<i64, 112, 128>, // Bucket
-            BlockedPartitioning<Neon, 112, 128>,
-            Neon,          // Simd
-            MedianOfM<3>,  // Pivot Strategy
-            NoRebalancing, // Rebalancing Strategy
-            16,            // Size smallest bucket
-            112,           // Bucket Size
-            128,           // Bucket Cap
-            true,          // Last layer sorted
-            false,         // Use equal buckets
-        >,
-    >(&mut cnt);
-
-    /* - - - - - -  - - - - */
-
-    /*
-
-    run_variant::<
-        i32, // Elem Type
-        quickheap_dev::ConfigurableSimdQuickHeap<
-            i32,                      // Elem Type
-            VecBucket<i32, 128, 128>, // Bucket
-            FlatPartitioning<Neon, 128, 128>,
-            Neon,          // Simd
-            MedianOfM<3>,  // Pivot Strategy
-            NoRebalancing, // Rebalancing Strategy
-            16,            // Size smallest bucket
-            128,           // Bucket Size
-            128,           // Bucket Cap
-            true,          // Last layer sorted
-            true,          // Use equal buckets
-        >,
-    >(&mut cnt);
+    >(&mut cnt);*/
 
     cnt += 1;
-
-    run_variant::<
-        i32, // Elem Type
-        quickheap_dev::ConfigurableSimdQuickHeap<
-            i32,                            // Elem Type
-            ListBlockBucket<i32, 112, 128>, // Bucket
-            BlockedPartitioning<Neon, 112, 128>,
-            Neon,          // Simd
-            MedianOfM<3>,  // Pivot Strategy
-            NoRebalancing, // Rebalancing Strategy
-            16,            // Size smallest bucket
-            112,           // Bucket Size
-            128,           // Bucket Cap
-            true,          // Last layer sorted
-            true,          // Use equal buckets
-        >,
-    >(&mut cnt);
-
-    /*
-    cnt += 1;
-
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                      // Elem Type
-            VecBucket<i64, 128, 128>, // Bucket
-            Avx2,                     // Simd
-            MedianOfM<3>,             // Pivot Strategy
-            NoRebalancing,            // Rebalancing Strategy
-            16,                       // Size smallest bucket
-            128,                      // Bucket Size
-            128,                      // Bucket Cap
-            true,                     // Last layer sorted
-            false,                    // Use equal buckets
-        >,
-    >(pcs, &mut cnt);*/
-
-    cnt += 1; */
-
-    /*
-    // Different Buckets
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                           // Elem Type
-            VecBlockBucket<i64, 128, 154>, // Bucket
-            Avx2,                          // Simd
-            MedianOfM<3>,                  // Pivot Strategy
-            NoRebalancing,                 // Rebalancing Strategy
-            16,                            // Size smallest bucket
-            128,                           // Bucket Size
-            154,                           // Bucket Cap
-            true,                          // Last layer sorted
-            false,                         // Use equal buckets
-        >,
-    >(pcs, &mut cnt);
-
-    cnt += 1;
-
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                            // Elem Type
-            ListBlockBucket<i64, 128, 154>, // Bucket
-            Avx2,                           // Simd
-            MedianOfM<3>,                   // Pivot Strategy
-            NoRebalancing,                  // Rebalancing Strategy
-            16,                             // Size smallest bucket
-            128,                            // Bucket Size
-            154,                            // Bucket Cap
-            true,                           // Last layer sorted
-            false,                          // Use equal buckets
-        >,
-    >(pcs, &mut cnt);
-
-    cnt += 1;
-     */
 
     /* run_variant::<
         i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
+        quickheap_dev::ConfigurableSimdQuickHeap<
             i64,                      // Elem Type
             VecBucket<i64, 128, 128>, // Bucket
-            Avx2,                     // Simd
-            MedianOfM<3>,             // Pivot Strategy
-            NoRebalancing,            // Rebalancing Strategy
-            16,                       // Size smallest bucket
-            128,                      // Bucket Size
-            128,                      // Bucket Cap
-            true,                     // Last layer sorted
-            false,                    // Use equal buckets
-        >,
-    >(pcs, &mut cnt);
-
-    cnt += 1; */
-
-    // FROM HERE - - - - - - - -
-
-    /*
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                      // Elem Type
-            VecBucket<i64, 128, 128>, // Bucket
-            Avx512,                   // Simd
-            MedianOfM<3>,             // Pivot Strategy
-            NoRebalancing,            // Rebalancing Strategy
-            16,                       // Size smallest bucket
-            128,                      // Bucket Size
-            128,                      // Bucket Cap
-            true,                     // Last layer sorted
-            false,                    // Use equal buckets
-        >,
-    >(&mut pcs, &mut cnt); */
-
-    cnt += 1;
-
-    /*
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                           // Elem Type
-            VecBlockBucket<i64, 128, 154>, // Bucket
-            Avx512,                        // Simd
-            MedianOfM<3>,                  // Pivot Strategy
-            NoRebalancing,                 // Rebalancing Strategy
-            16,                            // Size smallest bucket
-            128,                           // Bucket Size
-            154,                           // Bucket Cap
-            true,                          // Last layer sorted
-            false,                         // Use equal buckets
-        >,
-    >(&mut pcs, &mut cnt); */
-
-    cnt += 1;
-
-    /*
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                            // Elem Type
-            ListBlockBucket<i64, 128, 154>, // Bucket
-            Avx512,                         // Simd
-            MedianOfM<3>,                   // Pivot Strategy
-            NoRebalancing,                  // Rebalancing Strategy
-            16,                             // Size smallest bucket
-            128,                            // Bucket Size
-            154,                            // Bucket Cap
-            true,                           // Last layer sorted
-            false,                          // Use equal buckets
-        >,
-    >(&mut pcs, &mut cnt); */
-
-    cnt += 1;
-
-    /*
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                      // Elem Type
-            VecBucket<i64, 128, 128>, // Bucket
-            Avx512,                   // Simd
-            MedianOfM<3>,             // Pivot Strategy
-            PivotForgetting<2, 2048>, // Rebalancing Strategy
-            16,                       // Size smallest bucket
-            128,                      // Bucket Size
-            128,                      // Bucket Cap
-            true,                     // Last layer sorted
-            false,                    // Use equal buckets
-        >,
-    >(&mut pcs, &mut cnt); */
-
-    cnt += 1;
-
-    /*
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                           // Elem Type
-            VecBlockBucket<i64, 128, 154>, // Bucket
-            Avx512,                        // Simd
-            MedianOfM<3>,                  // Pivot Strategy
-            PivotForgetting<2, 2048>,      // Rebalancing Strategy
-            16,                            // Size smallest bucket
-            128,                           // Bucket Size
-            154,                           // Bucket Cap
-            true,                          // Last layer sorted
-            false,                         // Use equal buckets
-        >,
-    >(&mut pcs, &mut cnt); */
-
-    cnt += 1;
-
-    /*
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                            // Elem Type
-            ListBlockBucket<i64, 128, 154>, // Bucket
-            Avx512,                         // Simd
-            MedianOfM<3>,                   // Pivot Strategy
-            PivotForgetting<2, 2048>,       // Rebalancing Strategy
-            16,                             // Size smallest bucket
-            128,                            // Bucket Size
-            154,                            // Bucket Cap
-            true,                           // Last layer sorted
-            false,                          // Use equal buckets
-        >,
-    >(&mut pcs, &mut cnt); */
-
-    cnt += 1;
-
-    /*
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                              // Elem Type
-            ListBlockBucket<i64, 128, 154>,   // Bucket
-            Avx512,                           // Simd
-            MedianOfM<3>,                     // Pivot Strategy
-            ExponentialUpperBoundRebalancing, // Rebalancing Strategy
-            16,                               // Size smallest bucket
-            128,                              // Bucket Size
-            154,                              // Bucket Cap
-            true,                             // Last layer sorted
-            false,                            // Use equal buckets
-        >,
-    >(&mut pcs, &mut cnt); */
-
-    cnt += 1;
-
-    /*
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                            // Elem Type
-            ListBlockBucket<i64, 128, 154>, // Bucket
-            Neon,                           // Simd
-            MedianOfM<3>,                   // Pivot Strategy
-            RandomizedRebalancing,          // Rebalancing Strategy
-            16,                             // Size smallest bucket
-            128,                            // Bucket Size
-            154,                            // Bucket Cap
-            true,                           // Last layer sorted
-            false,                          // Use equal buckets
+            FlatPartitioning<Neon, 128, 128>,
+            Neon,          // Simd
+            MedianOfM<3>,  // Pivot Strategy
+            NoRebalancing, // Rebalancing Strategy
+            16,            // Size smallest bucket
+            128,           // Bucket Size
+            128,           // Bucket Cap
+            true,          // Last layer sorted
+            false,         // Use equal buckets
+            2,
         >,
     >(&mut cnt); */
 
     cnt += 1;
 
-    /*
     run_variant::<
         i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
+        quickheap_dev::ConfigurableSimdQuickHeap<
             i64,                      // Elem Type
             VecBucket<i64, 128, 128>, // Bucket
-            Avx512,                   // Simd
-            MedianOfM<3>,             // Pivot Strategy
-            AlphaBalancedRebalancing, // Rebalancing Strategy
-            16,                       // Size smallest bucket
-            128,                      // Bucket Size
-            128,                      // Bucket Cap
-            true,                     // Last layer sorted
-            false,                    // Use equal buckets
+            FlatPartitioning<Neon, 128, 128>,
+            Neon,          // Simd
+            MedianOfM<3>,  // Pivot Strategy
+            NoRebalancing, // Rebalancing Strategy
+            16,            // Size smallest bucket
+            128,           // Bucket Size
+            128,           // Bucket Cap
+            true,          // Last layer sorted
+            false,         // Use equal buckets
+            3,
+            3,
+            9,
         >,
-    >(&mut pcs, &mut cnt);
+    >(&mut cnt);
 
     cnt += 1;
 
     run_variant::<
         i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                           // Elem Type
-            VecBucket<i64, 128, 128>,      // Bucket
-            Avx512,                        // Simd
-            MedianOfM<3>,                  // Pivot Strategy
-            NaiveLogRebalancing<10, 2048>, // Rebalancing Strategy
-            16,                            // Size smallest bucket
-            128,                           // Bucket Size
-            128,                           // Bucket Cap
-            true,                          // Last layer sorted
-            false,                         // Use equal buckets
+        quickheap_dev::ConfigurableSimdQuickHeap<
+            i64,                      // Elem Type
+            VecBucket<i64, 128, 128>, // Bucket
+            FlatPartitioning<Neon, 128, 128>,
+            Neon,          // Simd
+            MedianOfM<3>,  // Pivot Strategy
+            NoRebalancing, // Rebalancing Strategy
+            16,            // Size smallest bucket
+            128,           // Bucket Size
+            128,           // Bucket Cap
+            true,          // Last layer sorted
+            false,         // Use equal buckets
+            4,
+            3,
+            21,
         >,
-    >(&mut pcs, &mut cnt);
-
-    cnt += 1; */
-    /*
-
-
-    // Different Buckets
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                           // Elem Type
-            VecBlockBucket<i64, 128, 154>, // Bucket
-            Avx512,                        // Simd
-            MedianOfM<3>,                  // Pivot Strategy
-            NoRebalancing,                 // Rebalancing Strategy
-            16,                            // Size smallest bucket
-            128,                           // Bucket Size
-            154,                           // Bucket Cap
-            true,                          // Last layer sorted
-            false,                         // Use equal buckets
-        >,
-    >(&mut pc, &mut cnt);
-
-    cnt += 1;
-
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,                            // Elem Type
-            ListBlockBucket<i64, 128, 154>, // Bucket
-            Avx512,                         // Simd
-            MedianOfM<3>,                   // Pivot Strategy
-            NoRebalancing,                  // Rebalancing Strategy
-            16,                             // Size smallest bucket
-            128,                            // Bucket Size
-            154,                            // Bucket Cap
-            true,                           // Last layer sorted
-            false,                          // Use equal buckets
-        >,
-    >(&mut pc, &mut cnt);
-     */
-
-    /*
-
-    cnt += 1;
-
-    // Different Pivot Strategies
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,            // Elem Type
-            VecBucket<i64>, // Bucket
-            Avx512,         // Simd
-            RandomPivot,    // Pivot Strategy
-            NoRebalancing,  // Rebalancing Strategy
-            16,             // Size smallest bucket
-            true,           // Last layer sorted
-            false,          // Use equal buckets
-        >,
-    >(&mut pc, &mut cnt);
-
-    cnt += 1;
-
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,            // Elem Type
-            VecBucket<i64>, // Bucket
-            Avx512,         // Simd
-            MedianOfM<5>,   // Pivot Strategy
-            NoRebalancing,  // Rebalancing Strategy
-            16,             // Size smallest bucket
-            true,           // Last layer sorted
-            false,          // Use equal buckets
-        >,
-    >(&mut pc, &mut cnt);
-
-    cnt += 1;
-
-    run_variant::<
-        i64, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i64,            // Elem Type
-            VecBucket<i64>, // Bucket
-            Avx512,         // Simd
-            TablePivot,     // Pivot Strategy
-            NoRebalancing,  // Rebalancing Strategy
-            16,             // Size smallest bucket
-            true,           // Last layer sorted
-            false,          // Use equal buckets
-        >,
-    >(&mut pc, &mut cnt);
-
-    cnt += 1;
-
-    */
-
-    /*
-
-    cnt = 8;
-
-    // Equal Buckets
-    run_variant::<
-        i32, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i32,            // Elem Type
-            VecBucket<i32>, // Bucket
-            Avx512,         // Simd
-            MedianOfM<3>,   // Pivot Strategy
-            NoRebalancing,  // Rebalancing Strategy
-            16,             // Size smallest bucket
-            true,           // Last layer sorted
-            false,          // Use equal buckets
-        >,
-    >(&mut pc, &mut cnt);
-
-    cnt += 1;
-
-    run_variant::<
-        i32, // Elem Type
-        quickheap::ConfigurableSimdQuickHeap<
-            i32,            // Elem Type
-            VecBucket<i32>, // Bucket
-            Avx512,         // Simd
-            MedianOfM<3>,   // Pivot Strategy
-            NoRebalancing,  // Rebalancing Strategy
-            16,             // Size smallest bucket
-            true,           // Last layer sorted
-            true,           // Use equal buckets
-        >,
-    >(&mut pc, &mut cnt);
-
-     */
+    >(&mut cnt);
 }

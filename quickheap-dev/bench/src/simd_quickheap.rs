@@ -9,6 +9,7 @@ impl<
     PART: Partition<T, B> + MultiPartition<T, B>,
     S: quickheap::simd::SimdElem<T>,
     PIVOT: quickheap_dev::pivot_strategies::PivotStrategy,
+    MUTLI_PIVOT: quickheap_dev::pivot_strategies::MultiPivotStrategy<P>,
     R: quickheap_dev::rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
     const N: usize,
     const K: usize,
@@ -17,7 +18,21 @@ impl<
     const EQUAL: bool,
     const P: usize,
 > Heap<T>
-    for quickheap_dev::ConfigurableSimdQuickHeap<T, B, PART, S, PIVOT, R, N, K, CAP, SORT, EQUAL, P>
+    for quickheap_dev::ConfigurableSimdQuickHeap<
+        T,
+        B,
+        PART,
+        S,
+        PIVOT,
+        MUTLI_PIVOT,
+        R,
+        N,
+        K,
+        CAP,
+        SORT,
+        EQUAL,
+        P,
+    >
 {
     type CountedType = workloads::CountComparisons<T>;
     type CountedHeap = NoHeap;
@@ -80,6 +95,7 @@ pub type DevSimdQuickHeap<
     quickheap_dev::buckets::block_partitioning::FlatPartitioning<S, K, CAP>,
     S,
     PIVOT,
+    quickheap_dev::pivot_strategies::GeoMultiMedianOfM<2>,
     R,
     N,
     K,

@@ -8,6 +8,7 @@ publish = false
 default = []
 partition_stats = []
 layer_stats = []
+entropy = []
 
 [dependencies]
 quickheap = { path = "../quickheap" }

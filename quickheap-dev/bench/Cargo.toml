@@ -8,6 +8,7 @@ default = ["avx2", "ffi"]
 
 layer_stats = ["quickheap-dev/layer_stats"]
 partition_stats = ["quickheap-dev/partition_stats"]
+entropy = ["quickheap-dev/entropy", "partition_stats"]
 
 # Enable SimdQuickHeap with AVX2 backend
 avx2 = []

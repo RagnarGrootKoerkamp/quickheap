@@ -5,6 +5,12 @@ import pandas as pd
 
 directory = Path("./data/variants")
 
+features = [
+    {"name": "partitions", "display": "Partitions"},
+    {"name": "avg_elems_partitioned", "display": "Avg #elems partitioned"},
+    # {"name": "redos", "display": "Redos"},
+]
+
 for file_path in sorted(directory.glob("*.csv")):
     filename = file_path.name.split("_", 1)[1].replace(".csv", "")
     df = pd.read_csv(file_path)
@@ -13,10 +19,7 @@ for file_path in sorted(directory.glob("*.csv")):
     sep = " & "
 
     num_workloads = len(workloads)
-    num_features = len(df.columns) - 2 # Num of columns minus col n and col workload
-
-    # TODO:
-    num_features = 1
+    num_features = len(features) + 1 # Time is always tracked
 
     result_col_str = str(num_workloads * num_features)
     result = "\\multirow{" + result_col_str + "}{*}{" + filename + "} &"
@@ -34,6 +37,14 @@ for file_path in sorted(directory.glob("*.csv")):
             time += str(t)
         time += "\\\\\n"
         workload_line += time
+
+        for feature in features:
+            line = "& & " + feature["display"] + " "
+            for f in df_wl[feature["name"]]:
+                line += "& "
+                line += str(f)
+            line += "\\\\\n"
+            workload_line += line
 
 
         # cache = "& & Cache Misses "
