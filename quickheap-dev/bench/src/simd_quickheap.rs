@@ -17,6 +17,7 @@ impl<
     const SORT: bool,
     const EQUAL: bool,
     const P: usize,
+    const MULTI_THRESH: usize,
 > Heap<T>
     for quickheap_dev::ConfigurableSimdQuickHeap<
         T,
@@ -32,6 +33,7 @@ impl<
         SORT,
         EQUAL,
         P,
+        MULTI_THRESH,
     >
 {
     type CountedType = workloads::CountComparisons<T>;
@@ -103,4 +105,5 @@ pub type DevSimdQuickHeap<
     SORT,
     EQUAL,
     P,
+    512,
 >;

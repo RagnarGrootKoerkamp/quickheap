@@ -14,6 +14,8 @@ pub trait MultiPartition<T, B> {
     fn multi_partition<const P: usize>(layers: &mut [B], pivot: &[T], pivot_pos: [usize; P]);
 }
 
+use simd::PIVOTS_LE;
+use simd::PIVOTS_LT;
 use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
 
 /// Implementation for a plain vector
@@ -35,6 +37,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         unsafe { next_layer.set_len(n + S::L) };
 
         let n2 = n.next_multiple_of(S::L).saturating_sub(S::L);
+        // let half = pivot_pos.next_multiple_of(S::L).saturating_sub(S::L);
 
         // Partition a list into two using SIMD.
         let mut cur_len = 0;
@@ -57,6 +60,35 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
                 );
             }
         }
+
+        /*
+        for i in (0..half).step_by(S::L) {
+            unsafe {
+                S::partition_fast::<SPLIT>(
+                    S::simd_from_ptr(cur_layer_ptr.add(i)),
+                    threshold,
+                    pivot_pos,
+                    cur_layer_ptr,
+                    &mut cur_len,
+                    next_layer_ptr,
+                    &mut next_len,
+                );
+            }
+        }
+
+        for i in (half..n2).step_by(S::L) {
+            unsafe {
+                S::partition_fast::<PIVOTS_LT>(
+                    S::simd_from_ptr(cur_layer_ptr.add(i)),
+                    threshold,
+                    pivot_pos,
+                    cur_layer_ptr,
+                    &mut cur_len,
+                    next_layer_ptr,
+                    &mut next_len,
+                );
+            }
+        } */
 
         if n2 < n {
             unsafe {

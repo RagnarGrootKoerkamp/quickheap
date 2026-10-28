@@ -3,8 +3,8 @@ default:
 profile-neon:
     cd bench && samply record cargo run --profile profiling --example neon
 
-avx:
-    cd bench && cargo run -r -F perf --example simd
+avx flags='':
+    cd bench && cargo run -r -F avx512 {{flags}} --example simd
 
 neon flag='':
     cd bench && cargo run -r -F neon {{flag}} --example neon

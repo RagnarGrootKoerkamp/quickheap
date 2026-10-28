@@ -66,6 +66,10 @@ pub use simd::Avx2;
 pub use simd::Avx512;
 pub use simd::Neon;
 
+/* Constants for development testing */
+const SIMD_INSERT: bool = true;
+const LOWEST_LAYER_SIZE: usize = 32;
+
 /// The default Simd backend, decided at compile time based on the target architecture.
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
 pub type Simd = simd::Avx2;
@@ -140,9 +144,16 @@ impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
 
         if target_layer == self.pivots.len() && layer.len() < Self::N {
             // Count the number of larger elements in the prefix and insert the new element after them.
-            let pos = layer.partition_point(|x| *x > t);
+
+            let pos: usize;
+            if SIMD_INSERT {
+                pos = simd::insert_pos::<T, S>(layer, t);
+                debug_assert!(pos == layer.partition_point(|x| *x > t));
+            } else {
+                pos = layer.partition_point(|x| *x > t);
+            }
+
             layer.insert(pos, t);
-            // TODO: SIMD
         } else {
             layer.push(t);
         }
@@ -271,7 +282,7 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> Default for KvSimdQu
 }
 
 impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S> {
-    const N: usize = 16;
+    const N: usize = LOWEST_LAYER_SIZE;
 
     pub fn new() -> Self {
         Self {
@@ -309,10 +320,17 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
 
         if target_layer == self.pivots.len() && key_layer.len() < Self::N {
             // Count the number of larger elements in the prefix and insert the new element after them.
-            let pos = key_layer.partition_point(|x| *x > key); // TODO: Is this correct??
+
+            let pos: usize;
+            if SIMD_INSERT {
+                pos = simd::insert_pos::<T, S>(key_layer, key);
+                debug_assert!(pos == key_layer.partition_point(|x| *x > key));
+            } else {
+                pos = key_layer.partition_point(|x| *x > key);
+            }
+
             key_layer.insert(pos, key);
             value_layer.insert(pos, value);
-            // TODO: SIMD
         } else {
             key_layer.push(key);
             value_layer.push(value);

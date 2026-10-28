@@ -20,6 +20,11 @@ pub struct Neon;
 pub const ONLY_PIVOTS_TO_CUR: usize = 0;
 pub const ONLY_PIVOTS_TO_NEXT: usize = 1;
 pub const SPLIT_PIVOTS_CUR_AND_NEXT: usize = 2;
+pub const PIVOTS_LE: usize = 3;
+pub const PIVOTS_LT: usize = 4;
+
+pub const ABOVE_GT: usize = 0;
+pub const ABOVE_GE: usize = 1;
 
 /// Byte shuffles for `vqtbl1q_u8`: table[keep_mask] moves kept lanes to the front.
 #[cfg(target_arch = "aarch64")]
@@ -157,10 +162,9 @@ pub unsafe trait SimdElem<T>: 'static {
     /// Appends each lane to `writes[bucket]` and bumps `cnts[bucket]`.
     /// Contract: every `writes[b]` needs `>= LANES` elements of slack
     /// (full-vector store, only the first popcount lanes are kept).
-    unsafe fn partition_multi_fast<const K: usize>(
+    unsafe fn partition_multi_fast<const K: usize, const MODE: usize>(
         vals: Self::Simd,
         pivots: &[Self::Simd],
-        rand: usize,
         writes: &mut [*mut T; K],
         cnts: &mut [usize; K],
     );
@@ -201,6 +205,26 @@ pub fn push_position<T: Copy + Ord, S: SimdElem<T>>(pivots: &[T], t: T) -> usize
     } else {
         pivots.partition_point(|&p| t < p)
     }
+}
+
+/// Partition point using simd.
+#[inline(always)]
+pub fn insert_pos<T: Copy + Ord, S: SimdElem<T>>(elems: &[T], e: T) -> usize {
+    let e_simd = S::splat(e);
+
+    let mut target_pos = 0;
+    let mut i = 0;
+    while i < elems.len() {
+        // The caller must provide initialized padding for this full SIMD load.
+        unsafe {
+            let vals = (elems.as_ptr().add(i) as *const S::Simd).read_unaligned();
+            target_pos += S::simd_lt_bitmask(e_simd, vals).trailing_ones() as usize;
+        }
+
+        i += S::L;
+    }
+
+    target_pos.min(elems.len())
 }
 
 #[inline(never)]
@@ -372,6 +396,14 @@ macro_rules! impl_simd_elem_32 {
                     let lt = (threshold.simd_gt(keys).to_bitmask() as u64);
                     let eq = (threshold.simd_eq(keys).to_bitmask() as u64);
                     return (lt | (eq & EQUAL_MASKS[rand % 16])) & lanes;
+                }
+
+                if MODE == PIVOTS_LE {
+                    return threshold.simd_le(keys).to_bitmask() as u64 & lanes;
+                }
+
+                if MODE == PIVOTS_LT {
+                    return threshold.simd_lt(keys).to_bitmask() as u64 & lanes;
                 }
 
                 unreachable!();
@@ -626,6 +658,14 @@ macro_rules! impl_simd_elem_64 {
                     return (lt | (eq & EQUAL_MASKS[rand % 16])) & lanes;
                 }
 
+                if MODE == PIVOTS_LE {
+                    return threshold.simd_le(keys).to_bitmask() as u64 & lanes;
+                }
+
+                if MODE == PIVOTS_LT {
+                    return threshold.simd_lt(keys).to_bitmask() as u64 & lanes;
+                }
+
                 unreachable!();
             }
 
@@ -877,6 +917,14 @@ macro_rules! impl_simd_elem_32_avx512 {
                     let lt = (threshold.simd_gt(keys).to_bitmask() as u64);
                     let eq = (threshold.simd_eq(keys).to_bitmask() as u64);
                     return (lt | (eq & EQUAL_MASKS[rand % 16])) & lanes;
+                }
+
+                if MODE == PIVOTS_LE {
+                    return threshold.simd_le(keys).to_bitmask() as u64 & lanes;
+                }
+
+                if MODE == PIVOTS_LT {
+                    return threshold.simd_lt(keys).to_bitmask() as u64 & lanes;
                 }
 
                 unreachable!();
@@ -1202,6 +1250,14 @@ macro_rules! impl_simd_elem_64_avx512 {
                     let lt = (threshold.simd_gt(keys).to_bitmask() as u64);
                     let eq = (threshold.simd_eq(keys).to_bitmask() as u64);
                     return (lt | (eq & EQUAL_MASKS[rand % 16])) & lanes;
+                }
+
+                if MODE == PIVOTS_LE {
+                    return threshold.simd_le(keys).to_bitmask() as u64 & lanes;
+                }
+
+                if MODE == PIVOTS_LT {
+                    return threshold.simd_lt(keys).to_bitmask() as u64 & lanes;
                 }
 
                 unreachable!();
@@ -1791,6 +1847,14 @@ macro_rules! impl_simd_elem_64_neon {
                     return (lt | (eq & EQUAL_MASKS[rand % 16])) & lanes;
                 }
 
+                if MODE == PIVOTS_LE {
+                    return threshold.simd_le(keys).to_bitmask() as u64 & lanes;
+                }
+
+                if MODE == PIVOTS_LT {
+                    return threshold.simd_lt(keys).to_bitmask() as u64 & lanes;
+                }
+
                 unreachable!();
             }
 
@@ -1999,10 +2063,9 @@ macro_rules! impl_simd_elem_64_neon {
 macro_rules! avx2_partition_multi {
     ($t:ty, $shuf:ident, $full:expr, $mt:ty) => {
         #[inline(always)]
-        unsafe fn partition_multi_fast<const K: usize>(
+        unsafe fn partition_multi_fast<const K: usize, const MODE: usize>(
             vals: Self::Simd,
             pivots: &[Self::Simd],
-            rand: usize,
             writes: &mut [*mut $t; K],
             cnts: &mut [usize; K],
         ) {
@@ -2011,11 +2074,13 @@ macro_rules! avx2_partition_multi {
                 use std::mem::transmute;
 
                 debug_assert_eq!(pivots.len() + 1, K);
-                let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
+
                 let above = |p: Self::Simd| -> $mt {
-                    let gt = (vals.simd_gt(p).to_bitmask() as $mt) & $full;
-                    let eq = (vals.simd_eq(p).to_bitmask() as $mt) & $full;
-                    gt | (eq & tie)
+                    if MODE == ABOVE_GT {
+                        (vals.simd_gt(p).to_bitmask() as $mt) & $full
+                    } else {
+                        (vals.simd_ge(p).to_bitmask() as $mt) & $full
+                    }
                 };
                 let v: __m256i = transmute(vals);
 
@@ -2088,10 +2153,9 @@ macro_rules! avx512_partition_multi {
     // $mt: u16 (32-bit) or u8 (64-bit); $cz/$cs: compress intrinsics; $ct: i32/i64
     ($t:ty, $full:expr, $mt:ty, $cz:ident, $cs:ident, $ct:ty) => {
         #[inline(always)]
-        unsafe fn partition_multi_fast<const K: usize>(
+        unsafe fn partition_multi_fast<const K: usize, const MODE: usize>(
             vals: Self::Simd,
             pivots: &[Self::Simd],
-            rand: usize,
             writes: &mut [*mut $t; K],
             cnts: &mut [usize; K],
         ) {
@@ -2100,11 +2164,13 @@ macro_rules! avx512_partition_multi {
                 use std::mem::transmute;
 
                 debug_assert_eq!(pivots.len() + 1, K);
-                let tie: $mt = (EQUAL_MASKS[rand % 16] as $mt) & $full;
+
                 let above = |p: Self::Simd| -> $mt {
-                    let gt = (vals.simd_gt(p).to_bitmask() as $mt) & $full;
-                    let eq = (vals.simd_eq(p).to_bitmask() as $mt) & $full;
-                    gt | (eq & tie)
+                    if MODE == ABOVE_GT {
+                        (vals.simd_gt(p).to_bitmask() as $mt) & $full
+                    } else {
+                        (vals.simd_ge(p).to_bitmask() as $mt) & $full
+                    }
                 };
                 let v: __m512i = transmute(vals);
 
@@ -2178,10 +2244,9 @@ macro_rules! avx512_partition_multi {
 macro_rules! neon_partition_multi {
     ($t:ty, $shuf:ident, $full:expr) => {
         #[inline(always)]
-        unsafe fn partition_multi_fast<const K: usize>(
+        unsafe fn partition_multi_fast<const K: usize, const MODE: usize>(
             vals: Self::Simd,
             pivots: &[Self::Simd],
-            rand: usize,
             writes: &mut [*mut $t; K],
             cnts: &mut [usize; K],
         ) {
@@ -2190,12 +2255,14 @@ macro_rules! neon_partition_multi {
                 use std::mem::transmute;
 
                 debug_assert_eq!(pivots.len() + 1, K);
-                let tie: u8 = (EQUAL_MASKS[rand % 16] as u8) & $full;
+
                 // Bit i = lane i is above pivot p (greater, or equal and picked by tie).
                 let above = |p: Self::Simd| -> u8 {
-                    let gt = (vals.simd_gt(p).to_bitmask() as u8) & $full;
-                    let eq = (vals.simd_eq(p).to_bitmask() as u8) & $full;
-                    gt | (eq & tie)
+                    if MODE == ABOVE_GT {
+                        (vals.simd_gt(p).to_bitmask() as u8) & $full
+                    } else {
+                        (vals.simd_ge(p).to_bitmask() as u8) & $full
+                    }
                 };
                 let v: uint8x16_t = transmute(vals);
 

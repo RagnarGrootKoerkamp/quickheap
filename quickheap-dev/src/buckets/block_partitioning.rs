@@ -162,12 +162,26 @@ impl<
             ptrs[i] = layers[i].write_ptr();
         }
 
-        for i in (0..n2).step_by(S::L) {
+        let half = pivot_pos[0].next_multiple_of(S::L).saturating_sub(S::L);
+
+        for i in (0..half).step_by(S::L) {
             unsafe {
-                S::partition_multi_fast::<P>(
+                S::partition_multi_fast::<P, { simd::ABOVE_GT }>(
                     S::simd_from_slice(layers[0].get_unchecked(i, S::L)),
                     &thresholds[0..P - 1],
-                    pivot_pos[0],
+                    // pivot_pos[0],
+                    &mut ptrs,
+                    &mut lens,
+                );
+            }
+        }
+
+        for i in (half..n2).step_by(S::L) {
+            unsafe {
+                S::partition_multi_fast::<P, { simd::ABOVE_GE }>(
+                    S::simd_from_slice(layers[0].get_unchecked(i, S::L)),
+                    &thresholds[0..P - 1],
+                    // pivot_pos[0],
                     &mut ptrs,
                     &mut lens,
                 );

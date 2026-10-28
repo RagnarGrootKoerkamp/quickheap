@@ -54,7 +54,7 @@ radix-heap-sys = { path = "../ext/radix-heap-sys", optional = true }
 # Specialized examples require their SIMD backend and optional instrumentation.
 [[example]]
 name = "simd"
-required-features = ["avx512", "perf"]
+required-features = ["avx512"]
 
 [[example]]
 name = "neon"

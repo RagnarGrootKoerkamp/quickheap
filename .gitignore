@@ -1,7 +1,9 @@
 target/
 input/
 output/
-/bench/evals/plots
+/quickheap-dev/bench/evals/plots
 perf/
 profile.json.gz
 .DS_Store
+/quickheap-dev/bench/evals/data/log/
+/quickheap-dev/bench/evals/data/variants/

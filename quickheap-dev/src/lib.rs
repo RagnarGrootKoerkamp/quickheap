@@ -174,6 +174,7 @@ pub struct ConfigurableSimdQuickHeap<
     const SORT: bool = true,
     const EQUAL: bool = false,
     const P: usize = 2, // Number of partitions
+    const MULTI_THRESH: usize = 1024, // Layer size from which multi way partitioning is applied
 > {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
@@ -225,8 +226,24 @@ impl<
     const SORT: bool,
     const EQUAL: bool,
     const P: usize,
+    const MUTLI_THRESH: usize,
 > Default
-    for ConfigurableSimdQuickHeap<T, B, PART, S, PIVOT, MULTI_PIVOT, R, N, K, CAP, SORT, EQUAL, P>
+    for ConfigurableSimdQuickHeap<
+        T,
+        B,
+        PART,
+        S,
+        PIVOT,
+        MULTI_PIVOT,
+        R,
+        N,
+        K,
+        CAP,
+        SORT,
+        EQUAL,
+        P,
+        MUTLI_THRESH,
+    >
 {
     fn default() -> Self {
         let free_arena = Box::into_raw(Box::from(BlockArena::<T, K, CAP>::new()));
@@ -262,7 +279,24 @@ impl<
     const SORT: bool,
     const EQUAL: bool,
     const P: usize,
-> ConfigurableSimdQuickHeap<T, B, PART, S, PIVOT, MULTI_PIVOT, R, N, K, CAP, SORT, EQUAL, P>
+    const MULTI_THRESH: usize,
+>
+    ConfigurableSimdQuickHeap<
+        T,
+        B,
+        PART,
+        S,
+        PIVOT,
+        MULTI_PIVOT,
+        R,
+        N,
+        K,
+        CAP,
+        SORT,
+        EQUAL,
+        P,
+        MULTI_THRESH,
+    >
 {
     /// Initializes the heap from a given list of layers
     pub fn from_vecs(layers: Vec<Vec<T>>) -> Self {
@@ -524,7 +558,7 @@ impl<
             return;
         }
 
-        if self.buckets[layer].len() <= 32768 {
+        if self.buckets[layer].len() <= MULTI_THRESH {
             self.dual_partition(layer);
         } else {
             debug_assert!(layer == self.pivots.len());
