@@ -51,11 +51,15 @@ use std::marker::PhantomData;
 #[doc(hidden)]
 pub mod c;
 #[doc(hidden)]
+pub mod decrease_key;
+#[doc(hidden)]
 pub mod partitioning;
 #[doc(hidden)]
 pub mod pivots;
 #[doc(hidden)]
 pub mod simd;
+#[doc(hidden)]
+pub mod util;
 
 #[cfg(test)]
 mod test;
@@ -80,6 +84,8 @@ pub type Simd = simd::Avx512;
 #[cfg(target_arch = "aarch64")]
 pub type Simd = simd::Neon;
 
+use crate::decrease_key::DecreaseKeyStrategy;
+use crate::decrease_key::NoDecreaseKey;
 use crate::{partitioning::VecPartitioning, pivots::MedianOfM};
 
 /// The key-only SimdQuickHeap implementation
@@ -254,7 +260,89 @@ impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
 ///
 /// - `T`: the element type.
 /// - `S`: an optional backend tag: [`Avx2`], [`Avx512`], or [`Neon`].
-pub struct KvSimdQuickHeap<T: Copy + Ord, S: simd::SimdElem<T> = Simd> {
+/// - `DK`: the decrease-key strategy.
+///
+/// The heap data lives in [`KvCore`], separate from the strategy `DK`,
+/// so that the strategy can mutate the core while borrowing itself mutably.
+pub struct KvSimdQuickHeap<
+    T: Copy + Ord + Debug,
+    S: simd::SimdElem<T> = Simd,
+    DK: DecreaseKeyStrategy<T, S> = NoDecreaseKey,
+> {
+    core: KvCore<T, S>,
+    decrease_key: DK,
+}
+
+impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>, DK: Default + DecreaseKeyStrategy<T, S>>
+    Default for KvSimdQuickHeap<T, S, DK>
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>, DK: Default + DecreaseKeyStrategy<T, S>>
+    KvSimdQuickHeap<T, S, DK>
+{
+    pub fn new() -> Self {
+        Self {
+            core: KvCore::new(),
+            decrease_key: DK::default(),
+        }
+    }
+
+    /// Return the total capacity over all buckets.
+    pub fn capacity(&self) -> usize {
+        self.core.capacity()
+    }
+
+    /// Return the number of elements currently in the heap.
+    pub fn len(&self) -> usize {
+        self.core.len()
+    }
+
+    /// Return whether the heap contains no elements.
+    pub fn is_empty(&self) -> bool {
+        self.core.is_empty()
+    }
+
+    /// Push `t` onto the heap.
+    pub fn push(&mut self, key: T, value: T) {
+        self.core.push(key, value);
+    }
+
+    /// Method to decrease the key of an already inserted value
+    pub fn decrease_key(&mut self, old_key: T, new_key: T, val: T) {
+        self.decrease_key
+            .decrease_key(&mut self.core, old_key, new_key, val);
+    }
+
+    /// Peek at the smallest element from the queue.
+    pub fn peek(&mut self) -> Option<(T, T)> {
+        self.core.peek(&mut self.decrease_key)
+    }
+
+    /// Pop the smallest element from the queue.
+    pub fn pop(&mut self) -> Option<(T, T)> {
+        // If the total size is 0, return none
+        if self.core.size == 0 {
+            return None;
+        }
+
+        self.core.ensure_small(&mut self.decrease_key);
+        self.decrease_key.before_pop(&mut self.core);
+        let r = self.core.remove_smallest_elem();
+
+        self.core.size -= 1;
+        r
+    }
+}
+
+/// The data of the key-value pair SimdQuickHeap, without any decrease-key strategy.
+///
+/// - `T`: the element type.
+/// - `S`: an optional backend tag: [`Avx2`], [`Avx512`], or [`Neon`].
+pub struct KvCore<T: Copy + Ord + Debug, S: simd::SimdElem<T> = Simd> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -275,13 +363,7 @@ pub struct KvSimdQuickHeap<T: Copy + Ord, S: simd::SimdElem<T> = Simd> {
     _backend: PhantomData<S>,
 }
 
-impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> Default for KvSimdQuickHeap<T, S> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S> {
+impl<T: Copy + Ord + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
     const N: usize = LOWEST_LAYER_SIZE;
 
     pub fn new() -> Self {
@@ -313,6 +395,12 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
 
     /// Push `t` onto the heap.
     pub fn push(&mut self, key: T, value: T) {
+        self.insert_elem(key, value);
+        self.size += 1;
+    }
+
+    /// Method to insert a helper element without increasing the heaps size
+    fn insert_elem(&mut self, key: T, value: T) {
         let target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, key) };
 
         let key_layer = &mut self.keys[target_layer];
@@ -335,29 +423,48 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
             key_layer.push(key);
             value_layer.push(value);
         }
-
-        self.size += 1;
     }
 
-    /// Pop the smallest element from the queue.
-    pub fn pop(&mut self) -> Option<(T, T)> {
+    /// Peek at the smallest element from the queue.
+    pub fn peek<DK: Default + DecreaseKeyStrategy<T, S>>(
+        &mut self,
+        strat: &mut DK,
+    ) -> Option<(T, T)> {
         // If the total size is 0, return none
         if self.size == 0 {
             return None;
         }
 
+        self.ensure_small(strat);
+
+        // Find and extract the minimum.
+        let key_layer = &mut self.keys[self.pivots.len()];
+        let val_layer = &mut self.values[self.pivots.len()];
+        debug_assert!(!key_layer.is_empty());
+
+        let idx = key_layer.len() - 1;
+        let key = key_layer[idx];
+        let val = val_layer[idx];
+
+        Some((key, val))
+    }
+
+    #[inline(always)]
+    fn ensure_small<DK: Default + DecreaseKeyStrategy<T, S>>(&mut self, strat: &mut DK) {
         // Split the current layer as long as it is too large.
         if self.keys[self.pivots.len()].len() > Self::N {
             while self.keys[self.pivots.len()].len() > Self::N {
-                self.partition();
+                self.partition(strat);
             }
 
             // Sort final layer decreasing.
             let key_layer = &mut self.keys[self.pivots.len()];
             let val_layer = &mut self.values[self.pivots.len()];
-            Self::sort_key_and_values(key_layer, val_layer);
+            KvCore::<T, S>::sort_key_and_values(key_layer, val_layer);
         }
+    }
 
+    fn remove_smallest_elem(&mut self) -> Option<(T, T)> {
         // Find and extract the minimum.
         let key_layer = &mut self.keys[self.pivots.len()];
         let val_layer = &mut self.values[self.pivots.len()];
@@ -380,13 +487,13 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
             }
         }
 
-        self.size -= 1;
-
         Some((key, val))
     }
 
     #[inline(never)]
-    fn partition(&mut self) {
+    fn partition<DK: Default + DecreaseKeyStrategy<T, S>>(&mut self, strat: &mut DK) {
+        strat.before_partition(self);
+
         let total_layers = self.pivots.len() + 1;
 
         // Reserve space for an additional L layers when needed.
@@ -398,7 +505,10 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
             debug_assert!(total_layers == self.values.len());
             self.keys.push(vec![]);
             self.values.push(vec![]);
+            strat.layer_push();
         }
+
+        let layer = self.pivots.len();
 
         // Alias the current layer (to be split) and the next layer.
         let [cur_key_layer, next_key_layer] =
@@ -418,6 +528,7 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
 
         // Sample a pivot using the pivot strategy
         let (pivot, pivot_pos) = MedianOfM::<3>::pick(cur_key_layer);
+        let pivot_val = cur_val_layer[pivot_pos];
 
         self.pivots.push(pivot);
 
@@ -431,6 +542,7 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
             next_key_layer,
             next_val_layer,
             pivot,
+            pivot_val,
             pivot_pos,
         );
 
@@ -441,6 +553,7 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
         if next_key_layer.is_empty() {
             debug_assert!(next_val_layer.is_empty());
             self.pivots.pop();
+            return;
         }
 
         // If we extracted all elements to the next layer
@@ -452,13 +565,16 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>> KvSimdQuickHeap<T, S
             std::mem::swap(cur_val_layer, next_val_layer);
 
             self.pivots.pop();
+            return;
         }
+
+        strat.after_partition(layer, pivot, pivot_val, pivot_pos);
     }
 
     fn sort_key_and_values(keys: &mut [T], vals: &mut [T]) {
         let n = keys.len();
         let mut idx: Vec<usize> = (0..n).collect();
-        idx.sort_unstable_by_key(|&i| std::cmp::Reverse(keys[i]));
+        idx.sort_unstable_by_key(|&i| std::cmp::Reverse((keys[i], vals[i])));
 
         for i in 0..n {
             if idx[i] == i {

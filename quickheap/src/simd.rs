@@ -90,6 +90,13 @@ pub unsafe trait SimdElem<T>: 'static {
         pivot_pos: usize,
     ) -> u64;
 
+    fn small_mask_kv(
+        keys: Self::Simd,
+        keys: Self::Simd,
+        threshold: Self::Simd,
+        threshold_val: Self::Simd,
+    ) -> u64;
+
     /*
     fn simd_min(a: Self::Simd, b: Self::Simd) -> Self::Simd;
     fn simd_eq_bitmask(a: Self::Simd, b: Self::Simd) -> u64;
@@ -132,6 +139,7 @@ pub unsafe trait SimdElem<T>: 'static {
         keys: Self::Simd,
         vals: Self::Simd,
         threshold: Self::Simd,
+        threshold_val: Self::Simd,
         pivot_pos: usize,
         cur_keys: *mut T,
         cur_vals: *mut T,
@@ -149,6 +157,7 @@ pub unsafe trait SimdElem<T>: 'static {
         vals: Self::Simd,
         len: Self::Simd,
         threshold: Self::Simd,
+        threshold_val: Self::Simd,
         pivot_pos: usize,
         cur_keys: *mut T,
         cur_vals: *mut T,
@@ -410,6 +419,24 @@ macro_rules! impl_simd_elem_32 {
             }
 
             #[inline(always)]
+            fn small_mask_kv(
+                keys: $simd,
+                vals: $simd,
+                threshold: $simd,
+                threshold_val: $simd,
+            ) -> u64 {
+                let lanes = 0xFFu64;
+                let lt = threshold.simd_gt(keys).to_bitmask() as u64;
+                let pv_lt = vals.simd_lt(threshold_val).to_bitmask() as u64;
+                let eq = threshold.simd_eq(keys);
+                if eq.any() {
+                    (lt | (eq.to_bitmask() as u64 & pv_lt)) & lanes
+                } else {
+                    lt & lanes
+                }
+            }
+
+            #[inline(always)]
             unsafe fn partition_fast<const MODE: usize>(
                 vals: Self::Simd,
                 threshold: Self::Simd,
@@ -492,6 +519,7 @@ macro_rules! impl_simd_elem_32 {
                 keys: Self::Simd,
                 vals: Self::Simd,
                 threshold: Self::Simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -504,9 +532,9 @@ macro_rules! impl_simd_elem_32 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8;
                     let large = !small;
                     let keys: __m256i = transmute(keys);
                     let vals: __m256i = transmute(vals);
@@ -541,6 +569,7 @@ macro_rules! impl_simd_elem_32 {
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -553,9 +582,9 @@ macro_rules! impl_simd_elem_32 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let mut small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8;
+                    let mut small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8;
                     let mut large = !small;
                     let in_range = len
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
@@ -670,6 +699,26 @@ macro_rules! impl_simd_elem_64 {
             }
 
             #[inline(always)]
+            fn small_mask_kv(
+                keys: $simd,
+                vals: $simd,
+                threshold: $simd,
+                threshold_val: $simd,
+            ) -> u64 {
+                let lanes = 0xFu64;
+
+                const ONE: $simd = <$simd>::splat(1);
+                let lt = threshold.simd_gt(keys).to_bitmask() as u64;
+                let eq = threshold.simd_eq(keys);
+                let pv_lt = vals.simd_lt(threshold_val).to_bitmask() as u64;
+                if eq.any() {
+                    (lt | (eq.to_bitmask() as u64 & pv_lt)) & lanes
+                } else {
+                    lt & lanes
+                }
+            }
+
+            #[inline(always)]
             unsafe fn partition_fast<const MODE: usize>(
                 vals: $simd,
                 threshold: $simd,
@@ -753,6 +802,7 @@ macro_rules! impl_simd_elem_64 {
                 keys: $simd,
                 vals: $simd,
                 threshold: $simd,
+                threshold_val: $simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -765,9 +815,9 @@ macro_rules! impl_simd_elem_64 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8;
                     let large = small ^ 0xF;
                     let keys: __m256i = transmute(keys);
                     let vals: __m256i = transmute(vals);
@@ -802,6 +852,7 @@ macro_rules! impl_simd_elem_64 {
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
+                threshold_val: $simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -818,10 +869,10 @@ macro_rules! impl_simd_elem_64 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8)
                         & 0xF;
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8
-                        & in_range;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8
+                            & in_range;
                     let large = (small ^ 0xF) & in_range;
                     let keys: __m256i = transmute(keys);
                     let vals: __m256i = transmute(vals);
@@ -931,6 +982,24 @@ macro_rules! impl_simd_elem_32_avx512 {
             }
 
             #[inline(always)]
+            fn small_mask_kv(
+                keys: $simd,
+                vals: $simd,
+                threshold: $simd,
+                threshold_val: $simd,
+            ) -> u64 {
+                let lanes = 0xFFFFu64;
+                let lt = threshold.simd_gt(keys).to_bitmask() as u64;
+                let pv_lt = vals.simd_lt(threshold_val).to_bitmask() as u64;
+                let eq = threshold.simd_eq(keys);
+                if eq.any() {
+                    (lt | (eq.to_bitmask() as u64 & pv_lt)) & lanes
+                } else {
+                    lt & lanes
+                }
+            }
+
+            #[inline(always)]
             unsafe fn partition_fast<const MODE: usize>(
                 vals: Self::Simd,
                 threshold: Self::Simd,
@@ -1035,6 +1104,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                 keys: Self::Simd,
                 vals: Self::Simd,
                 threshold: Self::Simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -1047,9 +1117,9 @@ macro_rules! impl_simd_elem_32_avx512 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u16;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u16;
                     let large: u16 = !small;
                     let keys: __m512i = transmute(keys);
                     let vals: __m512i = transmute(vals);
@@ -1106,6 +1176,7 @@ macro_rules! impl_simd_elem_32_avx512 {
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -1122,10 +1193,10 @@ macro_rules! impl_simd_elem_32_avx512 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u16;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u16
-                        & in_range;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u16
+                            & in_range;
                     let large: u16 = (!small) & in_range;
                     let keys: __m512i = transmute(keys);
                     let vals: __m512i = transmute(vals);
@@ -1264,6 +1335,24 @@ macro_rules! impl_simd_elem_64_avx512 {
             }
 
             #[inline(always)]
+            fn small_mask_kv(
+                keys: $simd,
+                vals: $simd,
+                threshold: $simd,
+                threshold_val: $simd,
+            ) -> u64 {
+                let lanes = 0xFFu64;
+                let lt = threshold.simd_gt(keys).to_bitmask() as u64;
+                let pv_lt = vals.simd_lt(threshold_val).to_bitmask() as u64;
+                let eq = threshold.simd_eq(keys);
+                if eq.any() {
+                    (lt | (eq.to_bitmask() as u64 & pv_lt)) & lanes
+                } else {
+                    lt & lanes
+                }
+            }
+
+            #[inline(always)]
             unsafe fn partition_fast<const MODE: usize>(
                 vals: Self::Simd,
                 threshold: Self::Simd,
@@ -1368,6 +1457,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                 keys: Self::Simd,
                 vals: Self::Simd,
                 threshold: Self::Simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -1380,9 +1470,9 @@ macro_rules! impl_simd_elem_64_avx512 {
                     use core::arch::x86_64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8;
                     let large: u8 = !small;
                     let keys: __m512i = transmute(keys);
                     let vals: __m512i = transmute(vals);
@@ -1439,6 +1529,7 @@ macro_rules! impl_simd_elem_64_avx512 {
                 vals: Self::Simd,
                 len: Self::Simd,
                 threshold: Self::Simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -1455,10 +1546,10 @@ macro_rules! impl_simd_elem_64_avx512 {
                         .simd_gt(<Self as SimdElem<$t>>::lane_indices())
                         .to_bitmask() as u8;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8
-                        & in_range;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8
+                            & in_range;
                     let large: u8 = (!small) & in_range;
                     let keys: __m512i = transmute(keys);
                     let vals: __m512i = transmute(vals);

@@ -121,6 +121,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         next_key_layer: &mut Vec<T>,
         next_val_layer: &mut Vec<T>,
         pivot: T,
+        pivot_val: T,
         pivot_pos: usize,
     ) {
         assert_eq!(
@@ -154,6 +155,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
         let mut cur_len = 0;
         let mut next_len = 0;
         let threshold = S::splat(pivot);
+        let threshold_val = S::splat(pivot_val);
 
         let cur_key_layer_ptr = cur_key_layer.as_mut_ptr();
         let next_key_layer_ptr = next_key_layer.as_mut_ptr();
@@ -166,6 +168,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
                     S::simd_from_ptr(cur_key_layer_ptr.add(i)),
                     S::simd_from_ptr(cur_val_layer_ptr.add(i)),
                     threshold,
+                    threshold_val,
                     pivot_pos,
                     cur_key_layer_ptr,
                     cur_val_layer_ptr,
@@ -184,6 +187,7 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
                     S::simd_from_ptr(cur_val_layer_ptr.add(n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
+                    threshold_val,
                     pivot_pos,
                     cur_key_layer_ptr,
                     cur_val_layer_ptr,
