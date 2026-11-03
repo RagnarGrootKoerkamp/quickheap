@@ -1679,6 +1679,24 @@ macro_rules! impl_simd_elem_32_neon {
                 unreachable!();
             }
 
+            #[inline(always)]
+            fn small_mask_kv(
+                keys: $simd,
+                vals: $simd,
+                threshold: $simd,
+                threshold_val: $simd,
+            ) -> u64 {
+                let lanes = 0xFu64;
+                let lt = threshold.simd_gt(keys).to_bitmask() as u64;
+                let pv_lt = vals.simd_lt(threshold_val).to_bitmask() as u64;
+                let eq = threshold.simd_eq(keys);
+                if eq.any() {
+                    (lt | (eq.to_bitmask() as u64 & pv_lt)) & lanes
+                } else {
+                    lt & lanes
+                }
+            }
+
             /*
             #[inline(always)]
             fn simd_min(a: $simd, b: $simd) -> $simd {
@@ -1783,6 +1801,7 @@ macro_rules! impl_simd_elem_32_neon {
                 keys: $simd,
                 vals: $simd,
                 threshold: $simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -1795,9 +1814,9 @@ macro_rules! impl_simd_elem_32_neon {
                     use core::arch::aarch64::*;
                     use std::mem::transmute;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8;
                     let large: u8 = small ^ 0xF;
                     let k: uint8x16_t = transmute(keys);
                     let v: uint8x16_t = transmute(vals);
@@ -1826,6 +1845,7 @@ macro_rules! impl_simd_elem_32_neon {
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -1843,10 +1863,11 @@ macro_rules! impl_simd_elem_32_neon {
                         .to_bitmask() as u8)
                         & 0xF;
 
-                    let small = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8
-                        & in_range;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8
+                            & in_range;
+
                     let large = (small ^ 0xF) & in_range;
                     let k: uint8x16_t = transmute(keys);
                     let v: uint8x16_t = transmute(vals);
@@ -1947,6 +1968,24 @@ macro_rules! impl_simd_elem_64_neon {
                 }
 
                 unreachable!();
+            }
+
+            #[inline(always)]
+            fn small_mask_kv(
+                keys: $simd,
+                vals: $simd,
+                threshold: $simd,
+                threshold_val: $simd,
+            ) -> u64 {
+                let lanes = 0xFu64;
+                let lt = threshold.simd_gt(keys).to_bitmask() as u64;
+                let pv_lt = vals.simd_lt(threshold_val).to_bitmask() as u64;
+                let eq = threshold.simd_eq(keys);
+                if eq.any() {
+                    (lt | (eq.to_bitmask() as u64 & pv_lt)) & lanes
+                } else {
+                    lt & lanes
+                }
             }
 
             /*
@@ -2053,6 +2092,7 @@ macro_rules! impl_simd_elem_64_neon {
                 keys: $simd,
                 vals: $simd,
                 threshold: $simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -2065,9 +2105,10 @@ macro_rules! impl_simd_elem_64_neon {
                     use core::arch::aarch64::*;
                     use std::mem::transmute;
 
-                    let small: u8 = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8;
+
                     let large: u8 = small ^ 0x3;
                     let k: uint8x16_t = transmute(keys);
                     let v: uint8x16_t = transmute(vals);
@@ -2096,6 +2137,7 @@ macro_rules! impl_simd_elem_64_neon {
                 vals: $simd,
                 len: $simd,
                 threshold: $simd,
+                threshold_val: Self::Simd,
                 pivot_pos: usize,
                 cur_keys: *mut $t,
                 cur_vals: *mut $t,
@@ -2113,10 +2155,10 @@ macro_rules! impl_simd_elem_64_neon {
                         .to_bitmask() as u8)
                         & 0x3;
 
-                    let small: u8 = <Self as SimdElem<$t>>::small_mask::<SPLIT_PIVOTS_CUR_AND_NEXT>(
-                        keys, threshold, pivot_pos,
-                    ) as u8
-                        & in_range;
+                    let small =
+                        <Self as SimdElem<$t>>::small_mask_kv(keys, vals, threshold, threshold_val)
+                            as u8
+                            & in_range;
                     let large = (small ^ 0x3) & in_range;
                     let k: uint8x16_t = transmute(keys);
                     let v: uint8x16_t = transmute(vals);

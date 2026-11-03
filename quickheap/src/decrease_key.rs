@@ -646,5 +646,7 @@ mod test {
     #[cfg(target_arch = "aarch64")]
     mod neon_dk_test {
         decrease_key_tests!(simple_dk, crate::Neon, crate::decrease_key::SimpleDK<i64>);
+        decrease_key_tests!(del_token_sort, crate::Neon, crate::decrease_key::DelTokenSort<i64, crate::Neon>);
+        decrease_key_tests!(del_token_cnt_bloom, crate::Neon, crate::decrease_key::DelTokenCountingBloom<i64, crate::Neon, 16>);
     }
 }
