@@ -66,9 +66,15 @@ mod test;
 
 pub use simd::SimdElem;
 
+use num_traits::PrimInt;
+use std::ops::{BitAndAssign, BitOrAssign};
+
 pub use simd::Avx2;
 pub use simd::Avx512;
 pub use simd::Neon;
+
+pub trait ElemT: PartialEq + PrimInt + BitAndAssign + BitOrAssign {}
+impl<T: PartialEq + PrimInt + BitAndAssign + BitOrAssign> ElemT for T {}
 
 /* Constants for development testing */
 const SIMD_INSERT: bool = true;
@@ -92,7 +98,7 @@ use crate::{partitioning::VecPartitioning, pivots::MedianOfM};
 ///
 /// - `T`: the element type: `u32`, `i32`, `u64`, or `i64`.
 /// - `S`: an optional tag to select the SIMD backend: [`Avx2`], [`Avx512`], or [`Neon`].
-pub struct SimdQuickHeap<T: Copy + Ord, S: simd::SimdElem<T> = Simd> {
+pub struct SimdQuickHeap<T: ElemT, S: simd::SimdElem<T> = Simd> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -113,7 +119,7 @@ pub struct SimdQuickHeap<T: Copy + Ord, S: simd::SimdElem<T> = Simd> {
 }
 
 /// Return a default instance with plenty (128) layers of empty buckets.
-impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> Default for SimdQuickHeap<T, S> {
+impl<T: ElemT + Default, S: simd::SimdElem<T>> Default for SimdQuickHeap<T, S> {
     fn default() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
@@ -124,7 +130,7 @@ impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> Default for SimdQuickHeap<T,
     }
 }
 
-impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
+impl<T: ElemT + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
     const N: usize = 16;
 
     /// Return the total capacity over all buckets.
@@ -265,7 +271,7 @@ impl<T: Copy + Ord + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
 /// The heap data lives in [`KvCore`], separate from the strategy `DK`,
 /// so that the strategy can mutate the core while borrowing itself mutably.
 pub struct KvSimdQuickHeap<
-    T: Copy + Ord + Debug,
+    T: ElemT + Debug,
     S: simd::SimdElem<T> = Simd,
     DK: DecreaseKeyStrategy<T, S> = NoDecreaseKey,
 > {
@@ -273,7 +279,7 @@ pub struct KvSimdQuickHeap<
     decrease_key: DK,
 }
 
-impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>, DK: Default + DecreaseKeyStrategy<T, S>>
+impl<T: ElemT + Debug + Default, S: simd::SimdElem<T>, DK: Default + DecreaseKeyStrategy<T, S>>
     Default for KvSimdQuickHeap<T, S, DK>
 {
     fn default() -> Self {
@@ -281,7 +287,7 @@ impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>, DK: Default + Decrea
     }
 }
 
-impl<T: Copy + Ord + Debug + Default, S: simd::SimdElem<T>, DK: Default + DecreaseKeyStrategy<T, S>>
+impl<T: ElemT + Debug + Default, S: simd::SimdElem<T>, DK: Default + DecreaseKeyStrategy<T, S>>
     KvSimdQuickHeap<T, S, DK>
 {
     pub fn new() -> Self {
@@ -363,7 +369,7 @@ pub struct KvCore<T: Copy + Ord + Debug, S: simd::SimdElem<T> = Simd> {
     _backend: PhantomData<S>,
 }
 
-impl<T: Copy + Ord + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
+impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
     const N: usize = LOWEST_LAYER_SIZE;
 
     pub fn new() -> Self {

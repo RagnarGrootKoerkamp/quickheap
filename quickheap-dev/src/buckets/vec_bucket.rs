@@ -1,16 +1,19 @@
 use crate::buckets::{Bucket, FlatBucket, block_arena::BlockArena};
 use std::fmt::Debug;
 
-pub struct VecBucket<T, const K: usize = 256, const CAP: usize = 256> {
+pub struct VecBucket<T> {
     data: Vec<T>,
 }
 
-impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> FlatBucket<T>
-    for VecBucket<T, K, CAP>
-{
+impl<T: Copy + Default + Ord + Debug> FlatBucket<T> for VecBucket<T> {
     #[inline]
     fn reserve(&mut self, n: usize) {
         self.data.reserve(n);
+    }
+
+    #[inline]
+    fn flat_len(&self) -> usize {
+        self.data.len()
     }
 
     #[inline]
@@ -32,7 +35,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> FlatBuck
 }
 
 impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
-    for VecBucket<T, K, CAP>
+    for VecBucket<T>
 {
     fn default(_: *mut BlockArena<T, K, CAP>) -> Self {
         Self {
@@ -104,7 +107,7 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
 
     #[inline]
     fn len(&self) -> usize {
-        self.data.len()
+        self.flat_len()
     }
 
     #[inline]

@@ -1,6 +1,8 @@
 use quickheap::partitioning::{MultiPartition, Partition};
 use quickheap::simd;
 
+use quickheap::ElemT;
+
 use crate::buckets::BlockedBucket;
 use crate::buckets::Bucket;
 use crate::buckets::FlatBucket;
@@ -9,7 +11,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ptr;
 
-pub struct FlatPartitioning<S, const K: usize, const CAP: usize>(PhantomData<S>);
+pub struct FlatPartitioning<S>(PhantomData<S>);
 pub struct BlockedPartitioning<S, const K: usize, const CAP: usize>(PhantomData<S>);
 
 #[inline(always)]
@@ -31,12 +33,7 @@ fn prefetch_read<T>(p: *const T) {
 
 #[cold]
 #[inline(never)]
-unsafe fn spill<
-    T: Copy + PartialEq,
-    B: BlockedBucket<T, K, CAP>,
-    const K: usize,
-    const CAP: usize,
->(
+unsafe fn spill<T: ElemT, B: BlockedBucket<T, K, CAP>, const K: usize, const CAP: usize>(
     bucket: &mut B,
     ptr: &mut *mut T,
     len: usize,
@@ -52,14 +49,7 @@ unsafe fn spill<
     over
 }
 
-impl<
-    T: PartialEq + Copy,
-    B: Bucket<T, K, CAP> + FlatBucket<T>,
-    S: simd::SimdElem<T>,
-    const K: usize,
-    const CAP: usize,
-> Partition<T, B> for FlatPartitioning<S, K, CAP>
-{
+impl<T: ElemT, B: FlatBucket<T>, S: simd::SimdElem<T>> Partition<T, B> for FlatPartitioning<S> {
     #[inline(always)]
     fn partition<const MODE: usize>(
         cur_layer: &mut B,
@@ -67,7 +57,7 @@ impl<
         pivot: T,
         pivot_pos: usize,
     ) {
-        let n = cur_layer.len();
+        let n = cur_layer.flat_len();
 
         // Reserve space in the next layer,
         // and make sure the current layer can hold a spare SIMD register.
@@ -123,17 +113,12 @@ impl<
     }
 }
 
-impl<
-    T: PartialEq + Copy + Debug,
-    B: Bucket<T, K, CAP> + FlatBucket<T>,
-    S: simd::SimdElem<T>,
-    const K: usize,
-    const CAP: usize,
-> MultiPartition<T, B> for FlatPartitioning<S, K, CAP>
+impl<T: ElemT + Debug, B: FlatBucket<T>, S: simd::SimdElem<T>> MultiPartition<T, B>
+    for FlatPartitioning<S>
 {
     #[inline(always)]
     fn multi_partition<const P: usize>(layers: &mut [B], pivots: &[T], pivot_pos: [usize; P]) {
-        let n = layers[0].len();
+        let n = layers[0].flat_len();
         debug_assert!(layers.len() == P);
         debug_assert!(P > 1);
 
@@ -210,7 +195,7 @@ impl<
 }
 
 impl<
-    T: PartialEq + Copy,
+    T: ElemT,
     B: Bucket<T, K, CAP> + BlockedBucket<T, K, CAP>,
     S: simd::SimdElem<T>,
     const K: usize,

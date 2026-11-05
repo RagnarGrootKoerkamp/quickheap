@@ -1,10 +1,12 @@
+use quickheap::ElemT;
 use quickheap::partitioning::{MultiPartition, Partition};
-use quickheap_dev::ElemConstraint;
+
+use quickheap_dev::{ElemConstraint, RadixSimdQuickHeap};
 
 use crate::{Heap, impls::NoHeap, workloads};
 
 impl<
-    T: workloads::Elem + Default + std::ops::Sub<Output = T> + ElemConstraint,
+    T: ElemT + workloads::Elem + Default + std::ops::Sub<Output = T> + ElemConstraint,
     B: quickheap_dev::buckets::Bucket<T, K, CAP>,
     PART: Partition<T, B> + MultiPartition<T, B>,
     S: quickheap::simd::SimdElem<T>,
@@ -56,7 +58,7 @@ impl<
     }
 }
 
-impl<T: workloads::Elem + Default, S: quickheap::simd::SimdElem<T>> Heap<T>
+impl<T: ElemT + workloads::Elem + Default, S: quickheap::simd::SimdElem<T>> Heap<T>
     for quickheap::SimdQuickHeap<T, S>
 {
     type CountedType = workloads::CountComparisons<T>;
@@ -93,8 +95,8 @@ pub type DevSimdQuickHeap<
     const CAP: usize = 128,
 > = quickheap_dev::ConfigurableSimdQuickHeap<
     T,
-    quickheap_dev::buckets::vec_bucket::VecBucket<T, K, CAP>,
-    quickheap_dev::buckets::block_partitioning::FlatPartitioning<S, K, CAP>,
+    quickheap_dev::buckets::vec_bucket::VecBucket<T>,
+    quickheap_dev::buckets::block_partitioning::FlatPartitioning<S>,
     S,
     PIVOT,
     quickheap_dev::pivot_strategies::GeoMultiMedianOfM<2>,
@@ -107,3 +109,30 @@ pub type DevSimdQuickHeap<
     P,
     512,
 >;
+
+impl<
+    T: ElemT + workloads::Elem + Default,
+    S: quickheap::simd::SimdElem<T>,
+    const B: usize,
+    const L: usize,
+> Heap<T> for RadixSimdQuickHeap<T, S, B, L>
+{
+    type CountedType = workloads::CountComparisons<T>;
+    type CountedHeap = NoHeap;
+
+    fn default() -> Self {
+        Default::default()
+    }
+
+    fn push(&mut self, t: T) {
+        self.push(t)
+    }
+
+    fn pop(&mut self) -> Option<T> {
+        self.pop()
+    }
+
+    fn capacity(&self) -> usize {
+        self.capacity()
+    }
+}

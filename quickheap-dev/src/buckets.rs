@@ -13,6 +13,7 @@ pub trait FlatBucket<T: PartialEq> {
     unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T];
     fn write_ptr(&mut self) -> *mut T;
     fn reserve(&mut self, n: usize);
+    fn flat_len(&self) -> usize;
     // fn override_elem(&mut self, pos: usize, elem: T);
     // fn get_unchecked_single(&self, idx: usize) -> T;
 }

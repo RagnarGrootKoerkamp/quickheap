@@ -188,6 +188,25 @@ pub unsafe trait SimdElem<T>: 'static {
         writes: &mut [*mut T; K],
         cnts: &mut [usize; K],
     );
+
+    unsafe fn partition_radix_fast<const B: usize>(
+        flip: Self::Simd,
+        shift: Self::Simd,
+        mask: Self::Simd,
+        vals: Self::Simd,
+        writes: &mut [*mut T],
+        cnts: &mut [usize],
+    );
+
+    unsafe fn partition_radix_slow<const B: usize>(
+        flip: Self::Simd,
+        shift: Self::Simd,
+        mask: Self::Simd,
+        vals: Self::Simd,
+        len: Self::Simd,
+        writes: &mut [*mut T],
+        cnts: &mut [usize],
+    );
 }
 
 /// Classify the element t against the decreasing list of pivots.
@@ -2445,6 +2464,70 @@ macro_rules! neon_partition_multi {
                     vst1q_u8(writes[b].add(cnts[b]) as *mut u8, vqtbl1q_u8(v, key));
                     cnts[b] += m.count_ones() as usize;
                     prev = next;
+                }
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn partition_radix_fast<const B: usize>(
+            flip: Self::Simd,
+            shift: Self::Simd,
+            mask: Self::Simd,
+            vals: Self::Simd,
+            writes: &mut [*mut $t],
+            cnts: &mut [usize],
+        ) {
+            unsafe {
+                use core::arch::aarch64::*;
+                use std::mem::transmute;
+
+                // Contains the bucket index for each buckets destination
+                let indices = ((vals ^ flip) >> shift) & mask;
+
+                let num_buckets = 2usize.pow(B as u32);
+
+                let v: uint8x16_t = transmute(vals);
+                for b in 0..num_buckets {
+                    let b_mask = Self::splat(b as $t);
+                    let bucket_mask = indices.simd_eq(b_mask).to_bitmask() as u8;
+                    let key = vld1q_u8($shuf[bucket_mask as usize].as_ptr());
+                    vst1q_u8(writes[b].add(cnts[b]) as *mut u8, vqtbl1q_u8(v, key));
+                    cnts[b] += bucket_mask.count_ones() as usize;
+                }
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn partition_radix_slow<const B: usize>(
+            flip: Self::Simd,
+            shift: Self::Simd,
+            mask: Self::Simd,
+            vals: Self::Simd,
+            len: Self::Simd,
+            writes: &mut [*mut $t],
+            cnts: &mut [usize],
+        ) {
+            unsafe {
+                use core::arch::aarch64::*;
+                use std::mem::transmute;
+
+                let in_range: u8 = (len
+                    .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                    .to_bitmask() as u8)
+                    & $full;
+
+                // Contains the bucket index for each buckets destination
+                let indices = ((vals ^ flip) >> shift) & mask;
+
+                let num_buckets = 2usize.pow(B as u32);
+
+                let v: uint8x16_t = transmute(vals);
+                for b in 0..num_buckets {
+                    let b_mask = Self::splat(b as $t);
+                    let bucket_mask = indices.simd_eq(b_mask).to_bitmask() as u8 & in_range;
+                    let key = vld1q_u8($shuf[bucket_mask as usize].as_ptr());
+                    vst1q_u8(writes[b].add(cnts[b]) as *mut u8, vqtbl1q_u8(v, key));
+                    cnts[b] += bucket_mask.count_ones() as usize;
                 }
             }
         }

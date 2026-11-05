@@ -1,0 +1,22 @@
+{
+  "name": "implicit_equal_buckets",
+  "heap_mappings":
+    {
+      "SimdQuickHeap": "SQH",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH-no-equal",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "CSQH-equal"
+    },
+  "heap_colors": {
+    "SimdQuickHeap": "xkcd:salmon",
+    "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:navy blue",
+    "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "xkcd:peach"
+  },
+  "metric_mappings": {"nano_seconds": "ns/op"},
+  "plot_by": ["nano_seconds"],
+  "plot_types": ["i32", "i64"],
+  "table_n": 1048576,
+  "table_type": "i64",
+  "table_workload": "RandomConstantSizeManyEqual",
+  "table_backend": "Neon",
+  "table_cols": ["nano_seconds", "median_layers"]
+}

@@ -268,11 +268,42 @@ impl Workload for RandomConstantSize {
     const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
-        // let stride = T::stride();
+        let stride = T::stride();
         let stride = 2 << 14;
         let mut rng = fastrand::Rng::new();
         for _ in 0..(n + 50) {
             // TODO: Think of better solution
+            h.push(T::try_from(rng.u64(0..stride)));
+            h.pop().unwrap().get();
+            h.push(T::try_from(rng.u64(0..stride)));
+        }
+        let values = std::iter::repeat_with(|| rng.u64(0..stride))
+            .take(10 * n as usize)
+            .collect::<Vec<_>>()
+            .into_iter();
+        move || {
+            for value in values {
+                let _ = h.pop().unwrap().get();
+                h.push(T::try_from(value));
+            }
+            black_box(h)
+        }
+    }
+}
+
+/// init: push^n
+/// bench: (pop push)^n
+/// values: random
+pub struct RandomConstantSizeManyEqual;
+
+impl Workload for RandomConstantSizeManyEqual {
+    const NORMALIZATION: u64 = 10;
+    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
+        let mut h = H::default();
+        // TODO: Check if this is good?
+        let stride = n / (2 << 12);
+        let mut rng = fastrand::Rng::new();
+        for _ in 0..(n + 50) {
             h.push(T::try_from(rng.u64(0..stride)));
             h.pop().unwrap().get();
             h.push(T::try_from(rng.u64(0..stride)));

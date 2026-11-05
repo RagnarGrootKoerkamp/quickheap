@@ -1,3 +1,4 @@
+use crate::ElemT;
 use crate::KvCore;
 use crate::partitioning::VecPartitioning;
 use crate::simd;
@@ -13,7 +14,7 @@ use std::hash::Hash;
 /// Caller has to ensure that every val is only inserted once
 pub trait DecreaseKeyStrategy<T, S>
 where
-    T: Copy + Ord + Debug,
+    T: ElemT + Debug,
     S: SimdElem<T>,
 {
     fn decrease_key(&mut self, heap: &mut KvCore<T, S>, old_key: T, new_key: T, val: T);
@@ -30,7 +31,7 @@ pub struct NoDecreaseKey;
 
 impl<T, S> DecreaseKeyStrategy<T, S> for NoDecreaseKey
 where
-    T: Copy + Ord + Debug,
+    T: ElemT + Debug,
     S: SimdElem<T>,
 {
     fn decrease_key(&mut self, _: &mut KvCore<T, S>, _: T, _: T, _: T) {
@@ -56,7 +57,7 @@ pub struct SimpleDK<T> {
 
 impl<T, S> DecreaseKeyStrategy<T, S> for SimpleDK<T>
 where
-    T: Hash + Copy + Ord + Debug + Default,
+    T: Hash + ElemT + Debug + Default,
     S: SimdElem<T>,
 {
     fn decrease_key(&mut self, heap: &mut KvCore<T, S>, _: T, new_key: T, val: T) {
@@ -105,7 +106,7 @@ impl<T, S> Default for DelTokenSort<T, S> {
 
 impl<T, S> DecreaseKeyStrategy<T, S> for DelTokenSort<T, S>
 where
-    T: Copy + Ord + Debug,
+    T: ElemT + Debug,
     S: SimdElem<T>,
 {
     fn decrease_key(&mut self, heap: &mut KvCore<T, S>, old_key: T, new_key: T, val: T) {
@@ -189,7 +190,7 @@ where
 
 impl<T, S> DelTokenSort<T, S>
 where
-    T: Copy + Ord + Debug,
+    T: ElemT + Debug,
     S: SimdElem<T>,
 {
     fn clean_up(&mut self, heap: &mut KvCore<T, S>) {
@@ -286,7 +287,7 @@ impl<T, S, const ELEM_BYTES: usize> Default for DelTokenCountingBloom<T, S, ELEM
 impl<T, S, const ELEM_BYTES: usize> DecreaseKeyStrategy<T, S>
     for DelTokenCountingBloom<T, S, ELEM_BYTES>
 where
-    T: Copy + Ord + Debug,
+    T: ElemT + Debug,
     (T, T): ToBytes<ELEM_BYTES>,
     S: SimdElem<T>,
 {
@@ -371,7 +372,7 @@ where
 
 impl<T, S, const ELEM_BYTES: usize> DelTokenCountingBloom<T, S, ELEM_BYTES>
 where
-    T: Copy + Ord + Debug,
+    T: ElemT + Debug,
     (T, T): ToBytes<ELEM_BYTES>,
     S: SimdElem<T>,
 {

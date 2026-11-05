@@ -1,5 +1,9 @@
+use crate::ElemT;
 use crate::simd;
 use std::marker::PhantomData;
+use std::ptr;
+
+const MAX_BUCKETS: usize = 16;
 
 pub trait Partition<T, B> {
     fn partition<const MODE: usize>(
@@ -19,8 +23,8 @@ use simd::PIVOTS_LT;
 use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
 
 /// Implementation for a plain vector
-pub struct VecPartitioning<T, S>(PhantomData<T>, PhantomData<S>);
-impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
+pub struct VecPartitioning<T: ElemT, S>(PhantomData<T>, PhantomData<S>);
+impl<T: ElemT, S: simd::SimdElem<T>> VecPartitioning<T, S> {
     #[inline]
     /// Partition `cur_layer` into the `cur_layer` and `next_layer`.
     /// Elements equal to `pivot` can go either way.
@@ -60,35 +64,6 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
                 );
             }
         }
-
-        /*
-        for i in (0..half).step_by(S::L) {
-            unsafe {
-                S::partition_fast::<SPLIT>(
-                    S::simd_from_ptr(cur_layer_ptr.add(i)),
-                    threshold,
-                    pivot_pos,
-                    cur_layer_ptr,
-                    &mut cur_len,
-                    next_layer_ptr,
-                    &mut next_len,
-                );
-            }
-        }
-
-        for i in (half..n2).step_by(S::L) {
-            unsafe {
-                S::partition_fast::<PIVOTS_LT>(
-                    S::simd_from_ptr(cur_layer_ptr.add(i)),
-                    threshold,
-                    pivot_pos,
-                    cur_layer_ptr,
-                    &mut cur_len,
-                    next_layer_ptr,
-                    &mut next_len,
-                );
-            }
-        } */
 
         if n2 < n {
             unsafe {
@@ -205,5 +180,120 @@ impl<T: PartialEq + Copy, S: simd::SimdElem<T>> VecPartitioning<T, S> {
             next_key_layer.set_len(next_len);
             next_val_layer.set_len(next_len);
         }
+    }
+
+    fn radix_mask<const B: usize>(layer: &Vec<T>) -> usize {
+        let mut all_and = layer[0];
+        let mut all_or = layer[0];
+
+        for i in 1..layer.len() {
+            all_and &= layer[i];
+            all_or |= layer[i];
+        }
+
+        let diff = all_and ^ all_or;
+
+        if diff == T::zero() {
+            return 0;
+        }
+
+        let bits = T::zero().count_zeros() as usize;
+        let idx = bits - 1 - diff.leading_zeros() as usize;
+
+        let shift = (idx + 1).saturating_sub(B);
+
+        shift
+    }
+
+    pub fn radix_partition<const B: usize>(layers: &mut [Vec<T>]) -> Vec<T> {
+        let n = layers[0].len();
+
+        let num_buckets: usize = 2usize.pow(B as u32);
+        assert!(num_buckets <= MAX_BUCKETS);
+
+        let shift = Self::radix_mask::<B>(&layers[0]); // TODO: Use simd for this
+        if shift == 0 {
+            return vec![];
+        }
+
+        let v0 = layers[0][0];
+        let flip = T::min_value();
+        let bits = T::zero().count_zeros() as usize;
+
+        let simd_flip = S::splat(flip);
+        let simd_shift = S::splat(T::from(shift).unwrap());
+        let simd_nb_mask = S::splat(T::from(num_buckets - 1).unwrap());
+
+        debug_assert!(layers.len() == num_buckets);
+        debug_assert!(num_buckets >= 2);
+
+        // Reserve space in the next layers,
+        // and make sure the current layer can hold a spare SIMD register.
+        layers[0].reserve(S::L);
+        unsafe {
+            layers[0].set_len(n + S::L);
+        }
+
+        for i in 0..num_buckets {
+            layers[i].reserve(n + S::L);
+            unsafe { layers[i].set_len(n + S::L) };
+        }
+
+        let n2 = n.next_multiple_of(S::L).saturating_sub(S::L);
+
+        // Partition a list into `num_buckets` using SIMD and a radix style partitioning.
+        let mut lens = [0; MAX_BUCKETS];
+        let mut ptrs: [*mut T; MAX_BUCKETS] = [ptr::null_mut(); MAX_BUCKETS];
+
+        for k in 0..num_buckets {
+            ptrs[k] = layers[num_buckets - 1 - k].as_mut_ptr();
+        }
+
+        for i in (0..n2).step_by(S::L) {
+            unsafe {
+                S::partition_radix_fast::<B>(
+                    simd_flip,
+                    simd_shift,
+                    simd_nb_mask,
+                    S::simd_from_slice(layers[0].get_unchecked(i..i + S::L)),
+                    &mut ptrs[0..MAX_BUCKETS],
+                    &mut lens[0..MAX_BUCKETS],
+                );
+            }
+        }
+
+        if n2 < n {
+            unsafe {
+                S::partition_radix_slow::<B>(
+                    simd_flip,
+                    simd_shift,
+                    simd_nb_mask,
+                    S::simd_from_slice(layers[0].get_unchecked(n2..n)),
+                    S::splat(S::from_usize(n - n2)),
+                    &mut ptrs[0..MAX_BUCKETS],
+                    &mut lens[0..MAX_BUCKETS],
+                );
+            }
+        }
+
+        for k in 0..num_buckets {
+            unsafe {
+                layers[num_buckets - 1 - k].set_len(lens[k]);
+            }
+        }
+
+        let top = shift + B;
+        let base = if top >= bits {
+            T::zero()
+        } else {
+            ((v0 ^ flip) >> top) << top
+        };
+
+        let mut pivots = Vec::with_capacity(num_buckets - 1);
+        for j in 0..num_buckets - 1 {
+            let k = num_buckets - 1 - j;
+            pivots.push((base | (T::from(k).unwrap() << shift)) ^ flip);
+        }
+        pivots
     }
 }

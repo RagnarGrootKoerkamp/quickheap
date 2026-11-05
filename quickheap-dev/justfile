@@ -6,6 +6,9 @@ profile-neon:
 avx flags='':
     cd bench && cargo run -r -F avx512 {{flags}} --example simd
 
+exp flags='':
+    cd bench && cargo run -r {{flags}} --example experiments
+
 neon flag='':
     cd bench && cargo run -r -F neon {{flag}} --example neon
 

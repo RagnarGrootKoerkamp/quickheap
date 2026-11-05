@@ -3,6 +3,7 @@ use bench::{
     scalar_quickheap::{ScalarQuickHeap, Search},
 };
 
+use quickheap_dev::RadixSimdQuickHeap;
 use quickheap_dev::stats;
 
 use bench::workloads::{
@@ -40,6 +41,7 @@ fn run_variant<T: Elem, H: Heap<T>>(idx: &mut usize) {
         .replace("ConfigurableSimdQuickHeap", "SimdQH")
         .replace("ScalarQuickHeap", "ScalarQH")
         .replace("bench::scalar_quickheap::", "")
+        .replace("radix_quickheap::", "")
         .replace("quickheap::", "")
         .replace("quickheap_dev::", "")
         .replace("buckets::", "")
@@ -53,10 +55,9 @@ fn run_variant<T: Elem, H: Heap<T>>(idx: &mut usize) {
 
     println!("Run variant {}", heap_name);
 
-    let file = File::create(
-        String::from("./evals/data/variants/") + &idx.to_string() + "_" + &heap_name + ".csv",
-    )
-    .unwrap();
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("evals/data/variants");
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = File::create(dir.join(format!("{}_{}.csv", idx, heap_name))).unwrap();
 
     let mut writer = BufWriter::with_capacity(1 << 15, file);
 
@@ -99,8 +100,8 @@ fn run_variant_with_workload<T: Elem, H: Heap<T>, W: Workload>() -> WorkloadResu
 
     // TODO:
     // let ns: Vec<u64> = (13..=20).step_by(1).map(|i| (2u64).pow(i)).collect();
-    let ns: Vec<u64> = (15..=22).step_by(1).map(|i| (2u64).pow(i)).collect();
-    // let ns: Vec<u64> = vec![2u64.pow(22)];
+    let ns: Vec<u64> = (18..=24).step_by(2).map(|i| (2u64).pow(i)).collect();
+    // let ns: Vec<u64> = vec![2u64.pow(25)];
     // let ns: Vec<u64> = (10..=23).step_by(5).map(|i| (2u64).pow(i)).collect();
 
     const REPEATS: usize = 5;
@@ -166,15 +167,72 @@ fn main() {
     // cnt += 1;
 
     // Run the SIMD Variants
-    /* run_variant::<
+
+    run_variant::<
         i64, // Elem Type
         quickheap::SimdQuickHeap<
             i64,  // Elem Type
             Neon, // Simd
         >,
-    >(&mut cnt);*/
+    >(&mut cnt);
 
     cnt += 1;
+
+    run_variant::<
+        i64, // Elem Type
+        RadixSimdQuickHeap<
+            i64,  // Elem Type
+            Neon, // Simd
+            2,
+            1024,
+        >,
+    >(&mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i64, // Elem Type
+        RadixSimdQuickHeap<
+            i64,  // Elem Type
+            Neon, // Simd
+            2,
+            2048,
+        >,
+    >(&mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i32, // Elem Type
+        quickheap::SimdQuickHeap<
+            i32,  // Elem Type
+            Neon, // Simd
+        >,
+    >(&mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i32, // Elem Type
+        RadixSimdQuickHeap<
+            i32,  // Elem Type
+            Neon, // Simd
+            2,
+            1024,
+        >,
+    >(&mut cnt);
+
+    cnt += 1;
+
+    run_variant::<
+        i32, // Elem Type
+        RadixSimdQuickHeap<
+            i32,  // Elem Type
+            Neon, // Simd
+            2,
+            2048,
+        >,
+    >(&mut cnt);
 
     /* run_variant::<
         i64, // Elem Type
@@ -195,6 +253,8 @@ fn main() {
     >(&mut cnt); */
 
     cnt += 1;
+
+    /*
 
     run_variant::<
         i64, // Elem Type
@@ -236,5 +296,5 @@ fn main() {
             3,
             21,
         >,
-    >(&mut cnt);
+    >(&mut cnt); */
 }

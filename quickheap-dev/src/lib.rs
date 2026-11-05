@@ -17,6 +17,10 @@ pub mod pivot_strategies;
 pub mod rebalancing_strategies;
 
 #[doc(hidden)]
+pub mod radix_quickheap;
+pub use radix_quickheap::RadixSimdQuickHeap;
+
+#[doc(hidden)]
 pub mod buckets;
 
 mod simd_buckets;

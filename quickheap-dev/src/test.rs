@@ -1,10 +1,13 @@
 use std::cmp::Reverse;
 use std::ops::Sub;
 
+use quickheap::ElemT;
+
 use crate::{
     ConfigurableSimdQuickHeap, ElemConstraint, SimdElem,
     buckets::{block_partitioning::FlatPartitioning, vec_bucket::VecBucket},
     pivot_strategies::{EqualMultiMedianOfM, GeoMultiMedianOfM, MedianOfM},
+    radix_quickheap::RadixSimdQuickHeap,
     rebalancing_strategies::NoRebalancing,
 };
 
@@ -138,16 +141,18 @@ impl<T: GenElem> Generator<T> for MostlyMinGen {
 
 fn heapsort_with_gen<T, S, G, const L: usize>()
 where
-    T: GenElem + Default + Sub<Output = T> + ElemConstraint,
+    T: ElemT + GenElem + Default + Sub<Output = T> + ElemConstraint,
     S: SimdElem<T>,
     G: Generator<T>,
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
+        // let mut q = RadixSimdQuickHeap::<T, S, 2>::default();
+
         let mut q = <ConfigurableSimdQuickHeap<
             T,
-            VecBucket<T, 112, 128>,
-            FlatPartitioning<S, 112, 128>,
+            VecBucket<T>,
+            FlatPartitioning<S>,
             // ListBlockBucket<T, 112, 128>,
             // BlockedPartitioning<S, 112, 128>,
             S,
@@ -162,8 +167,9 @@ where
             112,
             128,
             true,
-            false,
-            3,
+            true,
+            2,
+            1024,
         >>::default();
 
         for _ in 0..n {
@@ -185,7 +191,7 @@ where
 
 fn wiggle_with_gen<T, S, G, const L: usize>()
 where
-    T: GenElem + Default + Sub<Output = T> + ElemConstraint,
+    T: ElemT + GenElem + Default + Sub<Output = T> + ElemConstraint,
     S: SimdElem<T>,
     G: Generator<T>,
 {
@@ -193,8 +199,8 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         let mut q1 = <ConfigurableSimdQuickHeap<
             T,
-            VecBucket<T, 112, 128>,
-            FlatPartitioning<S, 112, 128>,
+            VecBucket<T>,
+            FlatPartitioning<S>,
             // VecBlockBucket<T, 112, 128>,
             // ListBlockBucket<T, 112, 128>,
             // BlockedPartitioning<S, 112, 128>,
@@ -210,9 +216,13 @@ where
             112,
             128,
             true,
-            false,
-            3,
+            true,
+            2,
+            1024,
         >>::default();
+
+        // let mut q1 = RadixSimdQuickHeap::<T, S, 2>::default();
+
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 
         // (push pop push) xn
