@@ -520,7 +520,7 @@ fn implicit_equal_buckets() {
 }
 
 fn multiway() {
-    let mut heap_config = vec![
+    let heap_config = vec![
         HeapConfig {
             family: HeapFamily::SimdQH,
             config_simd: ConfigSimdQH::empty(),
@@ -572,13 +572,11 @@ fn multiway() {
         },
     ];
 
-    heap_config.reverse();
-
     let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
     let layer_measurement = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
 
     let mut e = Experiment {
-        name: "RadixSimdQH vs SimdQH".to_string(),
+        name: "Multiway Partitioning".to_string(),
         output_name: "multiway".to_string(),
         ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
@@ -958,8 +956,15 @@ fn main() {
     println!("| - - - - - - ENGINEERING QUICK HEAPS EXPERIMENTS - - - - - - |");
     println!("| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |");
 
-    // simd_qhs();
+    #[cfg(feature = "simd_qhs")]
+    simd_qhs();
+
+    #[cfg(feature = "implicit_equal_buckets")]
     implicit_equal_buckets();
+
+    #[cfg(feature = "multiway")]
+    multiway();
+
     // TODO: rebalancing();
     // TODO: finish/check multiway();
 }
@@ -967,10 +972,22 @@ fn main() {
 fn run(e: &mut Experiment) {
     println!("Run experiment: {}", e.name);
 
+    let backend_name;
+    #[cfg(target_arch = "aarch64")]
+    {
+        backend_name = "_neon";
+    }
+
+    #[cfg(target_feature = "avx2")]
+    {
+        backend_name = "_avx";
+    }
+
     // Create and open the file for the experiment
     let path = String::from(env!("CARGO_MANIFEST_DIR"))
         + &String::from("/evals/data/experiments/")
         + &e.output_name
+        + &backend_name
         + ".csv";
 
     let file = File::create(path).unwrap();

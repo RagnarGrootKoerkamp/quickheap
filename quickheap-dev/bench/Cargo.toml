@@ -10,6 +10,13 @@ layer_stats = ["quickheap-dev/layer_stats"]
 partition_stats = ["quickheap-dev/partition_stats"]
 entropy = ["quickheap-dev/entropy", "partition_stats"]
 
+
+
+# Features for individual experiments
+simd_qhs = []
+implicit_equal_buckets = ["layer_stats"]
+multiway = ["layer_stats"]
+
 # Enable SimdQuickHeap with AVX2 backend
 avx2 = []
 # Enable SimdQuickHeap with AVX-512 backend

@@ -77,21 +77,57 @@ def make_table(df, cfg):
     hm = cfg.get("heap_mappings", {})
     mm = cfg.get("metric_mappings", {})
     cols = cfg["table_cols"]
+    speedup = cfg.get("show_speedup", False)
+    sp_metric = cfg.get("speedup_metric", "nano_seconds")
+    sp_j = cols.index(sp_metric) if sp_metric in cols else None
+
     sub = df[(df["n"] == cfg["table_n"]) & (df["elem_type"] == cfg["table_type"]) &
              (df["workload"] == cfg["table_workload"]) &
              (df["simd_backend"] == cfg["table_backend"])]
-    caption = (f"$n = {cfg['table_n']}$, backend: {tex(cfg['table_backend'])}, "
+    heaps = list(dict.fromkeys(df["heap"]))
+
+    # values[heap][j] -> float or None
+    values = {}
+    for h in heaps:
+        row = sub[sub["heap"] == h]
+        values[h] = [float(row.iloc[0][c]) if len(row) else None for c in cols]
+
+    def fmt(v, bold=False):
+        if v is None:
+            return "--"
+        s = f"{v:.2f}"
+        return rf"\textbf{{{s}}}" if bold else s
+
+    best = []
+    for j in range(len(cols)):
+        present = [values[h][j] for h in heaps if values[h][j] is not None]
+        best.append(min(present) if present else None)
+
+    # reference = first heap with a value for the speedup metric
+    ref = None
+    if sp_j is not None:
+        ref = next((values[h][sp_j] for h in heaps if values[h][sp_j] is not None), None)
+
+    header = [tex(mm.get(c, c)) for c in cols]
+    if speedup and sp_j is not None:
+        header.append("Speedup")
+
+    caption = (f"type: {cfg['table_type']}, $n = {cfg['table_n']}$, "
+               f"backend: {tex(cfg['table_backend'])}, "
                f"workload: {tex(cfg['table_workload'])}")
     lines = [r"\begin{table}[ht]", r"\centering",
-             r"\begin{tabular}{l" + "r" * len(cols) + "}", r"\hline",
-             "Heap & " + " & ".join(tex(mm.get(c, c)) for c in cols) + r" \\", r"\hline"]
-    for heap in dict.fromkeys(df["heap"]):
-        row = sub[sub["heap"] == heap]
-        vals = [f"{row.iloc[0][c]:.2f}" if len(row) else "--" for c in cols]
-        lines.append(tex(hm.get(heap, heap)) + " & " + " & ".join(vals) + r" \\")
+             r"\begin{tabular}{l" + "r" * len(header) + "}", r"\hline",
+             "Heap & " + " & ".join(header) + r" \\", r"\hline"]
+    for h in heaps:
+        cells = [fmt(v, j == sp_j and v is not None and v == best[j])
+                 for j, v in enumerate(values[h])]
+        if speedup and sp_j is not None:
+            v = values[h][sp_j]
+            cells.append("--" if v is None or ref is None
+                         else rf"{ref / v:.2f}$\times$")
+        lines.append(tex(hm.get(h, h)) + " & " + " & ".join(cells) + r" \\")
     lines += [r"\hline", r"\end{tabular}",
-              rf"\caption{{{caption}}}",
-              rf"\label{{tab:{cfg['name']}}}",
+              rf"\caption{{{caption}}}", rf"\label{{tab:{cfg['name']}}}",
               r"\end{table}"]
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / f"{cfg['name']}_table.tex").write_text("\n".join(lines) + "\n")
