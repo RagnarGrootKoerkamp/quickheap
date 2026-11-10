@@ -31,22 +31,58 @@ fn prefetch_read<T>(p: *const T) {
     }
 }
 
+/// Hot-path check: one combined branch, and the actual spills only on the rare path.
+#[inline(always)]
+unsafe fn spill_if_needed<
+    T: ElemT,
+    B: BlockedBucket<T, K, CAP>,
+    S: simd::SimdElem<T>,
+    const K: usize,
+    const CAP: usize,
+>(
+    cur_layer: &mut B,
+    next_layer: &mut B,
+    cur_write_ptr: &mut *mut T,
+    cur_len: &mut usize,
+    next_write_ptr: &mut *mut T,
+    next_len: &mut usize,
+) {
+    // Non-short-circuiting `|` -> a single branch in the hot path.
+    if (*cur_len > K) | (*next_len > K) {
+        if *cur_len > K {
+            (*cur_write_ptr, *cur_len) =
+                unsafe { spill::<T, B, S, K, CAP>(cur_layer, *cur_write_ptr, *cur_len) };
+        }
+        if *next_len > K {
+            (*next_write_ptr, *next_len) =
+                unsafe { spill::<T, B, S, K, CAP>(next_layer, *next_write_ptr, *next_len) };
+        }
+    }
+}
+
 #[cold]
 #[inline(never)]
-unsafe fn spill<T: ElemT, B: BlockedBucket<T, K, CAP>, const K: usize, const CAP: usize>(
+unsafe fn spill<
+    T: ElemT,
+    B: BlockedBucket<T, K, CAP>,
+    S: simd::SimdElem<T>,
+    const K: usize,
+    const CAP: usize,
+>(
     bucket: &mut B,
-    ptr: &mut *mut T,
+    old: *mut T,
     len: usize,
-) -> usize {
+) -> (*mut T, usize) {
     let over = len - K; // < L, lives in the slack region
-    let old = *ptr;
+    // let old = *ptr;
     bucket.write_next();
-    *ptr = bucket.active_write();
+    let new = bucket.active_write();
+    // *ptr =
     unsafe {
-        ptr::copy_nonoverlapping(old.add(K), *ptr, over);
+        ptr::copy_nonoverlapping(old.add(K), new, S::L);
     }
 
-    over
+    (new, over)
 }
 
 impl<T: ElemT, B: FlatBucket<T>, S: simd::SimdElem<T>> Partition<T, B> for FlatPartitioning<S> {
@@ -249,12 +285,14 @@ impl<
                         next_write_ptr,
                         &mut next_len,
                     );
-                    if cur_len > K {
-                        cur_len = spill(cur_layer, &mut cur_write_ptr, cur_len);
-                    }
-                    if next_len > K {
-                        next_len = spill(next_layer, &mut next_write_ptr, next_len);
-                    }
+                    spill_if_needed::<T, B, S, K, CAP>(
+                        cur_layer,
+                        next_layer,
+                        &mut cur_write_ptr,
+                        &mut cur_len,
+                        &mut next_write_ptr,
+                        &mut next_len,
+                    );
                 }
                 i += S::L;
             }
@@ -275,14 +313,14 @@ impl<
                         next_write_ptr,
                         &mut next_len,
                     );
-
-                    if cur_len > K {
-                        cur_len = spill(cur_layer, &mut cur_write_ptr, cur_len);
-                    }
-
-                    if next_len > K {
-                        next_len = spill(next_layer, &mut next_write_ptr, next_len);
-                    }
+                    spill_if_needed::<T, B, S, K, CAP>(
+                        cur_layer,
+                        next_layer,
+                        &mut cur_write_ptr,
+                        &mut cur_len,
+                        &mut next_write_ptr,
+                        &mut next_len,
+                    );
                 }
             }
 
@@ -298,19 +336,34 @@ impl<
                         next_write_ptr,
                         &mut next_len,
                     );
-
-                    if cur_len > K {
-                        cur_len = spill(cur_layer, &mut cur_write_ptr, cur_len);
-                    }
-
-                    if next_len > K {
-                        next_len = spill(next_layer, &mut next_write_ptr, next_len);
-                    }
+                    spill_if_needed::<T, B, S, K, CAP>(
+                        cur_layer,
+                        next_layer,
+                        &mut cur_write_ptr,
+                        &mut cur_len,
+                        &mut next_write_ptr,
+                        &mut next_len,
+                    );
                 }
             }
         }
 
         cur_layer.set_last_block_len(cur_len);
         next_layer.set_last_block_len(next_len);
+    }
+}
+
+impl<
+    T: ElemT + Debug,
+    B: BlockedBucket<T, K, CAP>,
+    S: simd::SimdElem<T>,
+    const K: usize,
+    const CAP: usize,
+> MultiPartition<T, B> for BlockedPartitioning<S, K, CAP>
+{
+    #[inline(always)]
+    fn multi_partition<const P: usize>(layers: &mut [B], pivots: &[T], pivot_pos: [usize; P]) {
+        // Only implemented multi partition for flat bucket
+        unimplemented!()
     }
 }

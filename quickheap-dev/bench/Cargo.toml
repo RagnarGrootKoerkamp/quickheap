@@ -9,20 +9,22 @@ default = ["avx2", "ffi"]
 layer_stats = ["quickheap-dev/layer_stats"]
 partition_stats = ["quickheap-dev/partition_stats"]
 entropy = ["quickheap-dev/entropy", "partition_stats"]
-
-
+memory = []
 
 # Features for individual experiments
 simd_qhs = []
 implicit_equal_buckets = ["layer_stats"]
-multiway = ["layer_stats"]
+radix = ["layer_stats"]
+competitors = ["perf"]
+graphs = []
+decrease_key = ["memory"]
+pivots = ["layer_stats"]
+rebalancing = ["layer_stats"]
 
 # Enable SimdQuickHeap with AVX2 backend
 avx2 = []
 # Enable SimdQuickHeap with AVX-512 backend
 avx512 = ["avx2"]
-# Enable the AArch64 NEON measurement example and its partition counters.
-neon = ["partition_stats"]
 # Enable SequenceHeap and S3Q
 ffi = ["dep:s3q-sys", "dep:sequence-heap-sys", "dep:original-quickheap-sys", "dep:radix-heap-sys"]
 boost = ["dep:boost-heap-sys"]
@@ -59,13 +61,6 @@ original-quickheap-sys = { path = "../ext/original-quickheap-sys", optional = tr
 radix-heap-sys = { path = "../ext/radix-heap-sys", optional = true }
 
 # Specialized examples require their SIMD backend and optional instrumentation.
-[[example]]
-name = "simd"
-required-features = ["avx512"]
-
-[[example]]
-name = "neon"
-required-features = ["neon"]
 
 [[example]]
 name = "measure_rebal_speedup"

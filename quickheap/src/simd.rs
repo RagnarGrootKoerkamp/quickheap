@@ -2291,6 +2291,68 @@ macro_rules! avx2_partition_multi {
                 }
             }
         }
+
+        #[inline(always)]
+        unsafe fn partition_radix_fast<const B: usize>(
+            flip: Self::Simd,
+            shift: Self::Simd,
+            mask: Self::Simd,
+            vals: Self::Simd,
+            writes: &mut [*mut $t],
+            cnts: &mut [usize],
+        ) {
+            unsafe {
+                use core::arch::x86_64::*;
+                use std::mem::transmute;
+
+                let indices = ((vals ^ flip) >> shift) & mask;
+                let v: __m256i = transmute(vals);
+
+                for b in 0..(1usize << B) {
+                    let m = (indices.simd_eq(Self::splat(b as $t)).to_bitmask() as $mt) & $full;
+                    // table index = lanes to drop
+                    let key: __m256i = transmute($shuf[((!m) & $full) as usize]);
+                    _mm256_storeu_si256(
+                        writes[b].add(cnts[b]) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(v, key),
+                    );
+                    cnts[b] += m.count_ones() as usize;
+                }
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn partition_radix_slow<const B: usize>(
+            flip: Self::Simd,
+            shift: Self::Simd,
+            mask: Self::Simd,
+            vals: Self::Simd,
+            len: Self::Simd,
+            writes: &mut [*mut $t],
+            cnts: &mut [usize],
+        ) {
+            unsafe {
+                use core::arch::x86_64::*;
+                use std::mem::transmute;
+
+                let in_range = (len
+                    .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                    .to_bitmask() as $mt)
+                    & $full;
+                let indices = ((vals ^ flip) >> shift) & mask;
+                let v: __m256i = transmute(vals);
+
+                for b in 0..(1usize << B) {
+                    let m = (indices.simd_eq(Self::splat(b as $t)).to_bitmask() as $mt) & in_range;
+                    let key: __m256i = transmute($shuf[((!m) & $full) as usize]);
+                    _mm256_storeu_si256(
+                        writes[b].add(cnts[b]) as *mut __m256i,
+                        _mm256_permutevar8x32_epi32(v, key),
+                    );
+                    cnts[b] += m.count_ones() as usize;
+                }
+            }
+        }
     };
 }
 
@@ -2380,6 +2442,69 @@ macro_rules! avx512_partition_multi {
                     }
                     cnts[b] += m.count_ones() as usize;
                     prev = next;
+                }
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn partition_radix_fast<const B: usize>(
+            flip: Self::Simd,
+            shift: Self::Simd,
+            mask: Self::Simd,
+            vals: Self::Simd,
+            writes: &mut [*mut $t],
+            cnts: &mut [usize],
+        ) {
+            unsafe {
+                use core::arch::x86_64::*;
+                use std::mem::transmute;
+
+                let indices = ((vals ^ flip) >> shift) & mask;
+                let v: __m512i = transmute(vals);
+
+                for b in 0..(1usize << B) {
+                    let m = (indices.simd_eq(Self::splat(b as $t)).to_bitmask() as $mt) & $full;
+                    let dst = writes[b].add(cnts[b]);
+                    if CS {
+                        _mm512_storeu_si512(dst as *mut __m512i, $cz(m, v));
+                    } else {
+                        $cs(dst as *mut $ct, m, v);
+                    }
+                    cnts[b] += m.count_ones() as usize;
+                }
+            }
+        }
+
+        #[inline(always)]
+        unsafe fn partition_radix_slow<const B: usize>(
+            flip: Self::Simd,
+            shift: Self::Simd,
+            mask: Self::Simd,
+            vals: Self::Simd,
+            len: Self::Simd,
+            writes: &mut [*mut $t],
+            cnts: &mut [usize],
+        ) {
+            unsafe {
+                use core::arch::x86_64::*;
+                use std::mem::transmute;
+
+                let in_range = (len
+                    .simd_gt(<Self as SimdElem<$t>>::lane_indices())
+                    .to_bitmask() as $mt)
+                    & $full;
+                let indices = ((vals ^ flip) >> shift) & mask;
+                let v: __m512i = transmute(vals);
+
+                for b in 0..(1usize << B) {
+                    let m = (indices.simd_eq(Self::splat(b as $t)).to_bitmask() as $mt) & in_range;
+                    let dst = writes[b].add(cnts[b]);
+                    if CS {
+                        _mm512_storeu_si512(dst as *mut __m512i, $cz(m, v));
+                    } else {
+                        $cs(dst as *mut $ct, m, v);
+                    }
+                    cnts[b] += m.count_ones() as usize;
                 }
             }
         }

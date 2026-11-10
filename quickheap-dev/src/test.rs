@@ -5,10 +5,16 @@ use quickheap::ElemT;
 
 use crate::{
     ConfigurableSimdQuickHeap, ElemConstraint, SimdElem,
-    buckets::{block_partitioning::FlatPartitioning, vec_bucket::VecBucket},
+    buckets::{
+        block_partitioning::{BlockedPartitioning, FlatPartitioning},
+        list_block_bucket::ListBlockBucket,
+        vec_bucket::VecBucket,
+    },
     pivot_strategies::{EqualMultiMedianOfM, GeoMultiMedianOfM, MedianOfM},
     radix_quickheap::RadixSimdQuickHeap,
-    rebalancing_strategies::NoRebalancing,
+    rebalancing_strategies::{
+        ExponentialUpperBoundRebalancing, NoRebalancing, PivotForgetting, RandomizedRebalancing,
+    },
 };
 
 /// Element-type capabilities needed by the generators.
@@ -151,25 +157,25 @@ where
 
         let mut q = <ConfigurableSimdQuickHeap<
             T,
-            VecBucket<T>,
-            FlatPartitioning<S>,
-            // ListBlockBucket<T, 112, 128>,
-            // BlockedPartitioning<S, 112, 128>,
+            // VecBucket<T>,
+            // FlatPartitioning<S>,
+            ListBlockBucket<T, 224, 256>,
+            BlockedPartitioning<S, 224, 256>,
             S,
             MedianOfM<3>,
             EqualMultiMedianOfM<1>,
-            NoRebalancing,
+            // NoRebalancing,
             // NaiveLogRebalancing<4, 2048>,
             // PivotForgetting<3, 2048>,
             // ExponentialUpperBoundRebalancing,
-            // RandomizedRebalancing<128>,
+            RandomizedRebalancing<128>,
             16,
-            112,
-            128,
+            224,
+            256,
             true,
-            true,
+            false,
             2,
-            1024,
+            0,
         >>::default();
 
         for _ in 0..n {
@@ -199,26 +205,25 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         let mut q1 = <ConfigurableSimdQuickHeap<
             T,
-            VecBucket<T>,
-            FlatPartitioning<S>,
-            // VecBlockBucket<T, 112, 128>,
-            // ListBlockBucket<T, 112, 128>,
-            // BlockedPartitioning<S, 112, 128>,
+            // VecBucket<T>,
+            // FlatPartitioning<S>,
+            ListBlockBucket<T, 224, 256>,
+            BlockedPartitioning<S, 224, 256>,
             S,
             MedianOfM<3>,
-            EqualMultiMedianOfM<2>,
-            NoRebalancing,
+            EqualMultiMedianOfM<1>,
+            // NoRebalancing,
             // NaiveLogRebalancing<4, 2048>,
             // PivotForgetting<3, 2048>,
             // ExponentialUpperBoundRebalancing,
-            // RandomizedRebalancing<128>,
+            RandomizedRebalancing<128>,
             16,
-            112,
-            128,
+            224,
+            256,
             true,
-            true,
+            false,
             2,
-            1024,
+            0,
         >>::default();
 
         // let mut q1 = RadixSimdQuickHeap::<T, S, 2>::default();

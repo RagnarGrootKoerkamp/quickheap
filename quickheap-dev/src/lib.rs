@@ -69,93 +69,36 @@ pub trait ElemConstraint {
     fn to_usize(&self) -> usize;
 }
 
-impl ElemConstraint for i32 {
-    fn one() -> Self {
-        1
-    }
+macro_rules! impl_elem_constraint {
+    ($t: ty) => {
+        impl ElemConstraint for $t {
+            fn one() -> Self {
+                1
+            }
 
-    fn minimum() -> Self {
-        i32::MIN
-    }
+            fn minimum() -> Self {
+                <$t>::MIN
+            }
 
-    fn maximum() -> Self {
-        i32::MAX
-    }
+            fn maximum() -> Self {
+                <$t>::MAX
+            }
 
-    fn dec(&self) -> Self {
-        self.saturating_sub(1)
-    }
+            fn dec(&self) -> Self {
+                self.saturating_sub(1)
+            }
 
-    fn to_usize(&self) -> usize {
-        *self as usize
-    }
+            fn to_usize(&self) -> usize {
+                *self as usize
+            }
+        }
+    };
 }
 
-impl ElemConstraint for i64 {
-    fn one() -> Self {
-        1
-    }
-
-    fn minimum() -> Self {
-        i64::MIN
-    }
-
-    fn maximum() -> Self {
-        i64::MAX
-    }
-
-    fn dec(&self) -> Self {
-        self.saturating_sub(1)
-    }
-
-    fn to_usize(&self) -> usize {
-        *self as usize
-    }
-}
-
-impl ElemConstraint for u32 {
-    fn one() -> Self {
-        1
-    }
-
-    fn minimum() -> Self {
-        0
-    }
-
-    fn maximum() -> Self {
-        u32::MAX
-    }
-
-    fn dec(&self) -> Self {
-        self.saturating_sub(1)
-    }
-
-    fn to_usize(&self) -> usize {
-        *self as usize
-    }
-}
-
-impl ElemConstraint for u64 {
-    fn one() -> Self {
-        1
-    }
-
-    fn minimum() -> Self {
-        0
-    }
-
-    fn maximum() -> Self {
-        u64::MAX
-    }
-
-    fn dec(&self) -> Self {
-        self.saturating_sub(1)
-    }
-
-    fn to_usize(&self) -> usize {
-        *self as usize
-    }
-}
+impl_elem_constraint!(i32);
+impl_elem_constraint!(i64);
+impl_elem_constraint!(u32);
+impl_elem_constraint!(u64);
 
 /// The full SimdQuickHeap implementation, with all configuration parameters.
 ///
@@ -396,7 +339,7 @@ impl<
 
         let layer = &mut self.buckets[target_layer];
 
-        if !self.equal_buckets[target_layer]
+        if (!EQUAL || !self.equal_buckets[target_layer])
             && SORT
             && target_layer == self.pivots.len()
             && layer.len() < N
@@ -500,12 +443,12 @@ impl<
 
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].len() > N {
-            while !self.equal_buckets[self.pivots.len()]
+            while (!EQUAL || !self.equal_buckets[self.pivots.len()])
                 && self.buckets[self.pivots.len()].len() > N
             {
                 self.partition(self.pivots.len());
             }
-            if !self.equal_buckets[self.pivots.len()] && SORT {
+            if (!EQUAL || !self.equal_buckets[self.pivots.len()]) && SORT {
                 // Sort final layer decreasing.
                 let layer = &mut self.buckets[self.pivots.len()];
                 layer.sort_decreasing();
@@ -514,7 +457,7 @@ impl<
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.pivots.len()];
         debug_assert!(!layer.is_empty());
-        let min = if SORT || self.equal_buckets[self.pivots.len()] {
+        let min = if SORT || (EQUAL && self.equal_buckets[self.pivots.len()]) {
             layer.pop().unwrap()
         } else {
             let min_pos = simd_buckets::position_min_bucket::<T, S, B, K, CAP>(layer);
@@ -523,11 +466,14 @@ impl<
 
         // Update the active layer.
         if !R::ALLOW_EMPTY_LAYERS && layer.is_empty() && self.pivots.len() > 0 {
-            self.equal_buckets[self.pivots.len()] = false;
+            if EQUAL {
+                self.equal_buckets[self.pivots.len()] = false;
+            }
+
             self.pivots.pop();
 
             // Sort the new final layer decreasing if it's already small.
-            if !self.equal_buckets[self.pivots.len()]
+            if (!EQUAL || !self.equal_buckets[self.pivots.len()])
                 && SORT
                 && self.buckets[self.pivots.len()].len() <= N
             {
@@ -570,7 +516,7 @@ impl<
         }
     }
 
-    #[inline(never)]
+    #[inline(always)]
     fn dual_partition(&mut self, layer: usize) {
         let total_layers = self.pivots.len() + 1;
 
@@ -580,7 +526,9 @@ impl<
         }
 
         if layer == (total_layers - 1) && total_layers == self.buckets.len() {
-            self.equal_buckets.push(false);
+            if EQUAL {
+                self.equal_buckets.push(false);
+            }
             self.buckets.push(B::default(self.free_arena));
         }
 
@@ -607,8 +555,10 @@ impl<
         }
 
         // Clear the next layer
-        debug_assert!(self.equal_buckets[layer + 1] == false);
-        debug_assert!(self.equal_buckets[layer] == false);
+        if EQUAL {
+            debug_assert!(self.equal_buckets[layer + 1] == false);
+            debug_assert!(self.equal_buckets[layer] == false);
+        }
         next_layer.clear();
 
         if EQUAL && (layer > 0) && self.pivots[layer] == self.pivots[layer - 1] {
@@ -664,11 +614,15 @@ impl<
 
             std::mem::swap(cur_layer, next_layer);
             if replace {
-                self.equal_buckets[layer] = false;
+                if EQUAL {
+                    self.equal_buckets[layer] = false;
+                }
                 self.pivots[layer] = old_pivot;
             } else {
                 debug_assert!(layer == self.pivots.len() - 1);
-                self.equal_buckets[layer] = false;
+                if EQUAL {
+                    self.equal_buckets[layer] = false;
+                }
                 self.pivots.pop();
             }
             return;
@@ -680,7 +634,7 @@ impl<
         }
     }
 
-    #[inline(never)]
+    #[inline(always)]
     fn multi_partition(&mut self) {
         let total_layers = self.pivots.len() + 1;
 
@@ -690,7 +644,9 @@ impl<
         }
 
         while self.buckets.len() < total_layers + P - 1 {
-            self.equal_buckets.push(false);
+            if EQUAL {
+                self.equal_buckets.push(false);
+            }
             self.buckets.push(B::default(self.free_arena));
         }
 
@@ -751,21 +707,5 @@ impl<
                 stats::partition_stats::entropy::<P>(n, &layer_sizes);
             }
         }
-    }
-
-    pub fn introspect(&self) {
-        println!("#buckets: {} #elements: {}", self.buckets.len(), self.size);
-
-        println!("Pivots: {:?}", self.pivots);
-
-        for i in 0..self.pivots.len() {
-            println!(
-                "Size: {}, Pivot: {:?}",
-                self.buckets[i].len(),
-                self.pivots[i]
-            );
-        }
-
-        println!("Size: {}", self.buckets[self.pivots.len()].len());
     }
 }

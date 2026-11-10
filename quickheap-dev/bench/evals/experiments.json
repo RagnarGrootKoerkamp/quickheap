@@ -1,49 +1,103 @@
-[{
-  "name": "implicit_equal_buckets",
-  "heap_mappings":
-    {
-      "SimdQuickHeap": "SQH",
-      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH-no-equal",
-      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "CSQH-equal"
+[
+  {
+    "name": "simd_qhs",
+    "heap_mappings":
+      {
+        "SimdQuickHeap": "SQH",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH"
+      },
+    "heap_colors": {
+      "SimdQuickHeap": "xkcd:salmon",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:navy blue"
     },
-  "heap_colors": {
-    "SimdQuickHeap": "xkcd:salmon",
-    "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:navy blue",
-    "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "xkcd:peach"
+    "metric_mappings": {"nano_seconds": "ns/op"},
+    "plot_by": ["nano_seconds"],
+    "plot_types": ["i32", "i64"],
+    "table_n": 16777216,
+    "table_type": "i64",
+    "table_workload": "MonotoneConstantSize",
+    "table_backend": "Avx512",
+    "table_cols": ["nano_seconds"],
+    "show_speedup": true,
+    "speedup_metric": "nano_seconds"
   },
-  "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
-  "plot_by": ["nano_seconds"],
-  "plot_types": ["i32", "i64"],
-  "table_n": 1048576,
-  "table_type": "i64",
-  "table_workload": "RandomConstantSizeManyEqual",
-  "table_backend": "Neon",
-  "table_cols": ["nano_seconds", "median_layers"],
-  "show_speedup": true,
-  "speedup_metric": "nano_seconds"
-},
-{
-  "name": "multiway",
-  "heap_mappings":
-    {
-      "SimdQuickHeap": "SQH",
-      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4,1024>": "Multi4,1024",
-      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4,0>": "Multi4,2024"
+  {
+    "name": "implicit_equal_buckets",
+    "heap_mappings":
+      {
+        "SimdQuickHeap": "SQH",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH-no-equal",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "CSQH-equal"
+      },
+    "heap_colors": {
+      "SimdQuickHeap": "xkcd:salmon",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:navy blue",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "xkcd:peach"
     },
-  "heap_colors": {
-    "SimdQuickHeap": "xkcd:salmon",
-    "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:navy blue",
-    "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,Neon,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "xkcd:peach"
+    "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
+    "plot_by": ["nano_seconds"],
+    "plot_types": ["i32", "i64"],
+    "table_n": 1048576,
+    "table_type": "i64",
+    "table_workload": "RandomConstantSizeManyEqual",
+    "table_backend": "Avx512",
+    "table_cols": ["nano_seconds", "median_layers"],
+    "show_speedup": true,
+    "speedup_metric": "nano_seconds"
   },
-  "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
-  "plot_by": ["nano_seconds"],
-  "plot_types": ["i32", "i64"],
-  "table_n": 33554432,
-  "table_type": "i64",
-  "table_workload": "MonotoneConstantSize",
-  "table_backend": "Neon",
-  "table_cols": ["nano_seconds", "median_layers"],
-  "show_speedup": true,
-  "speedup_metric": "nano_seconds"
-}
+  {
+      "name": "radix",
+      "heap_mappings":
+        {
+          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH",
+          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4>": "Multi1024",
+          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,128,128,true,false,4,2048>": "Multi2048",
+          "RadixSimdQuickHeap<2,1024>": "Radix1024",
+          "RadixSimdQuickHeap<2,2048>": "Radix2048"
+        },
+      "heap_colors": {
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:goldenrod",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4>": "xkcd:navy blue",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,128,128,true,false,4,2048>": "xkcd:grey blue",
+        "RadixSimdQuickHeap<2,1024>": "xkcd:light olive",
+        "RadixSimdQuickHeap<2,2048>": "xkcd:olive drab"
+      },
+      "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
+      "plot_by": ["nano_seconds"],
+      "plot_types": ["i32", "i64"],
+      "table_n": 33554432,
+      "table_type": "i64",
+      "table_workload": "MonotoneConstantSize",
+      "table_backend": "Avx512",
+      "table_cols": ["nano_seconds", "median_layers"],
+      "show_speedup": true,
+      "speedup_metric": "nano_seconds"
+    },
+    {
+      "name": "rebalancing",
+      "heap_mappings":
+        {
+          "SimdQuickHeap": "SQH",
+          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH",
+          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,PivotForgetting<2,256>,16,0,0,true,false,2,0>": "PF-Flat",
+          "ConfigurableSimdQuickHeap<ListBlockBucket<224,256>,BlockedPartitioning<224,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,PivotForgetting<2,256>,16,224,256,true,false,2,0>": "PF-Block",
+          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,RandomizedRebalancing<128>,16,0,0,true,false,2,0>": "RR-Flat",
+          "ConfigurableSimdQuickHeap<ListBlockBucket<224,256>,BlockedPartitioning<224,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,RandomizedRebalancing<128>,16,224,256,true,false,2,0>": "RR-Block"
+        },
+      "heap_colors": {
+        "SimdQuickHeap": "xkcd:salmon",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:navy blue",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "xkcd:peach"
+      },
+      "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
+      "plot_by": ["nano_seconds"],
+      "plot_types": ["i32", "i64"],
+      "table_n": 1048576,
+      "table_type": "i64",
+      "table_workload": "MostlyPushDecreasing",
+      "table_backend": "Avx512",
+      "table_cols": ["nano_seconds", "median_layers"],
+      "show_speedup": true,
+      "speedup_metric": "nano_seconds"
+    }
 ]

@@ -77,8 +77,8 @@ pub trait ElemT: PartialEq + PrimInt + BitAndAssign + BitOrAssign {}
 impl<T: PartialEq + PrimInt + BitAndAssign + BitOrAssign> ElemT for T {}
 
 /* Constants for development testing */
-const SIMD_INSERT: bool = true;
-const LOWEST_LAYER_SIZE: usize = 32;
+const SIMD_INSERT: bool = false; // TODO: Test again
+const LOWEST_LAYER_SIZE: usize = 16;
 
 /// The default Simd backend, decided at compile time based on the target architecture.
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]

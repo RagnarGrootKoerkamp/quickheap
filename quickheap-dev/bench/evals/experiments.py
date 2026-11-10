@@ -26,7 +26,15 @@ def tex(s):
 
 
 def load(name):
-    df = pd.read_csv(DATA_DIR / f"{name}.csv", quotechar='"')
+    frames = []
+    for suffix in ("neon", "avx"):
+        path = DATA_DIR / f"{name}_{suffix}.csv"
+        if path.exists():
+            frames.append(pd.read_csv(path, quotechar='"'))
+    if not frames:
+        raise FileNotFoundError(
+            f"No data found: {DATA_DIR / (name + '_neon.csv')} or {DATA_DIR / (name + '_avx.csv')}")
+    df = pd.concat(frames, ignore_index=True)
     dup = df.duplicated(subset=KEY_COLS)
     if dup.any():
         raise ValueError(f"Duplicate rows:\n{df[dup][KEY_COLS]}")

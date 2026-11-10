@@ -1,10 +1,10 @@
 use std::{cmp::Reverse, collections::BTreeSet};
 
 use crate::simd::SimdElem;
-use crate::{KvSimdQuickHeap, SimdQuickHeap};
+use crate::{ElemT, KvSimdQuickHeap, SimdQuickHeap};
 
 /// Element-type capabilities needed by the generators.
-trait GenElem: Copy + Ord + std::fmt::Debug {
+trait GenElem: ElemT + Copy + Ord + std::fmt::Debug {
     fn gen_random() -> Self;
     fn gen_min() -> Self;
     fn gen_max() -> Self;
@@ -140,7 +140,7 @@ trait TestHeap<T>: Sized {
     fn len(&self) -> usize;
 }
 
-impl<T: GenElem + Default, S: SimdElem<T>> TestHeap<T> for SimdQuickHeap<T, S> {
+impl<T: ElemT + GenElem + Default, S: SimdElem<T>> TestHeap<T> for SimdQuickHeap<T, S> {
     fn new() -> Self {
         Self::default()
     }

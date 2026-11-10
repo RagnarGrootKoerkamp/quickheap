@@ -205,11 +205,11 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
     fn min(&mut self) -> (T, usize) {
         debug_assert!(self.total_size > 0);
 
-        unreachable!();
+        //unreachable!();
 
-        if !self.valid_min_max {
-            self.recompute_min_max();
-        }
+        //if !self.valid_min_max {
+        self.recompute_min_max();
+        //}
 
         (self.min, self.min_pos)
     }
@@ -218,11 +218,11 @@ impl<T: Copy + Default + Ord + Debug + ElemConstraint, const K: usize, const CAP
     fn max(&mut self) -> (T, usize) {
         debug_assert!(self.total_size > 0);
 
-        unreachable!();
+        // unreachable!();
 
-        if !self.valid_min_max {
-            self.recompute_min_max();
-        }
+        // if !self.valid_min_max {
+        self.recompute_min_max();
+        //}
 
         (self.max, self.max_pos)
     }

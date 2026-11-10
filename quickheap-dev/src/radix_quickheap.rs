@@ -239,16 +239,6 @@ impl<T: ElemT + Default + Debug, S: simd::SimdElem<T>, const B: usize, const L: 
                 self.pivots.remove(p);
             }
         }
-
-        /*
-        // Remove the empty layers that are created in between
-        let last_layer_idx = self.pivots.len();
-        for b in 0..num_buckets {
-            if self.buckets[last_layer_idx - b].is_empty() && (last_layer_idx - b) > 0 {
-                self.buckets.remove(last_layer_idx - b);
-                self.pivots.remove(last_layer_idx - 1 - b);
-            }
-        } */
     }
 
     #[inline(always)]

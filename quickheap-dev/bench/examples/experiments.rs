@@ -1,3 +1,9 @@
+#[cfg(feature = "perf")]
+use perfcnt::{
+    AbstractPerfCounter, PerfCounter,
+    linux::{HardwareEventType, PerfCounterBuilderLinux},
+};
+
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::time;
@@ -13,8 +19,10 @@ use quickheap_dev::RadixSimdQuickHeap;
 
 use quickheap_dev::{
     buckets::{
-        block_partitioning::FlatPartitioning, list_block_bucket::ListBlockBucket,
-        vec_block_bucket::VecBlockBucket, vec_bucket::VecBucket,
+        block_partitioning::{BlockedPartitioning, FlatPartitioning},
+        list_block_bucket::ListBlockBucket,
+        vec_block_bucket::VecBlockBucket,
+        vec_bucket::VecBucket,
     },
     pivot_strategies::{
         EqualMultiMedianOfM, GeoMultiMedianOfM, MedianOfM, RandomPivot, TablePivot,
@@ -196,6 +204,110 @@ impl MetricMeasurement<usize> for MeasureLayerStats {
     }
 }
 
+#[cfg(feature = "perf")]
+struct MeasurePerfStats {
+    cache: PerfCounter,
+    instructions: PerfCounter,
+    cycles: PerfCounter,
+
+    cache_measures: Vec<f64>,
+    ipc_measures: Vec<f64>,
+
+    cache_misses: f64,
+    ipc: f64,
+}
+#[cfg(feature = "perf")]
+impl MetricMeasurement<String> for MeasurePerfStats {
+    fn new() -> Self
+    where
+        Self: Sized,
+    {
+        Self {
+            cache: PerfCounterBuilderLinux::from_hardware_event(HardwareEventType::CacheMisses)
+                .exclude_kernel()
+                .finish()
+                .expect("Could not create the cache counter."),
+            instructions: PerfCounterBuilderLinux::from_hardware_event(
+                HardwareEventType::Instructions,
+            )
+            .exclude_kernel()
+            .finish()
+            .expect("Could not create the instruction counter."),
+            cycles: PerfCounterBuilderLinux::from_hardware_event(HardwareEventType::CPUCycles)
+                .exclude_kernel()
+                .finish()
+                .expect("Could not create the cycle counter."),
+            cache_measures: vec![],
+            ipc_measures: vec![],
+            cache_misses: 0f64,
+            ipc: 0f64,
+        }
+    }
+
+    fn start(&mut self) {
+        self.cache
+            .start()
+            .expect("Could not start cache miss counter");
+        self.instructions
+            .start()
+            .expect("Could not start instructions counter");
+        self.cycles.start().expect("Could not start cycle counter");
+    }
+
+    fn reset(&mut self) {
+        self.cache_measures.clear();
+        self.ipc_measures.clear();
+
+        self.cache
+            .reset()
+            .expect("Could not reset cache miss counter");
+        self.instructions
+            .reset()
+            .expect("Could not reset instructions counter");
+        self.cycles.reset().expect("Could not reset cycle counter");
+    }
+
+    fn stop(&mut self, _: &HeapStats) {
+        self.cache
+            .stop()
+            .expect("Could not stop cache miss counter");
+        self.instructions
+            .stop()
+            .expect("Could not stop instructions counter");
+        self.cycles.stop().expect("Could not stop cycle counter");
+
+        let cache_misses = self
+            .cache
+            .read()
+            .expect("Could not read cache miss counter") as f64;
+        let instructions = self
+            .instructions
+            .read()
+            .expect("Could not read instructions counter") as f64;
+        let cycles = self.cycles.read().expect("Could not read cycle counter") as f64;
+
+        self.cache_measures.push(cache_misses);
+        self.ipc_measures.push(instructions / cycles);
+    }
+
+    fn get(&self) -> String {
+        format!("{:.2},{:.1}", self.cache_misses, self.ipc)
+    }
+
+    fn get_name(&self) -> String {
+        "cache_misses,ipc".to_string()
+    }
+
+    fn norm_by_ops(&mut self, ops: usize) {
+        let num_measures = self.cache_measures.len();
+        self.cache_measures.sort_by(|a, b| a.total_cmp(b));
+        self.ipc_measures.sort_by(|a, b| a.total_cmp(b));
+
+        self.ipc = self.ipc_measures[num_measures / 2];
+        self.cache_misses = self.cache_measures[num_measures / 2] / ops as f64;
+    }
+}
+
 /*
 struct PartitionStats {}
 struct MeasurePartitionStats {
@@ -263,7 +375,7 @@ pub enum Work {
     Heapsort,
     MonotoneCS,
     RandomManyEqual,
-    MostlyPush,
+    MostlyPushDecreasing,
     // RandomCS,
     // MonotoneW,
     // RandomW,
@@ -277,8 +389,6 @@ pub struct ConfigSimdQH {
     multi_pivot: Pivots,
     rebal: Rebalancing,
     n: usize,
-    k: usize,
-    cap: usize,
     sort: bool,
     equal: bool,
     p: usize,
@@ -293,8 +403,6 @@ impl ConfigSimdQH {
             multi_pivot: Pivots::InvalPivot,
             rebal: Rebalancing::InvalRebal,
             n: 0,
-            k: 0,
-            cap: 0,
             sort: false,
             equal: false,
             p: 0,
@@ -342,12 +450,16 @@ pub enum Pivots {
 pub enum Rebalancing {
     InvalRebal,
     NoRebal,
+    PivotForgetting,
+    RandomizedRebalancing,
+    ExponentialUpperBound,
 }
 
 pub enum AnyMeasurement {
     Usize(Box<dyn MetricMeasurement<usize>>),
     U128(Box<dyn MetricMeasurement<u128>>),
     F64(Box<dyn MetricMeasurement<f64>>),
+    String(Box<dyn MetricMeasurement<String>>),
 }
 
 impl AnyMeasurement {
@@ -356,6 +468,7 @@ impl AnyMeasurement {
             Self::Usize(b) => b.reset(),
             Self::U128(b) => b.reset(),
             Self::F64(b) => b.reset(),
+            Self::String(b) => b.reset(),
         }
     }
 
@@ -364,6 +477,7 @@ impl AnyMeasurement {
             Self::Usize(b) => b.start(),
             Self::U128(b) => b.start(),
             Self::F64(b) => b.start(),
+            Self::String(b) => b.start(),
         }
     }
 
@@ -372,6 +486,7 @@ impl AnyMeasurement {
             Self::Usize(b) => b.stop(stats),
             Self::U128(b) => b.stop(stats),
             Self::F64(b) => b.stop(stats),
+            Self::String(b) => b.stop(stats),
         }
     }
 
@@ -380,6 +495,7 @@ impl AnyMeasurement {
             Self::Usize(b) => b.norm_by_ops(n),
             Self::U128(b) => b.norm_by_ops(n),
             Self::F64(b) => b.norm_by_ops(n),
+            Self::String(b) => b.norm_by_ops(n),
         }
     }
 
@@ -397,6 +513,10 @@ impl AnyMeasurement {
                 let r = b.get();
                 format!("{:.2}", r)
             }
+            Self::String(b) => {
+                let r = b.get();
+                format!("{}", r)
+            }
         }
     }
 
@@ -405,6 +525,7 @@ impl AnyMeasurement {
             Self::Usize(b) => b.get_name(),
             Self::U128(b) => b.get_name(),
             Self::F64(b) => b.get_name(),
+            Self::String(b) => b.get_name(),
         }
     }
 }
@@ -419,6 +540,7 @@ pub struct Experiment {
     metrics: Vec<AnyMeasurement>,
 }
 
+#[cfg(feature = "simd_qhs")]
 fn simd_qhs() {
     let heap_config = vec![
         HeapConfig {
@@ -434,8 +556,6 @@ fn simd_qhs() {
                 multi_pivot: EqualMedianOf2,
                 rebal: Rebalancing::NoRebal,
                 n: 16,
-                k: 0,
-                cap: 0,
                 sort: true,
                 equal: false,
                 p: 2,
@@ -452,7 +572,7 @@ fn simd_qhs() {
         output_name: "simd_qhs".to_string(),
         ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
-        workloads: vec![Work::Heapsort, Work::MonotoneCS],
+        workloads: vec![Work::MonotoneCS],
         types: vec![Type::I32, Type::I64],
         metrics: vec![nano_timer],
     };
@@ -460,13 +580,9 @@ fn simd_qhs() {
     run(&mut e);
 }
 
+#[cfg(feature = "implicit_equal_buckets")]
 fn implicit_equal_buckets() {
     let heap_config = vec![
-        HeapConfig {
-            family: HeapFamily::SimdQH,
-            config_simd: ConfigSimdQH::empty(),
-            config_radix: ConfigRadixQH::empty(),
-        },
         HeapConfig {
             family: HeapFamily::ConfigSimdQH,
             config_simd: ConfigSimdQH {
@@ -475,8 +591,6 @@ fn implicit_equal_buckets() {
                 multi_pivot: EqualMedianOf2,
                 rebal: Rebalancing::NoRebal,
                 n: 16,
-                k: 0,
-                cap: 0,
                 sort: true,
                 equal: false,
                 p: 2,
@@ -492,8 +606,6 @@ fn implicit_equal_buckets() {
                 multi_pivot: EqualMedianOf2,
                 rebal: Rebalancing::NoRebal,
                 n: 16,
-                k: 0,
-                cap: 0,
                 sort: true,
                 equal: true,
                 p: 2,
@@ -519,11 +631,149 @@ fn implicit_equal_buckets() {
     run(&mut e);
 }
 
-fn multiway() {
+#[cfg(feature = "rebalancing")]
+fn rebalancing() {
     let heap_config = vec![
         HeapConfig {
             family: HeapFamily::SimdQH,
             config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::Vec,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::NoRebal,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::Vec,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::PivotForgetting,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::ListBlock,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::PivotForgetting,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigRadixQH::empty(),
+        },
+        /* HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::Vec,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::ExponentialUpperBound,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigRadixQH::empty(),
+        }, */
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::Vec,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::RandomizedRebalancing,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::ListBlock,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::RandomizedRebalancing,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigRadixQH::empty(),
+        },
+    ];
+
+    // NoRebalancing,
+    // PivotForgetting<3, 2048>,
+    // ExponentialUpperBoundRebalancing,
+    // RandomizedRebalancing<128>,
+
+    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+    let layer_measure = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+    let memory_measure = AnyMeasurement::F64(Box::new(MemoryConsumption::new()));
+
+    let mut e = Experiment {
+        name: "Rebalancing".to_string(),
+        output_name: "rebalancing".to_string(),
+        ns: (16..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        heaps: heap_config,
+        workloads: vec![Work::MonotoneCS, Work::MostlyPushDecreasing],
+        types: vec![Type::I32, Type::I64],
+        metrics: vec![nano_timer, layer_measure, memory_measure],
+    };
+
+    run(&mut e);
+}
+
+#[cfg(feature = "radix")]
+fn radix() {
+    let heap_config = vec![
+        HeapConfig {
+            family: HeapFamily::SimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::Vec,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::NoRebal,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
             config_radix: ConfigRadixQH::empty(),
         },
         HeapConfig {
@@ -544,8 +794,6 @@ fn multiway() {
                 multi_pivot: EqualMedianOf2,
                 rebal: Rebalancing::NoRebal,
                 n: 16,
-                k: 0,
-                cap: 0,
                 sort: true,
                 equal: false,
                 p: 4,
@@ -561,8 +809,6 @@ fn multiway() {
                 multi_pivot: EqualMedianOf2,
                 rebal: Rebalancing::NoRebal,
                 n: 16,
-                k: 0,
-                cap: 0,
                 sort: true,
                 equal: false,
                 p: 4,
@@ -576,8 +822,8 @@ fn multiway() {
     let layer_measurement = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
 
     let mut e = Experiment {
-        name: "Multiway Partitioning".to_string(),
-        output_name: "multiway".to_string(),
+        name: "Radix Partitioning".to_string(),
+        output_name: "raidx".to_string(),
         ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
@@ -590,6 +836,7 @@ fn multiway() {
 
 fn sanitize(s: String) -> String {
     s.replace("simd::", "")
+        .replace(" ", "")
         .replace("radix_quickheap::", "")
         .replace("quickheap_dev::", "")
         .replace("quickheap::", "")
@@ -607,7 +854,7 @@ fn sanitize(s: String) -> String {
         .replace("block_partitioning::", "")
         .replace("bench::", "")
         .replace("workloads::", "")
-        .replace(" ", "")
+        .replace("list_block_bucket::", "")
 }
 
 fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
@@ -656,7 +903,15 @@ fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
         result.push_str(std::any::type_name::<W>());
         result.push_str(",");
         result.push_str("\"");
-        result.push_str(std::any::type_name::<H>());
+        result.push_str(
+            &std::any::type_name::<H>()
+                .replace("<Avx2>", "")
+                .replace("<Avx512>", "")
+                .replace("<Neon>", "")
+                .replace("Avx2,", "")
+                .replace("Neon", "")
+                .replace("Avx512,", ""),
+        );
         result.push_str("\"");
 
         for metric in e.metrics.iter_mut() {
@@ -702,21 +957,6 @@ macro_rules! dispatch_radix {
     };
 }
 
-/*
-*
-bucket: Buckets,
-pivot: Pivots,
-multi_pivot: Pivots,
-rebal: Rebalancing,
-n: usize,
-k: usize,
-cap: usize,
-sort: bool,
-equal: bool,
-p: usize,
-multi_thresh: usize,
-*/
-
 macro_rules! dispatch_config_simdqh {
     ($e: expr, $t: ty, $w: ty, $simd: ty, $c: expr, $writer: expr) => {
         match (
@@ -725,8 +965,6 @@ macro_rules! dispatch_config_simdqh {
             $c.multi_pivot,
             $c.rebal,
             $c.n,
-            $c.k,
-            $c.cap,
             $c.sort,
             $c.equal,
             $c.p,
@@ -739,8 +977,6 @@ macro_rules! dispatch_config_simdqh {
                 Pivots::EqualMedianOf2,
                 Rebalancing::NoRebal,
                 16,
-                0,
-                0,
                 true,
                 false,
                 2,
@@ -768,6 +1004,172 @@ macro_rules! dispatch_config_simdqh {
                     $w,
                 >($e, $writer);
             }
+            /* Rebalancing */
+            (
+                Buckets::Vec,
+                Pivots::MedianOf3,
+                Pivots::EqualMedianOf2,
+                Rebalancing::PivotForgetting,
+                16,
+                true,
+                false,
+                2,
+                0,
+            ) => {
+                run_config::<
+                    $t,
+                    $simd,
+                    ConfigurableSimdQuickHeap<
+                        $t,
+                        VecBucket<$t>,
+                        FlatPartitioning<$simd>,
+                        $simd,
+                        MedianOfM<3>,
+                        EqualMultiMedianOfM<2>,
+                        PivotForgetting<2, 256>,
+                        16,
+                        0,
+                        0,
+                        true,
+                        false,
+                        2,
+                        0,
+                    >,
+                    $w,
+                >($e, $writer);
+            },
+            (
+                Buckets::ListBlock,
+                Pivots::MedianOf3,
+                Pivots::EqualMedianOf2,
+                Rebalancing::PivotForgetting,
+                16,
+                true,
+                false,
+                2,
+                0,
+            ) => {
+                run_config::<
+                    $t,
+                    $simd,
+                    ConfigurableSimdQuickHeap<
+                        $t,
+                        ListBlockBucket<$t, 224, 256>,
+                        BlockedPartitioning<$simd, 224 ,256>,
+                        $simd,
+                        MedianOfM<3>,
+                        EqualMultiMedianOfM<2>,
+                        PivotForgetting<2, 256>,
+                        16,
+                        224,
+                        256,
+                        true,
+                        false,
+                        2,
+                        0,
+                    >,
+                    $w,
+                >($e, $writer);
+            }
+            (
+                Buckets::Vec,
+                Pivots::MedianOf3,
+                Pivots::EqualMedianOf2,
+                Rebalancing::ExponentialUpperBound,
+                16,
+                true,
+                false,
+                2,
+                0,
+            ) => {
+                run_config::<
+                    $t,
+                    $simd,
+                    ConfigurableSimdQuickHeap<
+                        $t,
+                        VecBucket<$t>,
+                        FlatPartitioning<$simd>,
+                        $simd,
+                        MedianOfM<3>,
+                        EqualMultiMedianOfM<2>,
+                        ExponentialUpperBoundRebalancing,
+                        16,
+                        0,
+                        0,
+                        true,
+                        false,
+                        2,
+                        0,
+                    >,
+                    $w,
+                >($e, $writer);
+            }
+            (
+                Buckets::Vec,
+                Pivots::MedianOf3,
+                Pivots::EqualMedianOf2,
+                Rebalancing::RandomizedRebalancing,
+                16,
+                true,
+                false,
+                2,
+                0,
+            ) => {
+                run_config::<
+                    $t,
+                    $simd,
+                    ConfigurableSimdQuickHeap<
+                        $t,
+                        VecBucket<$t>,
+                        FlatPartitioning<$simd>,
+                        $simd,
+                        MedianOfM<3>,
+                        EqualMultiMedianOfM<2>,
+                        RandomizedRebalancing<128>,
+                        16,
+                        0,
+                        0,
+                        true,
+                        false,
+                        2,
+                        0,
+                    >,
+                    $w,
+                >($e, $writer);
+            },
+            (
+                Buckets::ListBlock,
+                Pivots::MedianOf3,
+                Pivots::EqualMedianOf2,
+                Rebalancing::RandomizedRebalancing,
+                16,
+                true,
+                false,
+                2,
+                0,
+            ) => {
+                run_config::<
+                    $t,
+                    $simd,
+                    ConfigurableSimdQuickHeap<
+                        $t,
+                        ListBlockBucket<$t, 224, 256>,
+                        BlockedPartitioning<$simd, 224, 256>,
+                        $simd,
+                        MedianOfM<3>,
+                        EqualMultiMedianOfM<2>,
+                        RandomizedRebalancing<128>,
+                        16,
+                        224,
+                        256,
+                        true,
+                        false,
+                        2,
+                        0,
+                    >,
+                    $w,
+                >($e, $writer);
+            }
             /* Equal Buckets ConfigurableSimdQH */
             (
                 Buckets::Vec,
@@ -775,8 +1177,6 @@ macro_rules! dispatch_config_simdqh {
                 Pivots::EqualMedianOf2,
                 Rebalancing::NoRebal,
                 16,
-                0,
-                0,
                 true,
                 true,
                 2,
@@ -811,8 +1211,6 @@ macro_rules! dispatch_config_simdqh {
                 Pivots::EqualMedianOf2,
                 Rebalancing::NoRebal,
                 16,
-                0,
-                0,
                 true,
                 false,
                 4,
@@ -846,8 +1244,6 @@ macro_rules! dispatch_config_simdqh {
                 Pivots::EqualMedianOf2,
                 Rebalancing::NoRebal,
                 16,
-                0,
-                0,
                 true,
                 false,
                 4,
@@ -909,7 +1305,7 @@ macro_rules! dispatch_workload {
                 // Work::RandomW => {dispatch_heap!($e, $t, workloads::RandomWiggle, $simd, $writer);},
                 Work::MonotoneCS => {dispatch_heap!($e, $t, workloads::MonotoneConstantSize, $simd, $writer);},
                 // Work::RandomCS => {dispatch_heap!($e, $t, workloads::RandomConstantSize, $simd, $writer);},
-                Work::MostlyPush => {dispatch_heap!($e, $t, workloads::MostlyPushDecreasing, $simd, $writer);},
+                Work::MostlyPushDecreasing => {dispatch_heap!($e, $t, workloads::MostlyPushDecreasing, $simd, $writer);},
                 Work::RandomManyEqual => {dispatch_heap!($e, $t, workloads::RandomConstantSizeManyEqual, $simd, $writer);},
             }
         }
@@ -952,9 +1348,14 @@ macro_rules! dispatch_backend {
 }
 
 fn main() {
+    println!("\x1B[2J\x1B[1;1H");
     println!("| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |");
     println!("| - - - - - - ENGINEERING QUICK HEAPS EXPERIMENTS - - - - - - |");
     println!("| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |");
+
+    // Benchmarks using different worklaods
+    // #[cfg(feature = "competitors")]
+    // TODO: competitors();
 
     #[cfg(feature = "simd_qhs")]
     simd_qhs();
@@ -962,11 +1363,20 @@ fn main() {
     #[cfg(feature = "implicit_equal_buckets")]
     implicit_equal_buckets();
 
-    #[cfg(feature = "multiway")]
-    multiway();
+    #[cfg(feature = "radix")]
+    radix();
 
-    // TODO: rebalancing();
-    // TODO: finish/check multiway();
+    #[cfg(feature = "pivots")]
+    pivots();
+
+    #[cfg(feature = "rebalancing")]
+    rebalancing();
+
+    // Graph benchmarks
+    // #[cfg(feature = "graphs")]
+    // TODO: graphs();
+    // #[cfg(feature = "decrease_key")]
+    // TODO: decrease_key();
 }
 
 fn run(e: &mut Experiment) {
