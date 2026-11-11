@@ -335,10 +335,14 @@ impl<T: ElemT + Debug + Default, S: simd::SimdElem<T>, DK: Default + DecreaseKey
             return None;
         }
 
-        self.core.ensure_small(&mut self.decrease_key);
-        self.decrease_key.before_pop(&mut self.core);
+        loop {
+            self.core.ensure_small(&mut self.decrease_key);
+            self.decrease_key.before_pop(&mut self.core);
+            if !self.core.keys[self.core.pivots.len()].is_empty() {
+                break;
+            }
+        }
         let r = self.core.remove_smallest_elem();
-
         self.core.size -= 1;
         r
     }
