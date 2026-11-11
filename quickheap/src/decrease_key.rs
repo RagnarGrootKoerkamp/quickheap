@@ -114,7 +114,8 @@ where
         heap.insert_elem(new_key, val);
 
         // Insert the deletion token into the separate buffer
-        let target_layer = simd::push_position::<T, S>(&heap.pivots, old_key);
+        let target_layer = heap.layer_of(old_key, val);
+        // let target_layer = simd::push_position::<T, S>(&heap.pivots, old_key);
         debug_assert!(target_layer < self.deleted_keys.len());
         debug_assert!(target_layer < self.deleted_vals.len());
 
@@ -196,6 +197,10 @@ where
     fn clean_up(&mut self, heap: &mut KvCore<T, S>) {
         let layer = heap.pivots.len();
 
+        if self.deleted_keys[layer].is_empty() || heap.keys[layer].is_empty() {
+            return;
+        }
+
         // First, sort all keys and the values accordingly
         KvCore::<T, S>::sort_key_and_values(&mut heap.keys[layer], &mut heap.values[layer]);
         KvCore::<T, S>::sort_key_and_values(
@@ -262,7 +267,7 @@ where
         assert!(self.deleted_vals[layer].len() == 0);
 
         if heap.keys[layer].len() == 0 {
-            heap.pivots.pop();
+            heap.pop_layer();
         }
     }
 }
@@ -296,7 +301,8 @@ where
         heap.insert_elem(new_key, val);
 
         // Insert the deletion token into the separate buffer
-        let target_layer = simd::push_position::<T, S>(&heap.pivots, old_key);
+        // let target_layer = simd::push_position::<T, S>(&heap.pivots, old_key);
+        let target_layer = heap.layer_of(old_key, val);
         debug_assert!(target_layer < self.deleted_keys.len());
         debug_assert!(target_layer < self.deleted_vals.len());
 
@@ -379,6 +385,10 @@ where
     fn clean_up(&mut self, heap: &mut KvCore<T, S>) {
         let layer = heap.pivots.len();
 
+        if self.deleted_keys[layer].is_empty() || heap.keys[layer].is_empty() {
+            return;
+        }
+
         let mut cbf = CountingBloomFilter::<XxHashKHash, (T, T), 4, 128, 4, ELEM_BYTES>::new(1);
 
         // Sort the deletions
@@ -437,7 +447,7 @@ where
 
         // If layer is now empty, remove it
         if heap.keys[layer].len() == 0 {
-            heap.pivots.pop();
+            heap.pop_layer();
         }
     }
 }

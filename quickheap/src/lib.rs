@@ -362,6 +362,7 @@ pub struct KvCore<T: Copy + Ord + Debug, S: simd::SimdElem<T> = Simd> {
     ///
     /// This will have enough underlying capacity for out-of-bounds SIMD reads.
     pivots: Vec<T>,
+    pivot_vals: Vec<T>,
     /// The values in each layer.
     /// pivots[i-1] >= elements of buckets[i] >= pivots[i]
     /// Values equal to pivots[i] can be in layer i or i-1.
@@ -379,6 +380,7 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
     pub fn new() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
+            pivot_vals: Vec::with_capacity(128),
             keys: (0..128).map(|_| vec![]).collect(),
             values: (0..128).map(|_| vec![]).collect(),
             size: 0,
@@ -409,9 +411,31 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
         self.size += 1;
     }
 
+    /// Remove top layer and sort if necessary
+    pub(crate) fn pop_layer(&mut self) {
+        self.pivots.pop();
+        self.pivot_vals.pop();
+        let l = self.pivots.len();
+        if self.keys[l].len() <= Self::N {
+            Self::sort_key_and_values(&mut self.keys[l], &mut self.values[l]);
+        }
+    }
+
+    #[inline(always)]
+    fn layer_of(&self, key: T, val: T) -> usize {
+        // pivots with p > key (SIMD, as before)
+        let mut l = unsafe { simd::push_position::<T, S>(&self.pivots, key) };
+        // ties on the key: pair (key,val) < (pivot,pivot_val) -> lower layer
+        while l < self.pivots.len() && self.pivots[l] == key && val < self.pivot_vals[l] {
+            l += 1;
+        }
+        l
+    }
+
     /// Method to insert a helper element without increasing the heaps size
     fn insert_elem(&mut self, key: T, value: T) {
-        let target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, key) };
+        // let target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, key) };
+        let target_layer = self.layer_of(key, value);
 
         let key_layer = &mut self.keys[target_layer];
         let value_layer = &mut self.values[target_layer];
@@ -488,6 +512,7 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
             debug_assert!(val_layer.is_empty());
 
             self.pivots.pop();
+            self.pivot_vals.pop();
 
             // Sort the new final layer decreasing if it's already small.
             if self.keys[self.pivots.len()].len() <= Self::N {
@@ -503,6 +528,9 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
     #[inline(never)]
     fn partition<DK: Default + DecreaseKeyStrategy<T, S>>(&mut self, strat: &mut DK) {
         strat.before_partition(self);
+        if self.keys[self.pivots.len()].len() <= Self::N {
+            return;
+        }
 
         let total_layers = self.pivots.len() + 1;
 
@@ -541,6 +569,7 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
         let pivot_val = cur_val_layer[pivot_pos];
 
         self.pivots.push(pivot);
+        self.pivot_vals.push(pivot_val);
 
         // Clear the next layer
         next_key_layer.clear();
@@ -563,6 +592,7 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
         if next_key_layer.is_empty() {
             debug_assert!(next_val_layer.is_empty());
             self.pivots.pop();
+            self.pivot_vals.pop();
             return;
         }
 
@@ -575,6 +605,7 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
             std::mem::swap(cur_val_layer, next_val_layer);
 
             self.pivots.pop();
+            self.pivot_vals.pop();
             return;
         }
 
