@@ -1,6 +1,7 @@
 #![feature(adt_const_params, associated_type_defaults)]
 
 use workloads::{CountComparisons, CountingHeapT, Elem};
+pub mod graph_workloads;
 pub mod workloads;
 
 pub mod impls;
@@ -45,6 +46,15 @@ where
     fn capacity(&self) -> usize {
         0
     }
+}
+
+pub trait KvHeap<T: Elem> {
+    const MONOTONE: bool = false;
+    fn default() -> Self;
+    fn push(&mut self, k: T, v: T);
+    fn pop(&mut self) -> Option<(T, T)>;
+    fn decrease_key(&mut self, old_key: T, new_key: T, val: T);
+    fn capacity(&self) -> usize;
 }
 
 #[cfg(test)]

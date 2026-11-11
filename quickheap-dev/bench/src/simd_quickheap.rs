@@ -1,9 +1,10 @@
-use quickheap::ElemT;
+use quickheap::decrease_key::DecreaseKeyStrategy;
 use quickheap::partitioning::{MultiPartition, Partition};
+use quickheap::{ElemT, KvSimdQuickHeap};
 
 use quickheap_dev::{ElemConstraint, RadixSimdQuickHeap};
 
-use crate::{Heap, impls::NoHeap, workloads};
+use crate::{Heap, KvHeap, impls::NoHeap, workloads};
 
 impl<
     T: ElemT + workloads::Elem + Default + std::ops::Sub<Output = T> + ElemConstraint,
@@ -125,7 +126,7 @@ impl<
     }
 
     fn push(&mut self, t: T) {
-        self.push(t)
+        self.push(t);
     }
 
     fn pop(&mut self) -> Option<T> {
@@ -134,5 +135,34 @@ impl<
 
     fn capacity(&self) -> usize {
         self.capacity()
+    }
+}
+
+impl<
+    T: ElemT + workloads::Elem + Default,
+    S: quickheap::simd::SimdElem<T>,
+    DK: DecreaseKeyStrategy<T, S> + Default,
+> KvHeap<T> for KvSimdQuickHeap<T, S, DK>
+{
+    fn default() -> Self {
+        Default::default()
+    }
+
+    fn push(&mut self, k: T, v: T) {
+        self.push(k, v);
+    }
+
+    fn pop(&mut self) -> Option<(T, T)> {
+        self.pop()
+    }
+
+    fn decrease_key(&mut self, old_key: T, new_key: T, val: T) {
+        self.decrease_key(old_key, new_key, val);
+    }
+
+    fn capacity(&self) -> usize {
+        let sum = 0;
+
+        sum
     }
 }

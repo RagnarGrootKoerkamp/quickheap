@@ -1,6 +1,9 @@
-use crate::Heap;
+use quickheap::ElemT;
+
 use crate::graph::{Edge, Graph};
 use crate::graph_util::{pack_id_key_tuple_to_u64, unpack_id_key_tuple_from_u64};
+use crate::workloads::Elem;
+use crate::{Heap, KvHeap};
 
 pub struct PrimMST<'g, HeapT: Heap<u64>> {
     graph: &'g Graph<u32>,
@@ -29,7 +32,7 @@ impl<'g, HeapT: Heap<u64>> PrimMST<'g, HeapT> {
 
         while let Some(tup) = self.heap.pop() {
             pop_count += 1;
-            let (id, _weight) = unpack_id_key_tuple_from_u64(tup);
+            let (id, _) = unpack_id_key_tuple_from_u64(tup);
 
             let edge @ Edge { to: v, .. } = self.graph.edge(id);
 

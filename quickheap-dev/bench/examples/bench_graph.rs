@@ -1,6 +1,7 @@
 use bench::DevSimdQuickHeap;
 use bench::dijkstra::DijkstraQuery;
 use bench::graph::Graph;
+use bench::graph_workloads::{DijkstraWorkload, GraphWorkload, PrimWorkload};
 use bench::prim::PrimMST;
 use bench::scalar_quickheap::Search;
 use clap::Parser;
@@ -16,30 +17,6 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 
 const REPEATS: usize = 3;
-
-trait GraphWorkload {
-    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce() -> (usize, usize);
-}
-
-// One-to-all dijkstra query from a random starting vertex
-struct DijkstraWorkload;
-
-// Construct mst using the prim algorithm from a random starting vertex
-struct PrimWorkload;
-
-impl GraphWorkload for DijkstraWorkload {
-    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce() -> (usize, usize) {
-        let mut dijkstra = DijkstraQuery::<H>::new(graph);
-        move || dijkstra.run_all(0)
-    }
-}
-
-impl GraphWorkload for PrimWorkload {
-    fn setup<H: Heap<u64>>(graph: &Graph<u32>) -> impl FnOnce() -> (usize, usize) {
-        let mut prim = PrimMST::<H>::new(graph);
-        move || prim.compute_mst_from_vertex(0)
-    }
-}
 
 #[derive(Serialize)]
 struct Result {
@@ -143,7 +120,7 @@ fn main() {
 
     // Load all the graphs into memory
     for path in paths {
-        let graph = Graph::from_dimacs_instance(&path);
+        let graph = Graph::<u32>::from_dimacs_instance(&path);
         eprintln!(
             "Loaded graph {} with {} vertices and {} edges",
             path.to_string_lossy(),

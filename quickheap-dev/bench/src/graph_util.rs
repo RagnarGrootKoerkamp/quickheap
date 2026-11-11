@@ -83,7 +83,47 @@ pub fn construct_graph_from_edge_list<WeightT: Max + Ord + Clone + Copy + Debug>
     Graph::new(new_first_out, new_heads, new_tails, weights)
 }
 
-pub fn construct_graph_from_dimacs_file(path: &Path) -> Graph<u32> {
+pub fn construct_graph_from_dimacs_file_u64(path: &Path) -> Graph<u64> {
+    let file = File::open(path).unwrap();
+    let file_reader = BufReader::new(file);
+
+    let mut edges: Vec<Edge<u64>> = vec![];
+    let mut num_vertices: usize = 0;
+    let mut problem_defined: bool = false;
+
+    for line in file_reader.lines() {
+        let line = line.unwrap();
+        let parts: Vec<&str> = line.split(" ").collect();
+
+        match parts[0] {
+            "c" => {
+                continue;
+            }
+            "p" => {
+                assert!(parts.len() == 4);
+                assert!(parts[1] == "sp");
+                num_vertices = parts[2].parse::<usize>().unwrap();
+                parts[3].parse::<usize>().unwrap();
+                problem_defined = true;
+            }
+            "a" => {
+                assert!(problem_defined);
+                assert!(parts.len() == 4);
+                let from = parts[1].parse::<usize>().unwrap() - 1;
+                let to = parts[2].parse::<usize>().unwrap() - 1;
+                let weight = parts[3].parse::<u64>().unwrap();
+
+                edges.push(Edge { from, to, weight });
+            }
+            _ => panic!("Unknown match arm: {}", parts[0]),
+        }
+    }
+
+    edges.sort_by_key(|a| (a.from, a.to, a.weight));
+    construct_graph_from_edge_list(&edges, num_vertices)
+}
+
+pub fn construct_graph_from_dimacs_file_u32(path: &Path) -> Graph<u32> {
     let file = File::open(path).unwrap();
     let file_reader = BufReader::new(file);
 

@@ -2,7 +2,9 @@ use std::{fmt::Debug, path::Path};
 
 use itertools::izip;
 
-use crate::graph_util::construct_graph_from_dimacs_file;
+use crate::graph_util::{
+    construct_graph_from_dimacs_file_u32, construct_graph_from_dimacs_file_u64,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Edge<WeightT: Debug + Copy> {
@@ -20,7 +22,13 @@ pub struct Graph<WeightT: Copy + Debug> {
 
 impl Graph<u32> {
     pub fn from_dimacs_instance(path: &Path) -> Self {
-        construct_graph_from_dimacs_file(path)
+        construct_graph_from_dimacs_file_u32(path)
+    }
+}
+
+impl Graph<u64> {
+    pub fn from_dimacs_instance(path: &Path) -> Self {
+        construct_graph_from_dimacs_file_u64(path)
     }
 }
 

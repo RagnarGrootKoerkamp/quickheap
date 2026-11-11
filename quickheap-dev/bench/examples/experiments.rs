@@ -4,16 +4,21 @@ use perfcnt::{
     linux::{HardwareEventType, PerfCounterBuilderLinux},
 };
 
-use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::path::PathBuf;
 use std::time;
+use std::{any::type_name, fs::File};
 
 use quickheap::SimdElem;
+
 #[cfg(feature = "layer_stats")]
 use quickheap_dev::stats::layer_stats;
 
-use quickheap::SimdQuickHeap;
 use quickheap::simd;
+use quickheap::{
+    KvSimdQuickHeap, SimdQuickHeap,
+    decrease_key::{DelTokenCountingBloom, DelTokenSort, SimpleDK},
+};
 use quickheap_dev::ConfigurableSimdQuickHeap;
 use quickheap_dev::RadixSimdQuickHeap;
 
@@ -34,7 +39,11 @@ use quickheap_dev::{
 };
 
 use bench::{
-    Heap,
+    Heap, KvHeap,
+    dijkstra::DijkstraQuery,
+    graph::Graph,
+    graph_workloads::{DijkstraWorkload, GraphWorkload, KvGraphWorkload, PrimWorkload},
+    prim::PrimMST,
     workloads::{self, Elem, Workload},
 };
 
@@ -834,6 +843,281 @@ fn radix() {
     run(&mut e);
 }
 
+fn read_paths() -> Vec<PathBuf> {
+    // Scan `path` for all input files.
+    let path = PathBuf::from("input/");
+    let mut paths = vec![];
+    let entries = std::fs::read_dir(&path).expect("Could not read input directory");
+    for entry in entries {
+        let entry = entry.expect("Could not read entry in input directory");
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) == Some("gr") {
+            paths.push(path);
+        }
+    }
+    paths
+}
+
+fn read_graphs_u64() -> Vec<(String, Graph<u64>)> {
+    let paths = read_paths();
+    let mut graphs: Vec<(String, Graph<u64>)> = vec![];
+    // Load all the graphs into memory
+    for path in paths {
+        let graph = Graph::<u64>::from_dimacs_instance(&path);
+        eprintln!(
+            "Loaded graph {} with {} vertices and {} edges",
+            path.to_string_lossy(),
+            graph.num_vertices(),
+            graph.num_edges()
+        );
+        graphs.push((path.to_string_lossy().to_string(), graph));
+    }
+
+    graphs
+}
+
+fn read_graphs_u32() -> Vec<(String, Graph<u32>)> {
+    let paths = read_paths();
+    let mut graphs: Vec<(String, Graph<u32>)> = vec![];
+    // Load all the graphs into memory
+    for path in paths {
+        let graph = Graph::<u32>::from_dimacs_instance(&path);
+        eprintln!(
+            "Loaded graph {} with {} vertices and {} edges",
+            path.to_string_lossy(),
+            graph.num_vertices(),
+            graph.num_edges()
+        );
+        graphs.push((path.to_string_lossy().to_string(), graph));
+    }
+
+    graphs
+}
+
+fn run_graph<S: SimdElem<u64>, H: Heap<u64>>(
+    graphs: &Vec<(String, Graph<u32>)>,
+    writer: &mut BufWriter<File>,
+) {
+    for (instance, graph) in graphs {
+        // Run once to warm up caches
+        let f = DijkstraWorkload::setup::<H>(graph);
+        f();
+
+        let mut all_nanos = vec![];
+        for _ in 0..REPEATS {
+            let f = DijkstraWorkload::setup::<H>(graph);
+
+            let start = std::time::Instant::now();
+            let (push_count, pop_count) = f();
+            let nanos = start.elapsed().as_nanos() as f64;
+
+            all_nanos.push(nanos);
+        }
+        // TODO: Work with the nanos
+
+        if !H::MONOTONE {
+            let f = PrimWorkload::setup::<H>(graph);
+            f();
+
+            let mut all_nanos = vec![];
+            for repeat in 0..REPEATS {
+                let f = PrimWorkload::setup::<H>(graph);
+
+                let start = std::time::Instant::now();
+                let (push_count, pop_count) = f();
+                let nanos = start.elapsed().as_nanos() as f64;
+
+                all_nanos.push((2f64 * nanos) / (push_count + pop_count) as f64);
+            }
+            all_nanos.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            let median = all_nanos[all_nanos.len() / 2];
+
+            let line = format!(
+                "{},{},{},{}\n",
+                type_name::<S>(),
+                type_name::<H>(),
+                instance,
+                median
+            );
+            writer.write_all(line.as_bytes()).unwrap();
+            writer.flush().unwrap();
+        }
+    }
+}
+
+fn run_kv_graph<S: SimdElem<u64>, H: KvHeap<u64>>(
+    graphs: &Vec<(String, Graph<u64>)>,
+    writer: &mut BufWriter<File>,
+) {
+    println!("Run heap {}", sanitize(type_name::<H>().to_owned()));
+
+    for (instance, graph) in graphs {
+        println!("Run instance {}", instance);
+
+        // Run once to warm up caches
+        let f = DijkstraWorkload::setup_kv::<H>(graph);
+        f();
+
+        let mut all_nanos = vec![];
+        let mut all_mem = vec![];
+        for _ in 0..REPEATS {
+            let f = DijkstraWorkload::setup_kv::<H>(graph);
+
+            let start = std::time::Instant::now();
+            let (h, push_count, pop_count) = f();
+            let nanos = start.elapsed().as_nanos() as f64;
+            let memory = h.capacity();
+
+            all_nanos.push((2f64 * nanos) / (push_count + pop_count) as f64);
+            all_mem.push((2f64 * memory as f64) / (push_count + pop_count) as f64);
+        }
+        all_nanos.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        all_mem.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        let median_time = all_nanos[all_nanos.len() / 2];
+        let median_mem = all_mem[all_mem.len() / 2];
+
+        let line = format!(
+            "{},{},{},{},{}\n",
+            type_name::<S>(),
+            type_name::<H>(),
+            instance,
+            median_time,
+            median_mem
+        );
+        writer.write_all(line.as_bytes()).unwrap();
+        writer.flush().unwrap();
+    }
+}
+
+#[cfg(feature = "graphs")]
+fn graphs() {
+    let graphs = read_graphs_u32();
+
+    let mut writer;
+    let top_line = "backend,heap,graph,nano_seconds\n";
+    #[cfg(target_feature = "avx512f")]
+    {
+        writer = build_writer("graphs_avx");
+        writer.write_all(top_line.as_bytes()).unwrap();
+
+        writer.flush().expect("Flush the writer");
+
+        // Run all the competitors
+        run_graph::<simd::Avx2, SimdQuickHeap<u64, simd::Avx2>>(&graphs, &mut writer);
+        run_graph::<simd::Avx512, SimdQuickHeap<u64, simd::Avx512>>(&graphs, &mut writer);
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        writer = build_writer("graphs_neon");
+        writer.write_all(top_line.as_bytes());
+
+        // Run all the competitors
+        run_graph::<SimdQuickHeap<u64, Neon>>(&graphs, &mut writer);
+    }
+
+    // Run competitors that are not backend dependent
+    // TODO:
+}
+
+#[cfg(feature = "decrease_key")]
+fn decrease_key() {
+    println!("Run experiemnt decrease_key.");
+
+    println!("Read graphs.");
+    let graphs = read_graphs_u64();
+
+    let mut writer;
+    let top_line = "backend,heap,graph,nano_seconds,bytes_per_elem\n";
+    #[cfg(target_feature = "avx512f")]
+    {
+        writer = build_writer("decrease_key_avx");
+        writer.write_all(top_line.as_bytes()).unwrap();
+
+        writer.flush().expect("Flush the writer");
+
+        // Run all the competitors
+        run_kv_graph::<simd::Avx2, KvSimdQuickHeap<u64, simd::Avx2, SimpleDK<u64>>>(
+            &graphs,
+            &mut writer,
+        );
+        run_kv_graph::<simd::Avx2, KvSimdQuickHeap<u64, simd::Avx2, DelTokenSort<u64, simd::Avx2>>>(
+            &graphs,
+            &mut writer,
+        );
+        run_kv_graph::<
+            simd::Avx2,
+            KvSimdQuickHeap<u64, simd::Avx2, DelTokenCountingBloom<u64, simd::Avx2, 16>>,
+        >(&graphs, &mut writer);
+
+        run_kv_graph::<simd::Avx512, KvSimdQuickHeap<u64, simd::Avx512, SimpleDK<u64>>>(
+            &graphs,
+            &mut writer,
+        );
+        run_kv_graph::<
+            simd::Avx512,
+            KvSimdQuickHeap<u64, simd::Avx512, DelTokenSort<u64, simd::Avx512>>,
+        >(&graphs, &mut writer);
+        run_kv_graph::<
+            simd::Avx512,
+            KvSimdQuickHeap<u64, simd::Avx512, DelTokenCountingBloom<u64, simd::Avx512, 16>>,
+        >(&graphs, &mut writer);
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        writer = build_writer("decrease_key_neon");
+        writer.write_all(top_line.as_bytes());
+
+        // Run all the competitors
+        run_graph_kv::<simd::Neon, KvSimdQuickHeap<u64, simd::Neon>>(&graphs, &mut writer);
+    }
+}
+
+/*
+
+
+/// Runs the workload `REPEATS` times, writes each run as a CSV row, and
+/// returns the median nanos (used to decide whether to skip larger `n`).
+fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u32>) -> f64 {
+    // Warmup: run once to populate instruction cache, page tables, and branch predictors.
+    let f = W::setup::<H>(graph);
+    f();
+
+    let mut all_nanos = vec![];
+
+    for repeat in 0..REPEATS {
+        let f = W::setup::<H>(graph);
+
+        let start = std::time::Instant::now();
+        let (push_count, pop_count) = f();
+        let nanos = start.elapsed().as_nanos() as f64;
+
+        let result = Result {
+            heap: type_name::<H>(),
+            graph: instance.to_string(),
+            workload: type_name::<W>(),
+            vertices: graph.num_vertices(),
+            edges: graph.num_edges(),
+            push_count,
+            pop_count,
+            repeat,
+            nanos,
+        };
+
+        CSV_WRITER.with(|w| {
+            w.borrow_mut().serialize(&result).unwrap();
+            w.borrow_mut().flush().unwrap();
+        });
+        all_nanos.push(result.nanos);
+    }
+
+    all_nanos.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    all_nanos[all_nanos.len() / 2]
+}
+ */
+
 fn sanitize(s: String) -> String {
     s.replace("simd::", "")
         .replace(" ", "")
@@ -1373,10 +1657,17 @@ fn main() {
     rebalancing();
 
     // Graph benchmarks
-    // #[cfg(feature = "graphs")]
-    // TODO: graphs();
-    // #[cfg(feature = "decrease_key")]
-    // TODO: decrease_key();
+    #[cfg(feature = "graphs")]
+    graphs();
+    #[cfg(feature = "decrease_key")]
+    decrease_key();
+}
+
+fn build_writer(name: &str) -> BufWriter<File> {
+    let path =
+        String::from(env!("CARGO_MANIFEST_DIR")) + "/evals/data/experiments/" + name + ".csv";
+    let file = File::create(path).unwrap();
+    BufWriter::with_capacity(1 << 15, file)
 }
 
 fn run(e: &mut Experiment) {
@@ -1394,15 +1685,8 @@ fn run(e: &mut Experiment) {
     }
 
     // Create and open the file for the experiment
-    let path = String::from(env!("CARGO_MANIFEST_DIR"))
-        + &String::from("/evals/data/experiments/")
-        + &e.output_name
-        + &backend_name
-        + ".csv";
-
-    let file = File::create(path).unwrap();
-    let mut writer = BufWriter::with_capacity(1 << 15, file);
-
+    let name = e.output_name.to_owned() + backend_name;
+    let mut writer = build_writer(&name);
     let mut top_line = "elem_type,simd_backend,n,workload,heap".to_string();
 
     for metric in e.metrics.iter() {
