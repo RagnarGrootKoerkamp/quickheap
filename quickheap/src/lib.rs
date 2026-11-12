@@ -330,19 +330,22 @@ impl<T: ElemT + Debug + Default, S: simd::SimdElem<T>, DK: Default + DecreaseKey
 
     /// Pop the smallest element from the queue.
     pub fn pop(&mut self) -> Option<(T, T)> {
-        // If the total size is 0, return none
-        if self.core.size == 0 {
-            return None;
-        }
-
         loop {
+            if self.core.size == 0 {
+                return None;
+            }
             self.core.ensure_small(&mut self.decrease_key);
+            let l = self.core.pivots.len();
             self.decrease_key.before_pop(&mut self.core);
-            if !self.core.keys[self.core.pivots.len()].is_empty() {
+            if self.core.pivots.len() == l && !self.core.keys[l].is_empty() {
                 break;
             }
         }
+
         let r = self.core.remove_smallest_elem();
+        if let Some((k, v)) = r {
+            self.decrease_key.after_pop(k, v);
+        }
         self.core.size -= 1;
         r
     }

@@ -19,6 +19,7 @@ where
 {
     fn decrease_key(&mut self, heap: &mut KvCore<T, S>, old_key: T, new_key: T, val: T);
     fn before_pop(&mut self, heap: &mut KvCore<T, S>);
+    fn after_pop(&mut self, _key: T, _val: T) {}
     fn before_partition(&mut self, heap: &mut KvCore<T, S>);
     fn after_partition(&mut self, idx: usize, pivot: T, pivot_val: T, pivot_pos: usize);
 
@@ -66,18 +67,16 @@ where
     }
 
     fn before_pop(&mut self, heap: &mut KvCore<T, S>) {
-        // Drop stale entries whose value was already popped
         while let Some((_, val)) = heap.peek(self) {
             if !self.popped_vals.contains(&val) {
                 break;
             }
             heap.remove_smallest_elem();
         }
+    }
 
-        // Insert the val that is popped currently
-        if let Some((_, val)) = heap.peek(self) {
-            self.popped_vals.insert(val);
-        }
+    fn after_pop(&mut self, _: T, val: T) {
+        self.popped_vals.insert(val);
     }
 
     fn before_partition(&mut self, _: &mut KvCore<T, S>) {}
