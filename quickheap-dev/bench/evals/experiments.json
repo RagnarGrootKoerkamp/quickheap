@@ -99,5 +99,35 @@
       "table_cols": ["nano_seconds", "median_layers"],
       "show_speedup": true,
       "speedup_metric": "nano_seconds"
+    },
+    {
+      "name": "competitors",
+      "heap_mappings":
+        {
+          "SimdQuickHeap": "SQH"
+        },
+      "heap_colors": {
+        "SimdQuickHeap": "xkcd:salmon"
+      },
+      "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
+      "plot_by": ["nano_seconds"],
+      "plot_types": ["i32", "i64"],
+      "table_n": 32768,
+      "table_type": "i64",
+      "table_workload": "MonotoneConstantSize",
+      "table_backend": "Avx512",
+      "table_cols": ["nano_seconds"],
+      "show_speedup": true,
+      "speedup_metric": "nano_seconds"
+    },
+    {
+      "name": "decrease_key",
+      "baseline": "KvSimdQuickHeap<SimpleDK>",
+      "metric": "nano_seconds",
+      "default_workload": "decrease_key",
+      "heap_mappings": {
+        "BinaryHeap": "Binary Heap"
+      },
+      "table_backend": "Avx512"
     }
 ]

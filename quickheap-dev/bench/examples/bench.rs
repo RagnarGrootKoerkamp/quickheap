@@ -283,6 +283,7 @@ where
     bench::<T, SimdQuickHeap<T, Avx2>>();
     #[cfg(feature = "avx512")]
     bench::<T, SimdQuickHeap<T, Avx512>>();
+
     bench::<T, scalar_quickheap::ScalarQuickHeap<T, 3, false, { Search::LinearScan }>>();
 
     #[cfg(feature = "avx2")]

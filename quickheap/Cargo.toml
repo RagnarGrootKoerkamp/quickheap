@@ -20,6 +20,7 @@ rustdoc-args = ["-C", "target-feature=+avx2"]
 [dependencies]
 rand = "0.10.1"
 wide = "1.2.0"
+rustc-hash = "2"
 ensure_simd = "0.1.0"
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
 num-traits = "0.2.19"

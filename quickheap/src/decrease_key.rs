@@ -7,7 +7,7 @@ use crate::util::CountingBloomFilter;
 use crate::util::ToBytes;
 use crate::util::XxHashKHash;
 
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -53,7 +53,7 @@ where
 /// Strategy that reinserts new decreased keys and tracks the already popped values, s.t. no value is popped twice
 #[derive(Default)]
 pub struct SimpleDK<T> {
-    popped_vals: HashSet<T>,
+    popped_vals: FxHashSet<T>,
 }
 
 impl<T, S> DecreaseKeyStrategy<T, S> for SimpleDK<T>
@@ -170,7 +170,7 @@ where
         };
 
         let n = cur_key_layer.len();
-        debug_assert!(cur_val_layer.len() == n);
+        assert!(cur_val_layer.len() == n);
 
         // Clear the next layer
         next_key_layer.clear();
@@ -197,6 +197,7 @@ where
         let layer = heap.pivots.len();
 
         if self.deleted_keys[layer].is_empty() || heap.keys[layer].is_empty() {
+            assert!(self.deleted_keys[layer].is_empty());
             return;
         }
 
@@ -207,65 +208,185 @@ where
             &mut self.deleted_vals[layer],
         );
 
-        let mut idx_norm = heap.keys[layer].len() - 1;
-        let mut idx_del = self.deleted_keys[layer].len() - 1;
+        assert!(heap.keys[layer].len() != 0 && self.deleted_keys[layer].len() != 0);
 
-        loop {
-            if self.deleted_keys[layer][idx_del] > heap.keys[layer][idx_norm] {
-                if idx_norm == 0 {
-                    break;
-                }
+        let (n, d) = (heap.keys[layer].len(), self.deleted_keys[layer].len());
+        let (keys, vals) = (&mut heap.keys[layer], &mut heap.values[layer]);
+        let (dk, dv) = (&self.deleted_keys[layer], &self.deleted_vals[layer]);
 
-                idx_norm -= 1;
+        let (mut w, mut j) = (0, 0);
+        for i in 0..n {
+            let e = (keys[i], vals[i]);
+            // tokens larger than e have no matching element (orphans)
+            while j < d && (dk[j], dv[j]) > e {
+                j += 1;
+            }
+            if j < d && (dk[j], dv[j]) == e {
+                j += 1; // element and token cancel
                 continue;
             }
-
-            if self.deleted_keys[layer][idx_del] < heap.keys[layer][idx_norm] {
-                if idx_del == 0 {
-                    break;
-                }
-
-                idx_del -= 1;
-                continue;
-            }
-
-            // Both keys are equal
-            if self.deleted_vals[layer][idx_del] > heap.values[layer][idx_norm] {
-                if idx_norm == 0 {
-                    break;
-                }
-
-                idx_norm -= 1;
-                continue;
-            }
-
-            if self.deleted_vals[layer][idx_del] < heap.values[layer][idx_norm] {
-                if idx_del == 0 {
-                    break;
-                }
-
-                idx_del -= 1;
-                continue;
-            }
-
-            // Both keys and both values are equal -> Remove element and deletion token
-            self.deleted_keys[layer].remove(idx_del);
-            self.deleted_vals[layer].remove(idx_del);
-            heap.keys[layer].remove(idx_norm);
-            heap.values[layer].remove(idx_norm);
-
-            if idx_del == 0 || idx_norm == 0 {
-                break;
-            }
-
-            idx_del -= 1;
-            idx_norm -= 1;
+            keys[w] = keys[i];
+            vals[w] = vals[i];
+            w += 1;
         }
+        keys.truncate(w);
+        vals.truncate(w);
+        debug_assert!(j == d, "unmatched tokens");
+
+        self.deleted_keys[layer].clear();
+        self.deleted_vals[layer].clear();
 
         assert!(self.deleted_keys[layer].len() == 0);
         assert!(self.deleted_vals[layer].len() == 0);
 
         if heap.keys[layer].len() == 0 {
+            heap.pop_layer();
+        }
+    }
+}
+
+/// Strategy that inserts deletion tokens and cleans up partitions using bloom filters
+pub struct DelTokenHash<T, S> {
+    deleted_vals: Vec<Vec<T>>,
+    deleted_keys: Vec<Vec<T>>,
+    _s: std::marker::PhantomData<S>,
+}
+
+impl<T, S> Default for DelTokenHash<T, S> {
+    fn default() -> Self {
+        Self {
+            deleted_keys: (0..128).map(|_| vec![]).collect(),
+            deleted_vals: (0..128).map(|_| vec![]).collect(),
+            _s: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T, S> DecreaseKeyStrategy<T, S> for DelTokenHash<T, S>
+where
+    T: Hash + Eq + ElemT + Debug,
+    S: SimdElem<T>,
+{
+    fn decrease_key(&mut self, heap: &mut KvCore<T, S>, old_key: T, new_key: T, val: T) {
+        // Insert the new elem
+        heap.insert_elem(new_key, val);
+
+        // Insert the deletion token into the separate buffer
+        // let target_layer = simd::push_position::<T, S>(&heap.pivots, old_key);
+        let target_layer = heap.layer_of(old_key, val);
+        debug_assert!(target_layer < self.deleted_keys.len());
+        debug_assert!(target_layer < self.deleted_vals.len());
+
+        self.deleted_keys[target_layer].push(old_key);
+        self.deleted_vals[target_layer].push(val);
+    }
+
+    fn before_pop(&mut self, heap: &mut KvCore<T, S>) {
+        // Clean up lowest buffer if it contains a deletion token
+        if self.deleted_keys[heap.pivots.len()].len() > 0 {
+            self.clean_up(heap);
+        }
+    }
+
+    fn before_partition(&mut self, heap: &mut KvCore<T, S>) {
+        // Clean up partition if necessary
+        let layer = heap.pivots.len();
+
+        let layer_size = heap.keys[layer].len();
+        let deletions = self.deleted_keys[layer].len();
+
+        if deletions * 3 < layer_size {
+            return;
+        }
+
+        self.clean_up(heap);
+    }
+
+    fn layer_remove(&mut self) {
+        self.deleted_keys.pop();
+        self.deleted_vals.pop();
+    }
+
+    fn layer_push(&mut self) {
+        self.deleted_keys.push(vec![]);
+        self.deleted_vals.push(vec![]);
+    }
+
+    fn after_partition(&mut self, idx: usize, pivot: T, pivot_val: T, pivot_pos: usize) {
+        if idx + 1 == self.deleted_keys.len() {
+            debug_assert!(idx + 1 == self.deleted_vals.len());
+            self.deleted_keys.push(vec![]);
+            self.deleted_vals.push(vec![]);
+        }
+
+        // Alias the current layer (to be split) and the next layer.
+        let [cur_key_layer, next_key_layer] = &mut self.deleted_keys[idx..=idx + 1] else {
+            unreachable!()
+        };
+
+        let [cur_val_layer, next_val_layer] = &mut self.deleted_vals[idx..=idx + 1] else {
+            unreachable!()
+        };
+
+        let n = cur_key_layer.len();
+        assert!(cur_val_layer.len() == n);
+
+        // Clear the next layer
+        next_key_layer.clear();
+        next_val_layer.clear();
+
+        VecPartitioning::<T, S>::partition_kv(
+            cur_key_layer,
+            cur_val_layer,
+            next_key_layer,
+            next_val_layer,
+            pivot,
+            pivot_val,
+            pivot_pos,
+        );
+    }
+}
+
+impl<T, S> DelTokenHash<T, S>
+where
+    T: Hash + Eq + ElemT + Debug,
+    S: SimdElem<T>,
+{
+    fn clean_up(&mut self, heap: &mut KvCore<T, S>) {
+        let layer = heap.pivots.len();
+        if self.deleted_keys[layer].is_empty() || heap.keys[layer].is_empty() {
+            return;
+        }
+
+        let d = self.deleted_keys[layer].len();
+        let mut set: FxHashSet<(T, T)> = FxHashSet::with_capacity_and_hasher(d, Default::default());
+        set.extend(
+            self.deleted_keys[layer]
+                .iter()
+                .copied()
+                .zip(self.deleted_vals[layer].iter().copied()),
+        );
+        debug_assert_eq!(set.len(), d, "duplicate deletion tokens");
+
+        let keys = &mut heap.keys[layer];
+        let vals = &mut heap.values[layer];
+        let mut w = 0;
+        for i in 0..keys.len() {
+            if !set.is_empty() && set.remove(&(keys[i], vals[i])) {
+                continue; // drop element
+            }
+            keys[w] = keys[i];
+            vals[w] = vals[i];
+            w += 1;
+        }
+        keys.truncate(w);
+        vals.truncate(w);
+
+        assert!(set.is_empty(), "unmatched deletion tokens");
+        self.deleted_keys[layer].clear();
+        self.deleted_vals[layer].clear();
+
+        if heap.keys[layer].is_empty() {
             heap.pop_layer();
         }
     }
@@ -357,7 +478,7 @@ where
         };
 
         let n = cur_key_layer.len();
-        debug_assert!(cur_val_layer.len() == n);
+        assert!(cur_val_layer.len() == n);
 
         // Clear the next layer
         next_key_layer.clear();
@@ -382,72 +503,80 @@ where
     S: SimdElem<T>,
 {
     fn clean_up(&mut self, heap: &mut KvCore<T, S>) {
+        println!("Start clean up with tokens: {}", self.deleted_keys.len());
         let layer = heap.pivots.len();
 
         if self.deleted_keys[layer].is_empty() || heap.keys[layer].is_empty() {
+            println!("End clean up");
             return;
         }
 
-        let mut cbf = CountingBloomFilter::<XxHashKHash, (T, T), 4, 128, 4, ELEM_BYTES>::new(1);
+        let mut cbf = CountingBloomFilter::<XxHashKHash, (T, T), 4, 1024, 4, ELEM_BYTES>::new(1);
 
-        // Sort the deletions
+        // Sort tokens descending so the exact check can be a binary search.
         KvCore::<T, S>::sort_key_and_values(
             &mut self.deleted_keys[layer],
             &mut self.deleted_vals[layer],
         );
 
-        for i in 0..self.deleted_keys[layer].len() {
-            let elem = (self.deleted_keys[layer][i], self.deleted_vals[layer][i]);
-            cbf.insert(elem);
+        let d = self.deleted_keys[layer].len();
+        println!("Start cbf insert");
+        for i in 0..d {
+            cbf.insert((self.deleted_keys[layer][i], self.deleted_vals[layer][i]));
         }
+        println!("End cbf insert");
 
-        // Check all elements
-        let mut remaining = self.deleted_keys[layer].len();
-        for i in (0..heap.keys[layer].len()).rev() {
-            let elem = (heap.keys[layer][i], heap.values[layer][i]);
+        let mut used = vec![false; d];
+        let mut remaining = d;
 
-            if !cbf.contains(elem) {
-                // Element can be kept, it is definitely not deleted
-                continue;
-            }
+        let keys = &mut heap.keys[layer];
+        let vals = &mut heap.values[layer];
+        let dk = &self.deleted_keys[layer];
+        let dv = &self.deleted_vals[layer];
 
-            // Element maybe has a deletion token
-            // Search the deletions to find
-            let mut has_token = false; // TODO: Find something faster for that
-            for i in 0..self.deleted_keys[layer].len() {
-                if self.deleted_keys[layer][i] == elem.0 && self.deleted_vals[layer][i] == elem.1 {
-                    has_token = true;
-                    break;
+        // Single compaction pass: keep survivors at write index `w`.
+        println!("Start pass");
+        let mut w = 0;
+        for i in 0..keys.len() {
+            let elem = (keys[i], vals[i]);
+
+            if remaining > 0 && cbf.contains(elem) {
+                // Exact check (descending order) to rule out false positives.
+                println!("Start search {} / {}", i, keys.len());
+                let pos = dk.binary_search_by(|&k| elem.0.cmp(&k)).ok().and_then(|_| {
+                    // Find first token with equal (key,val) that is not yet used.
+                    let start = (0..d).find(|&j| dk[j] == elem.0 && dv[j] == elem.1 && !used[j]);
+                    start
+                });
+                println!("End search");
+
+                if let Some(j) = pos {
+                    used[j] = true;
+                    remaining -= 1;
+                    println!("Start remove");
+                    cbf.remove(elem);
+                    println!("End remove");
+                    continue; // drop element
                 }
             }
 
-            if !has_token {
-                // Element can be kept, it has no matching token
-                continue;
-            }
-
-            // Remove the deleted elem
-            remaining -= 1;
-            cbf.remove(elem);
-            heap.values[layer].remove(i);
-            heap.keys[layer].remove(i);
-
-            if remaining == 0 {
-                break;
-            }
+            keys[w] = keys[i];
+            vals[w] = vals[i];
+            w += 1;
         }
+        println!("End pass");
+        keys.truncate(w);
+        vals.truncate(w);
 
-        // Each token has been matched
-        assert!(remaining == 0);
+        assert!(remaining == 0, "unmatched deletion tokens");
 
-        // Clear the used tokens
         self.deleted_keys[layer].clear();
         self.deleted_vals[layer].clear();
 
-        // If layer is now empty, remove it
-        if heap.keys[layer].len() == 0 {
+        if heap.keys[layer].is_empty() {
             heap.pop_layer();
         }
+        println!("End clean up");
     }
 }
 
@@ -640,6 +769,11 @@ mod test {
             crate::decrease_key::DelTokenSort<i64, crate::Avx2>
         );
         decrease_key_tests!(
+            del_token_hash,
+            crate::Avx2,
+            crate::decrease_key::DelTokenHash<i64, crate::Avx2>
+        );
+        decrease_key_tests!(
             del_token_cnt_bloom,
             crate::Avx2,
             crate::decrease_key::DelTokenCountingBloom<i64, crate::Avx2, 16>
@@ -650,6 +784,11 @@ mod test {
     mod avx512_dk_test {
         decrease_key_tests!(simple_dk, crate::Avx512, crate::decrease_key::SimpleDK<i64>);
         decrease_key_tests!(del_token_sort, crate::Avx512, crate::decrease_key::DelTokenSort<i64, crate::Avx512>);
+        decrease_key_tests!(
+            del_token_hash,
+            crate::Avx512,
+            crate::decrease_key::DelTokenHash<i64, crate::Avx512>
+        );
         decrease_key_tests!(del_token_cnt_bloom, crate::Avx512, crate::decrease_key::DelTokenCountingBloom<i64, crate::Avx512, 16>);
     }
 
@@ -657,6 +796,11 @@ mod test {
     mod neon_dk_test {
         decrease_key_tests!(simple_dk, crate::Neon, crate::decrease_key::SimpleDK<i64>);
         decrease_key_tests!(del_token_sort, crate::Neon, crate::decrease_key::DelTokenSort<i64, crate::Neon>);
+        decrease_key_tests!(
+            del_token_hash,
+            crate::Neon,
+            crate::decrease_key::DelTokenHash<i64, crate::Neon>
+        );
         decrease_key_tests!(del_token_cnt_bloom, crate::Neon, crate::decrease_key::DelTokenCountingBloom<i64, crate::Neon, 16>);
     }
 }

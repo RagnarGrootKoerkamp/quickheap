@@ -92,6 +92,7 @@ impl<'g, HeapT: KvHeap<u64>> KvDijkstraQuery<'g, HeapT> {
                     self.distances[to] = to_dist;
                     self.heap
                         .push(to_dist, to.to_u64().expect("Conversion to u64 failed."));
+                    push_count += 1;
                     continue;
                 }
 
@@ -101,8 +102,8 @@ impl<'g, HeapT: KvHeap<u64>> KvDijkstraQuery<'g, HeapT> {
                     push_count += 1;
 
                     self.heap.decrease_key(
-                        to_dist,
                         old_dist,
+                        to_dist,
                         to.to_u64().expect("Conversion to u64 failed."),
                     );
                 }

@@ -7,7 +7,16 @@ use perfcnt::{
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::time;
-use std::{any::type_name, fs::File};
+use std::{
+    any::{TypeId, type_name},
+    fs::File,
+};
+
+use bench::{
+    impls, original_quickheap, radix_heap, s3q,
+    scalar_quickheap::{self, Search},
+    sequence_heap,
+};
 
 use quickheap::SimdElem;
 
@@ -17,7 +26,7 @@ use quickheap_dev::stats::layer_stats;
 use quickheap::simd;
 use quickheap::{
     KvSimdQuickHeap, SimdQuickHeap,
-    decrease_key::{DelTokenCountingBloom, DelTokenSort, SimpleDK},
+    decrease_key::{DelTokenCountingBloom, DelTokenHash, DelTokenSort, SimpleDK},
 };
 use quickheap_dev::ConfigurableSimdQuickHeap;
 use quickheap_dev::RadixSimdQuickHeap;
@@ -374,9 +383,23 @@ pub enum Type {
 
 #[derive(Clone, Copy)]
 pub enum HeapFamily {
+    // Baseline SimdQH
     SimdQH,
+    // Dev SimdQH
     ConfigSimdQH,
+
+    // Pure SimdQH variants
     RadixSimdQH,
+
+    // Competitors
+    ScalarQH,
+    OriginalQH,
+    SequenceHeap,
+    S3qHeap,
+    RadixHeap,
+    BinaryHeap,
+    Orx8aryHeap,
+    WeakHeap,
 }
 
 #[derive(Clone, Copy)]
@@ -580,6 +603,71 @@ fn simd_qhs() {
         name: "SimdQuickHeaps".to_string(),
         output_name: "simd_qhs".to_string(),
         ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        heaps: heap_config,
+        workloads: vec![Work::MonotoneCS],
+        types: vec![Type::I32, Type::I64],
+        metrics: vec![nano_timer],
+    };
+
+    run(&mut e);
+}
+
+#[cfg(feature = "competitors")]
+fn competitors() {
+    let heap_config = vec![
+        HeapConfig {
+            family: HeapFamily::SimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ScalarQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::OriginalQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::SequenceHeap,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::S3qHeap,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::RadixHeap,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::BinaryHeap,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::Orx8aryHeap,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::WeakHeap,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigRadixQH::empty(),
+        },
+    ];
+
+    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+
+    let mut e = Experiment {
+        name: "Competitors".to_string(),
+        output_name: "competitors".to_string(),
+        ns: (10..=17).step_by(1).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
         types: vec![Type::I32, Type::I64],
@@ -898,11 +986,16 @@ fn run_graph<S: SimdElem<u64>, H: Heap<u64>>(
     graphs: &Vec<(String, Graph<u32>)>,
     writer: &mut BufWriter<File>,
 ) {
+    println!("Run heap {}", sanitize(type_name::<H>().to_owned()));
+
     for (instance, graph) in graphs {
+        println!("Run instance {}", instance);
+
         // Run once to warm up caches
         let f = DijkstraWorkload::setup::<H>(graph);
         f();
 
+        println!("Run Dijkstra");
         let mut all_nanos = vec![];
         for _ in 0..REPEATS {
             let f = DijkstraWorkload::setup::<H>(graph);
@@ -911,16 +1004,30 @@ fn run_graph<S: SimdElem<u64>, H: Heap<u64>>(
             let (push_count, pop_count) = f();
             let nanos = start.elapsed().as_nanos() as f64;
 
-            all_nanos.push(nanos);
+            all_nanos.push((2f64 * nanos) / (push_count + pop_count) as f64);
         }
-        // TODO: Work with the nanos
+        all_nanos.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let median = all_nanos[all_nanos.len() / 2];
+
+        let line = format!(
+            "{},DijkstraWorkload,\"{}\",{},{:.1}\n",
+            type_name::<S>(),
+            type_name::<H>(),
+            instance,
+            median
+        );
+        writer
+            .write_all(sanitize_graph(sanitize(line)).as_bytes())
+            .unwrap();
+        writer.flush().unwrap();
 
         if !H::MONOTONE {
+            println!("Run Prim");
             let f = PrimWorkload::setup::<H>(graph);
             f();
 
             let mut all_nanos = vec![];
-            for repeat in 0..REPEATS {
+            for _ in 0..REPEATS {
                 let f = PrimWorkload::setup::<H>(graph);
 
                 let start = std::time::Instant::now();
@@ -933,13 +1040,13 @@ fn run_graph<S: SimdElem<u64>, H: Heap<u64>>(
             let median = all_nanos[all_nanos.len() / 2];
 
             let line = format!(
-                "{},{},{},{}\n",
+                "{},PrimWorkload,\"{}\",{},{:.1}\n",
                 type_name::<S>(),
                 type_name::<H>(),
                 instance,
                 median
             );
-            writer.write_all(line.as_bytes()).unwrap();
+            writer.write_all(sanitize(line).as_bytes()).unwrap();
             writer.flush().unwrap();
         }
     }
@@ -978,24 +1085,36 @@ fn run_kv_graph<S: SimdElem<u64>, H: KvHeap<u64>>(
         let median_mem = all_mem[all_mem.len() / 2];
 
         let line = format!(
-            "{},{},{},{},{}\n",
+            "{},{},{},{:.1},{:.2}\n",
             type_name::<S>(),
             type_name::<H>(),
             instance,
             median_time,
             median_mem
         );
-        writer.write_all(line.as_bytes()).unwrap();
+        writer
+            .write_all(sanitize_graph(sanitize(line)).as_bytes())
+            .unwrap();
         writer.flush().unwrap();
     }
 }
 
 #[cfg(feature = "graphs")]
 fn graphs() {
+    println!("Run experiemnt graphs.");
+
+    println!("Read graphs.");
     let graphs = read_graphs_u32();
 
     let mut writer;
-    let top_line = "backend,heap,graph,nano_seconds\n";
+    let top_line = "simd_backend,workload,heap,instance,nano_seconds\n";
+
+    #[cfg(target_feature = "avx512f")]
+    type PlaceholderSimd = simd::Avx2;
+
+    #[cfg(target_arch = "aarch64")]
+    type PlaceholderSimd = simd::Neon;
+
     #[cfg(target_feature = "avx512f")]
     {
         writer = build_writer("graphs_avx");
@@ -1003,7 +1122,6 @@ fn graphs() {
 
         writer.flush().expect("Flush the writer");
 
-        // Run all the competitors
         run_graph::<simd::Avx2, SimdQuickHeap<u64, simd::Avx2>>(&graphs, &mut writer);
         run_graph::<simd::Avx512, SimdQuickHeap<u64, simd::Avx512>>(&graphs, &mut writer);
     }
@@ -1011,14 +1129,25 @@ fn graphs() {
     #[cfg(target_arch = "aarch64")]
     {
         writer = build_writer("graphs_neon");
-        writer.write_all(top_line.as_bytes());
+        writer.write_all(top_line.as_bytes()).unwrap();
 
-        // Run all the competitors
-        run_graph::<SimdQuickHeap<u64, Neon>>(&graphs, &mut writer);
+        run_graph::<simd::Neon, SimdQuickHeap<u64, Neon>>(&graphs, &mut writer);
     }
 
-    // Run competitors that are not backend dependent
-    // TODO:
+    // Run the other competitors
+    run_graph::<
+        PlaceholderSimd,
+        scalar_quickheap::ScalarQuickHeap<u64, 3, false, { Search::LinearScan }>,
+    >(&graphs, &mut writer);
+
+    run_graph::<PlaceholderSimd, original_quickheap::OriginalQuickHeapU64>(&graphs, &mut writer);
+    run_graph::<PlaceholderSimd, sequence_heap::SequenceHeapU64>(&graphs, &mut writer);
+    run_graph::<PlaceholderSimd, s3q::S3qHeapU64>(&graphs, &mut writer);
+    run_graph::<PlaceholderSimd, radix_heap::RadixHeapU64>(&graphs, &mut writer);
+
+    run_graph::<PlaceholderSimd, impls::BinaryHeap<u64>>(&graphs, &mut writer);
+    run_graph::<PlaceholderSimd, impls::OrxDaryHeap<u64, 8>>(&graphs, &mut writer);
+    run_graph::<PlaceholderSimd, impls::WeakHeap<u64>>(&graphs, &mut writer);
 }
 
 #[cfg(feature = "decrease_key")]
@@ -1029,7 +1158,7 @@ fn decrease_key() {
     let graphs = read_graphs_u64();
 
     let mut writer;
-    let top_line = "backend,heap,graph,nano_seconds,bytes_per_elem\n";
+    let top_line = "simd_backend,heap,instance,nano_seconds,bytes_per_elem\n";
     #[cfg(target_feature = "avx512f")]
     {
         writer = build_writer("decrease_key_avx");
@@ -1046,10 +1175,14 @@ fn decrease_key() {
             &graphs,
             &mut writer,
         );
-        run_kv_graph::<
+        run_kv_graph::<simd::Avx2, KvSimdQuickHeap<u64, simd::Avx2, DelTokenHash<u64, simd::Avx2>>>(
+            &graphs,
+            &mut writer,
+        );
+        /* run_kv_graph::<
             simd::Avx2,
             KvSimdQuickHeap<u64, simd::Avx2, DelTokenCountingBloom<u64, simd::Avx2, 16>>,
-        >(&graphs, &mut writer);
+        >(&graphs, &mut writer); */
 
         run_kv_graph::<simd::Avx512, KvSimdQuickHeap<u64, simd::Avx512, SimpleDK<u64>>>(
             &graphs,
@@ -1061,8 +1194,12 @@ fn decrease_key() {
         >(&graphs, &mut writer);
         run_kv_graph::<
             simd::Avx512,
-            KvSimdQuickHeap<u64, simd::Avx512, DelTokenCountingBloom<u64, simd::Avx512, 16>>,
+            KvSimdQuickHeap<u64, simd::Avx512, DelTokenHash<u64, simd::Avx512>>,
         >(&graphs, &mut writer);
+        /* run_kv_graph::<
+            simd::Avx512,
+            KvSimdQuickHeap<u64, simd::Avx512, DelTokenCountingBloom<u64, simd::Avx512, 16>>,
+        >(&graphs, &mut writer); */
     }
 
     #[cfg(target_arch = "aarch64")]
@@ -1070,57 +1207,39 @@ fn decrease_key() {
         writer = build_writer("decrease_key_neon");
         writer.write_all(top_line.as_bytes());
 
-        // Run all the competitors
-        run_graph_kv::<simd::Neon, KvSimdQuickHeap<u64, simd::Neon>>(&graphs, &mut writer);
+        run_kv_graph::<simd::Neon, KvSimdQuickHeap<u64, simd::Neon, SimpleDK<u64>>>(
+            &graphs,
+            &mut writer,
+        );
+        run_kv_graph::<simd::Neon, KvSimdQuickHeap<u64, simd::Neon, DelTokenSort<u64, simd::Neon>>>(
+            &graphs,
+            &mut writer,
+        );
+        run_kv_graph::<simd::Neon, KvSimdQuickHeap<u64, simd::Neon, DelTokenHash<u64, simd::Neon>>>(
+            &graphs,
+            &mut writer,
+        );
+        /* run_kv_graph::<
+            simd::Neon,
+            KvSimdQuickHeap<u64, simd::Neon, DelTokenCountingBloom<u64, simd::Neon, 16>>,
+        >(&graphs, &mut writer); */
     }
 }
-
-/*
-
-
-/// Runs the workload `REPEATS` times, writes each run as a CSV row, and
-/// returns the median nanos (used to decide whether to skip larger `n`).
-fn time_workload<H: Heap<u64>, W: GraphWorkload>(instance: &str, graph: &Graph<u32>) -> f64 {
-    // Warmup: run once to populate instruction cache, page tables, and branch predictors.
-    let f = W::setup::<H>(graph);
-    f();
-
-    let mut all_nanos = vec![];
-
-    for repeat in 0..REPEATS {
-        let f = W::setup::<H>(graph);
-
-        let start = std::time::Instant::now();
-        let (push_count, pop_count) = f();
-        let nanos = start.elapsed().as_nanos() as f64;
-
-        let result = Result {
-            heap: type_name::<H>(),
-            graph: instance.to_string(),
-            workload: type_name::<W>(),
-            vertices: graph.num_vertices(),
-            edges: graph.num_edges(),
-            push_count,
-            pop_count,
-            repeat,
-            nanos,
-        };
-
-        CSV_WRITER.with(|w| {
-            w.borrow_mut().serialize(&result).unwrap();
-            w.borrow_mut().flush().unwrap();
-        });
-        all_nanos.push(result.nanos);
-    }
-
-    all_nanos.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    all_nanos[all_nanos.len() / 2]
-}
- */
 
 fn sanitize(s: String) -> String {
     s.replace("simd::", "")
         .replace(" ", "")
+        .replace("input/", "")
+        .replace("_graph.gr", "")
+        .replace("sequence_heap::", "")
+        .replace("s3q::", "")
+        .replace("radix_heap::", "")
+        .replace("scalar_quickheap::", "")
+        .replace("original_quickheap::", "")
+        .replace("Search::", "")
+        .replace("alloc::collections::binary_heap::", "")
+        .replace("orx_priority_queue::dary::daryheap::", "")
+        .replace("weakheap::", "")
         .replace("radix_quickheap::", "")
         .replace("quickheap_dev::", "")
         .replace("quickheap::", "")
@@ -1133,12 +1252,32 @@ fn sanitize(s: String) -> String {
         .replace("<Avx2>", "")
         .replace("<Avx512>", "")
         .replace("vec_bucket::", "")
+        .replace("decrease_key::", "")
         .replace("rebalancing_strategies::", "")
         .replace("pivot_strategies::", "")
         .replace("block_partitioning::", "")
         .replace("bench::", "")
         .replace("workloads::", "")
         .replace("list_block_bucket::", "")
+        .replace("I32", "")
+        .replace("I64", "")
+        .replace("U32", "")
+        .replace("U64", "")
+        .replace("", "")
+        .replace("", "")
+        .replace("", "")
+        .replace("", "")
+        .replace("", "")
+        .replace("", "")
+}
+
+fn sanitize_graph(s: String) -> String {
+    s.replace(",Avx2", "")
+        .replace(",Avx512", "")
+        .replace(",Neon", "")
+        .replace("u64", "")
+        .replace("<>", "")
+        .replace("<,", ">")
 }
 
 fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
@@ -1574,6 +1713,52 @@ macro_rules! dispatch_heap {
                 HeapFamily::RadixSimdQH => {
                     dispatch_radix!($e, $t, $w, $simd, h.config_radix.b, h.config_radix.thresh, $writer);
                 }
+
+                HeapFamily::ScalarQH => {
+                    //
+                    run_config::<$t, $simd, scalar_quickheap::ScalarQuickHeap<$t, 3, false, { Search::LinearScan }>, $w>($e, $writer);
+                }
+                HeapFamily::OriginalQH => {
+                    if TypeId::of::<$t>() == TypeId::of::<i32>() {
+                        run_config::<i32, $simd, original_quickheap::OriginalQuickHeapI32, $w>($e, $writer);
+                    }
+                    if TypeId::of::<$t>() == TypeId::of::<i64>() {
+                        run_config::<i64, $simd, original_quickheap::OriginalQuickHeapI64, $w>($e, $writer);
+                    }
+                }
+                HeapFamily::SequenceHeap => {
+                    if TypeId::of::<$t>() == TypeId::of::<i32>() {
+                        run_config::<i32, $simd, sequence_heap::SequenceHeapI32, $w>($e, $writer);
+                    }
+                    if TypeId::of::<$t>() == TypeId::of::<i64>() {
+                        run_config::<i64, $simd, sequence_heap::SequenceHeapI64, $w>($e, $writer);
+                    }
+                }
+                HeapFamily::S3qHeap => {
+                    if TypeId::of::<$t>() == TypeId::of::<i32>() {
+                        run_config::<i32, $simd, s3q::S3qHeapI32, $w>($e, $writer);
+                    }
+                    if TypeId::of::<$t>() == TypeId::of::<i64>() {
+                        run_config::<i64, $simd, s3q::S3qHeapI64, $w>($e, $writer);
+                    }
+                }
+                HeapFamily::RadixHeap => {
+                    if TypeId::of::<$t>() == TypeId::of::<i32>() {
+                        run_config::<i32, $simd, radix_heap::RadixHeapI32, $w>($e, $writer);
+                    }
+                    if TypeId::of::<$t>() == TypeId::of::<i64>() {
+                        run_config::<i64, $simd, radix_heap::RadixHeapI64, $w>($e, $writer);
+                    }
+                }
+                HeapFamily::BinaryHeap => {
+                    run_config::<$t, $simd, impls::BinaryHeap<$t>, $w>($e, $writer);
+                }
+                HeapFamily::Orx8aryHeap => {
+                    run_config::<$t, $simd, impls::OrxDaryHeap<$t, 8>, $w>($e, $writer);
+                }
+                HeapFamily::WeakHeap => {
+                    run_config::<$t, $simd, impls::WeakHeap<$t>, $w>($e, $writer);
+                }
             }
         }
     };
@@ -1638,14 +1823,17 @@ fn main() {
     println!("| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |");
 
     // Benchmarks using different worklaods
-    // #[cfg(feature = "competitors")]
-    // TODO: competitors();
+    #[cfg(feature = "competitors")]
+    competitors();
 
     #[cfg(feature = "simd_qhs")]
     simd_qhs();
 
     #[cfg(feature = "implicit_equal_buckets")]
     implicit_equal_buckets();
+
+    #[cfg(feature = "multiway")]
+    multiway();
 
     #[cfg(feature = "radix")]
     radix();
