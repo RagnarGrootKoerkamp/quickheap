@@ -73,6 +73,8 @@ pub use simd::Avx2;
 pub use simd::Avx512;
 pub use simd::Neon;
 
+pub use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
+
 pub trait ElemT: PartialEq + PrimInt + BitAndAssign + BitOrAssign {}
 impl<T: PartialEq + PrimInt + BitAndAssign + BitOrAssign> ElemT for T {}
 
@@ -242,7 +244,9 @@ impl<T: ElemT + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
         // Clear the next layer
         next_layer.clear();
 
-        VecPartitioning::<T, S>::partition(cur_layer, next_layer, pivot, pivot_pos);
+        VecPartitioning::<T, S>::partition::<{ simd::SPLIT_PIVOTS_CUR_AND_NEXT }>(
+            cur_layer, next_layer, pivot, pivot_pos,
+        );
 
         debug_assert!(next_layer.len() + cur_layer.len() == n);
 

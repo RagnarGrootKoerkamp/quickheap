@@ -46,88 +46,122 @@
     "speedup_metric": "nano_seconds"
   },
   {
-      "name": "radix",
-      "heap_mappings":
-        {
-          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH",
-          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4>": "Multi1024",
-          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,128,128,true,false,4,2048>": "Multi2048",
-          "RadixSimdQuickHeap<2,1024>": "Radix1024",
-          "RadixSimdQuickHeap<2,2048>": "Radix2048"
-        },
-      "heap_colors": {
-        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:goldenrod",
-        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4>": "xkcd:navy blue",
-        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,128,128,true,false,4,2048>": "xkcd:grey blue",
-        "RadixSimdQuickHeap<2,1024>": "xkcd:light olive",
-        "RadixSimdQuickHeap<2,2048>": "xkcd:olive drab"
+    "name": "radix",
+    "heap_mappings":
+      {
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4>": "Multi1024",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,128,128,true,false,4,2048>": "Multi2048",
+        "RadixSimdQuickHeap<2,1024>": "Radix1024",
+        "RadixSimdQuickHeap<2,2048>": "Radix2048"
       },
-      "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
-      "plot_by": ["nano_seconds"],
-      "plot_types": ["i32", "i64"],
-      "table_n": 33554432,
-      "table_type": "i64",
-      "table_workload": "MonotoneConstantSize",
-      "table_backend": "Avx512",
-      "table_cols": ["nano_seconds", "median_layers"],
-      "show_speedup": true,
-      "speedup_metric": "nano_seconds"
+    "heap_colors": {
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:goldenrod",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4>": "xkcd:navy blue",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,128,128,true,false,4,2048>": "xkcd:grey blue",
+      "RadixSimdQuickHeap<2,1024>": "xkcd:light olive",
+      "RadixSimdQuickHeap<2,2048>": "xkcd:olive drab"
     },
-    {
-      "name": "rebalancing",
-      "heap_mappings":
-        {
-          "SimdQuickHeap": "SQH",
-          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH",
-          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,PivotForgetting<2,256>,16,0,0,true,false,2,0>": "PF-Flat",
-          "ConfigurableSimdQuickHeap<ListBlockBucket<224,256>,BlockedPartitioning<224,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,PivotForgetting<2,256>,16,224,256,true,false,2,0>": "PF-Block",
-          "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,RandomizedRebalancing<128>,16,0,0,true,false,2,0>": "RR-Flat",
-          "ConfigurableSimdQuickHeap<ListBlockBucket<224,256>,BlockedPartitioning<224,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,RandomizedRebalancing<128>,16,224,256,true,false,2,0>": "RR-Block"
-        },
-      "heap_colors": {
-        "SimdQuickHeap": "xkcd:salmon",
-        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:navy blue",
-        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "xkcd:peach"
+    "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
+    "plot_by": ["nano_seconds"],
+    "plot_types": ["i32", "i64"],
+    "table_n": 33554432,
+    "table_type": "i64",
+    "table_workload": "MonotoneConstantSize",
+    "table_backend": "Avx512",
+    "table_cols": ["nano_seconds", "median_layers"],
+    "show_speedup": true,
+    "speedup_metric": "nano_seconds"
+  },
+  {
+    "name": "multiway",
+    "heap_mappings":
+      {
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4>": "Multi1024",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,128,128,true,false,4,2048>": "Multi2048"
       },
-      "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
-      "plot_by": ["nano_seconds"],
-      "plot_types": ["i32", "i64"],
-      "table_n": 1048576,
-      "table_type": "i64",
-      "table_workload": "MostlyPushDecreasing",
-      "table_backend": "Avx512",
-      "table_cols": ["nano_seconds", "median_layers"],
-      "show_speedup": true,
-      "speedup_metric": "nano_seconds"
+    "heap_colors": {
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:goldenrod",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,4>": "xkcd:navy blue",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,128,128,true,false,4,2048>": "xkcd:grey blue"
     },
-    {
-      "name": "competitors",
-      "heap_mappings":
-        {
-          "SimdQuickHeap": "SQH"
-        },
-      "heap_colors": {
-        "SimdQuickHeap": "xkcd:salmon"
+    "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
+    "plot_by": ["nano_seconds"],
+    "plot_types": ["i32", "i64"],
+    "table_n": 33554432,
+    "table_type": "i64",
+    "table_workload": "MonotoneConstantSize",
+    "table_backend": "Avx512",
+    "table_cols": ["nano_seconds", "median_layers"],
+    "show_speedup": true,
+    "speedup_metric": "nano_seconds"
+  },
+  {
+    "name": "rebalancing",
+    "heap_mappings":
+      {
+        "SimdQuickHeap": "SQH",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "CSQH",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,PivotForgetting<2,256>,16,0,0,true,false,2,0>": "PF-Flat",
+        "ConfigurableSimdQuickHeap<ListBlockBucket<224,256>,BlockedPartitioning<224,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,PivotForgetting<2,256>,16,224,256,true,false,2,0>": "PF-Block",
+        "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,RandomizedRebalancing<128>,16,0,0,true,false,2,0>": "RR-Flat",
+        "ConfigurableSimdQuickHeap<ListBlockBucket<224,256>,BlockedPartitioning<224,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,RandomizedRebalancing<128>,16,224,256,true,false,2,0>": "RR-Block"
       },
-      "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
-      "plot_by": ["nano_seconds"],
-      "plot_types": ["i32", "i64"],
-      "table_n": 32768,
-      "table_type": "i64",
-      "table_workload": "MonotoneConstantSize",
-      "table_backend": "Avx512",
-      "table_cols": ["nano_seconds"],
-      "show_speedup": true,
-      "speedup_metric": "nano_seconds"
+    "heap_colors": {
+      "SimdQuickHeap": "xkcd:salmon",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>": "xkcd:navy blue",
+      "ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,true,2,0>": "xkcd:peach"
     },
-    {
-      "name": "decrease_key",
-      "baseline": "KvSimdQuickHeap<SimpleDK>",
-      "metric": "nano_seconds",
-      "default_workload": "decrease_key",
-      "heap_mappings": {
-        "BinaryHeap": "Binary Heap"
+    "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
+    "plot_by": ["nano_seconds"],
+    "plot_types": ["i32", "i64"],
+    "table_n": 1048576,
+    "table_type": "i64",
+    "table_workload": "MostlyPushDecreasing",
+    "table_backend": "Avx512",
+    "table_cols": ["nano_seconds", "median_layers"],
+    "show_speedup": true,
+    "speedup_metric": "nano_seconds"
+  },
+  {
+    "name": "competitors",
+    "heap_mappings":
+      {
+        "SimdQuickHeap": "SQH"
       },
-      "table_backend": "Avx512"
-    }
+    "heap_colors": {
+      "SimdQuickHeap": "xkcd:salmon"
+    },
+    "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
+    "plot_by": ["nano_seconds"],
+    "plot_types": ["i32", "i64"],
+    "table_n": 32768,
+    "table_type": "i64",
+    "table_workload": "MonotoneConstantSize",
+    "table_backend": "Avx512",
+    "table_cols": ["nano_seconds"],
+    "show_speedup": true,
+    "speedup_metric": "nano_seconds"
+  },
+  {
+    "name": "decrease_key",
+    "baseline": "KvSimdQuickHeap<SimpleDK>",
+    "metric": "nano_seconds",
+    "default_workload": "decrease_key",
+    "heap_mappings": {
+      "BinaryHeap": "Binary Heap"
+    },
+    "table_backend": "Avx512"
+  },
+  {
+    "name": "graphs",
+    "baseline": "SimdQuickHeap",
+    "metric": "nano_seconds",
+    "default_workload": "DijkstraWorkload",
+    "heap_mappings": {
+      "BinaryHeap": "Binary Heap"
+    },
+    "table_backend": "Avx2"
+  }
 ]

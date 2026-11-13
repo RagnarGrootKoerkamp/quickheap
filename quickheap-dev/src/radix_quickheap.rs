@@ -11,10 +11,7 @@ use std::marker::PhantomData;
 use quickheap::pivots::MedianOfM;
 use quickheap::simd;
 
-use simd::Avx2;
-use simd::Avx512;
-use simd::Neon;
-use simd::SimdElem;
+use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
 
 #[cfg(feature = "layer_stats")]
 use crate::stats;
@@ -270,7 +267,9 @@ impl<T: ElemT + Default + Debug, S: simd::SimdElem<T>, const B: usize, const L: 
         // Clear the next layer
         next_layer.clear();
 
-        VecPartitioning::<T, S>::partition(cur_layer, next_layer, pivot, pivot_pos);
+        VecPartitioning::<T, S>::partition::<SPLIT_PIVOTS_CUR_AND_NEXT>(
+            cur_layer, next_layer, pivot, pivot_pos,
+        );
 
         debug_assert!(next_layer.len() + cur_layer.len() == n);
 

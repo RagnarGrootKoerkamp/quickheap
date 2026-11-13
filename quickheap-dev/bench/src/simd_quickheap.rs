@@ -2,7 +2,7 @@ use quickheap::decrease_key::DecreaseKeyStrategy;
 use quickheap::partitioning::{MultiPartition, Partition};
 use quickheap::{ElemT, KvSimdQuickHeap};
 
-use quickheap_dev::{ElemConstraint, RadixSimdQuickHeap};
+use quickheap_dev::{ElemConstraint, EqualSimdQuickHeap, MultiSimdQuickHeap, RadixSimdQuickHeap};
 
 use crate::{Heap, KvHeap, impls::NoHeap, workloads};
 
@@ -164,5 +164,55 @@ impl<
         let sum = 0;
 
         sum
+    }
+}
+
+impl<
+    T: ElemConstraint + ElemT + workloads::Elem + Default,
+    S: quickheap::simd::SimdElem<T>,
+    const P: usize,
+    const L: usize,
+> Heap<T> for MultiSimdQuickHeap<T, S, P, L>
+{
+    type CountedType = workloads::CountComparisons<T>;
+    type CountedHeap = NoHeap;
+
+    fn default() -> Self {
+        Default::default()
+    }
+
+    fn push(&mut self, t: T) {
+        self.push(t);
+    }
+
+    fn pop(&mut self) -> Option<T> {
+        self.pop()
+    }
+
+    fn capacity(&self) -> usize {
+        self.capacity()
+    }
+}
+
+impl<T: ElemConstraint + ElemT + workloads::Elem + Default, S: quickheap::simd::SimdElem<T>> Heap<T>
+    for EqualSimdQuickHeap<T, S>
+{
+    type CountedType = workloads::CountComparisons<T>;
+    type CountedHeap = NoHeap;
+
+    fn default() -> Self {
+        Default::default()
+    }
+
+    fn push(&mut self, t: T) {
+        self.push(t);
+    }
+
+    fn pop(&mut self) -> Option<T> {
+        self.pop()
+    }
+
+    fn capacity(&self) -> usize {
+        self.capacity()
     }
 }

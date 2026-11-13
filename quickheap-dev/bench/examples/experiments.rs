@@ -29,6 +29,8 @@ use quickheap::{
     decrease_key::{DelTokenCountingBloom, DelTokenHash, DelTokenSort, SimpleDK},
 };
 use quickheap_dev::ConfigurableSimdQuickHeap;
+use quickheap_dev::EqualSimdQuickHeap;
+use quickheap_dev::MultiSimdQuickHeap;
 use quickheap_dev::RadixSimdQuickHeap;
 
 use quickheap_dev::{
@@ -390,6 +392,8 @@ pub enum HeapFamily {
 
     // Pure SimdQH variants
     RadixSimdQH,
+    MultiSimdQH,
+    EqualSimdQH,
 
     // Competitors
     ScalarQH,
@@ -408,7 +412,7 @@ pub enum Work {
     MonotoneCS,
     RandomManyEqual,
     MostlyPushDecreasing,
-    // RandomCS,
+    RandomCS,
     // MonotoneW,
     // RandomW,
 }
@@ -444,11 +448,11 @@ impl ConfigSimdQH {
 }
 
 #[derive(Clone, Copy)]
-pub struct ConfigRadixQH {
+pub struct ConfigMulti {
     b: usize,
     thresh: usize,
 }
-impl ConfigRadixQH {
+impl ConfigMulti {
     fn empty() -> Self {
         Self { b: 0, thresh: 0 }
     }
@@ -458,7 +462,8 @@ impl ConfigRadixQH {
 pub struct HeapConfig {
     family: HeapFamily,
     config_simd: ConfigSimdQH,
-    config_radix: ConfigRadixQH,
+    config_radix: ConfigMulti,
+    config_multi: ConfigMulti,
 }
 
 #[derive(Clone, Copy)]
@@ -482,8 +487,11 @@ pub enum Pivots {
 pub enum Rebalancing {
     InvalRebal,
     NoRebal,
+    #[cfg(feature = "rebalancing")]
     PivotForgetting,
+    #[cfg(feature = "rebalancing")]
     RandomizedRebalancing,
+    #[cfg(feature = "rebalancing")]
     ExponentialUpperBound,
 }
 
@@ -681,6 +689,18 @@ fn competitors() {
 fn implicit_equal_buckets() {
     let heap_config = vec![
         HeapConfig {
+            family: HeapFamily::SimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::EqualSimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+        HeapConfig {
             family: HeapFamily::ConfigSimdQH,
             config_simd: ConfigSimdQH {
                 bucket: Buckets::Vec,
@@ -693,7 +713,8 @@ fn implicit_equal_buckets() {
                 p: 2,
                 multi_thresh: 0,
             },
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
         },
         HeapConfig {
             family: HeapFamily::ConfigSimdQH,
@@ -708,7 +729,8 @@ fn implicit_equal_buckets() {
                 p: 2,
                 multi_thresh: 0,
             },
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
         },
     ];
 
@@ -925,6 +947,86 @@ fn radix() {
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
         types: vec![Type::I32, Type::I64],
+        metrics: vec![nano_timer, layer_measurement],
+    };
+
+    run(&mut e);
+}
+
+#[cfg(feature = "multiway")]
+fn multiway() {
+    let heap_config = vec![
+        HeapConfig {
+            family: HeapFamily::SimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::Vec,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::NoRebal,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::Vec,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::NoRebal,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 4,
+                multi_thresh: 1024,
+            },
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::MultiSimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti { b: 4, thresh: 1024 },
+        },
+        HeapConfig {
+            family: HeapFamily::MultiSimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti { b: 4, thresh: 2048 },
+        },
+        HeapConfig {
+            family: HeapFamily::MultiSimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti {
+                b: 4,
+                thresh: 32768,
+            },
+        },
+    ];
+
+    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+    let layer_measurement = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+
+    let mut e = Experiment {
+        name: "Multiway Partitioning".to_string(),
+        output_name: "multiway".to_string(),
+        ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        heaps: heap_config,
+        workloads: vec![Work::MonotoneCS, Work::RandomCS],
+        types: vec![Type::I64],
         metrics: vec![nano_timer, layer_measurement],
     };
 
@@ -1232,6 +1334,7 @@ fn sanitize(s: String) -> String {
         .replace("input/", "")
         .replace("_graph.gr", "")
         .replace("sequence_heap::", "")
+        .replace("multi_quickheap::", "")
         .replace("s3q::", "")
         .replace("radix_heap::", "")
         .replace("scalar_quickheap::", "")
@@ -1355,6 +1458,34 @@ fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
     }
 }
 
+macro_rules! dispatch_multi_ll {
+    ($e:expr, $t:ty, $w:ty, $simd:ty, $b:literal, $ll:expr, $writer: expr) => {
+        match $ll {
+            512 => run_config::<$t, $simd, MultiSimdQuickHeap<$t, $simd, $b, 512>, $w>($e, $writer),
+            1024 => {
+                run_config::<$t, $simd, MultiSimdQuickHeap<$t, $simd, $b, 1024>, $w>($e, $writer)
+            }
+            2048 => {
+                run_config::<$t, $simd, MultiSimdQuickHeap<$t, $simd, $b, 2048>, $w>($e, $writer)
+            }
+            32768 => {
+                run_config::<$t, $simd, MultiSimdQuickHeap<$t, $simd, $b, 32768>, $w>($e, $writer)
+            }
+            x => panic!("unsupported multi thresh: {}", x),
+        }
+    };
+}
+
+macro_rules! dispatch_multi {
+    ($e:expr, $t:ty, $w:ty, $simd:ty, $b:expr, $ll:expr, $writer: expr) => {
+        match $b {
+            4 => dispatch_multi_ll!($e, $t, $w, $simd, 4, $ll, $writer),
+            5 => dispatch_multi_ll!($e, $t, $w, $simd, 5, $ll, $writer),
+            x => panic!("unsupported #partitions b: {}", x),
+        }
+    };
+}
+
 macro_rules! dispatch_radix_ll {
     ($e:expr, $t:ty, $w:ty, $simd:ty, $b:literal, $ll:expr, $writer: expr) => {
         match $ll {
@@ -1428,6 +1559,7 @@ macro_rules! dispatch_config_simdqh {
                 >($e, $writer);
             }
             /* Rebalancing */
+            #[cfg(feature = "rebalancing")]
             (
                 Buckets::Vec,
                 Pivots::MedianOf3,
@@ -1461,6 +1593,7 @@ macro_rules! dispatch_config_simdqh {
                     $w,
                 >($e, $writer);
             },
+            #[cfg(feature = "rebalancing")]
             (
                 Buckets::ListBlock,
                 Pivots::MedianOf3,
@@ -1494,6 +1627,7 @@ macro_rules! dispatch_config_simdqh {
                     $w,
                 >($e, $writer);
             }
+            #[cfg(feature = "rebalancing")]
             (
                 Buckets::Vec,
                 Pivots::MedianOf3,
@@ -1527,6 +1661,7 @@ macro_rules! dispatch_config_simdqh {
                     $w,
                 >($e, $writer);
             }
+            #[cfg(feature = "rebalancing")]
             (
                 Buckets::Vec,
                 Pivots::MedianOf3,
@@ -1560,6 +1695,7 @@ macro_rules! dispatch_config_simdqh {
                     $w,
                 >($e, $writer);
             },
+            #[cfg(feature = "rebalancing")]
             (
                 Buckets::ListBlock,
                 Pivots::MedianOf3,
@@ -1713,6 +1849,12 @@ macro_rules! dispatch_heap {
                 HeapFamily::RadixSimdQH => {
                     dispatch_radix!($e, $t, $w, $simd, h.config_radix.b, h.config_radix.thresh, $writer);
                 }
+                HeapFamily::MultiSimdQH => {
+                    dispatch_multi!($e, $t, $w, $simd, h.config_multi.b, h.config_multi.thresh, $writer);
+                }
+                HeapFamily::EqualSimdQH => {
+                    run_config::<$t, $simd, EqualSimdQuickHeap<$t, $simd>, $w>($e, $writer);
+                }
 
                 HeapFamily::ScalarQH => {
                     //
@@ -1773,7 +1915,7 @@ macro_rules! dispatch_workload {
                 // Work::MonotoneW => {dispatch_heap!($e, $t, workloads::MonotoneWiggle, $simd, $writer);},
                 // Work::RandomW => {dispatch_heap!($e, $t, workloads::RandomWiggle, $simd, $writer);},
                 Work::MonotoneCS => {dispatch_heap!($e, $t, workloads::MonotoneConstantSize, $simd, $writer);},
-                // Work::RandomCS => {dispatch_heap!($e, $t, workloads::RandomConstantSize, $simd, $writer);},
+                Work::RandomCS => {dispatch_heap!($e, $t, workloads::RandomConstantSize, $simd, $writer);},
                 Work::MostlyPushDecreasing => {dispatch_heap!($e, $t, workloads::MostlyPushDecreasing, $simd, $writer);},
                 Work::RandomManyEqual => {dispatch_heap!($e, $t, workloads::RandomConstantSizeManyEqual, $simd, $writer);},
             }

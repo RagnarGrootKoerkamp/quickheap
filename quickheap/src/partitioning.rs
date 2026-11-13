@@ -28,7 +28,12 @@ impl<T: ElemT, S: simd::SimdElem<T>> VecPartitioning<T, S> {
     #[inline]
     /// Partition `cur_layer` into the `cur_layer` and `next_layer`.
     /// Elements equal to `pivot` can go either way.
-    pub fn partition(cur_layer: &mut Vec<T>, next_layer: &mut Vec<T>, pivot: T, pivot_pos: usize) {
+    pub fn partition<const MODE: usize>(
+        cur_layer: &mut Vec<T>,
+        next_layer: &mut Vec<T>,
+        pivot: T,
+        pivot_pos: usize,
+    ) {
         assert!(next_layer.is_empty(), "destination layer must be empty");
         let n = cur_layer.len();
 
@@ -53,7 +58,7 @@ impl<T: ElemT, S: simd::SimdElem<T>> VecPartitioning<T, S> {
 
         for i in (0..n2).step_by(S::L) {
             unsafe {
-                S::partition_fast::<SPLIT_PIVOTS_CUR_AND_NEXT>(
+                S::partition_fast::<MODE>(
                     S::simd_from_ptr(cur_layer_ptr.add(i)),
                     threshold,
                     pivot_pos,
@@ -67,7 +72,7 @@ impl<T: ElemT, S: simd::SimdElem<T>> VecPartitioning<T, S> {
 
         if n2 < n {
             unsafe {
-                S::partition_slow::<SPLIT_PIVOTS_CUR_AND_NEXT>(
+                S::partition_slow::<MODE>(
                     S::simd_from_ptr(cur_layer_ptr.add(n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
@@ -295,5 +300,88 @@ impl<T: ElemT, S: simd::SimdElem<T>> VecPartitioning<T, S> {
             pivots.push((base | (T::from(k).unwrap() << shift)) ^ flip);
         }
         pivots
+    }
+
+    #[inline(always)]
+    pub fn multi_partition<const P: usize>(
+        layers: &mut [Vec<T>],
+        pivots: &[T],
+        pivot_pos: [usize; P],
+    ) -> [usize; P] {
+        let n = layers[0].len();
+        debug_assert!(layers.len() == P);
+        debug_assert!(P > 1);
+
+        // Reserve space in the next layers,
+        // and make sure the current layer can hold a spare SIMD register.
+
+        layers[0].reserve(S::L);
+        unsafe {
+            layers[0].set_len(n + S::L);
+        }
+
+        for i in 0..P {
+            layers[i].reserve(n + S::L);
+            unsafe { layers[i].set_len(n + S::L) };
+        }
+
+        let n2 = n.next_multiple_of(S::L).saturating_sub(S::L);
+
+        // Partition a list into P using SIMD.
+
+        let mut lens = [0; P];
+        let thresholds: [S::Simd; P] = core::array::from_fn(|i| S::splat(pivots[i.min(P - 2)]));
+
+        let mut ptrs: [*mut T; P] = [ptr::null_mut(); P];
+        for i in 0..P {
+            ptrs[i] = layers[i].as_mut_ptr();
+        }
+
+        let half = pivot_pos[0].next_multiple_of(S::L).saturating_sub(S::L);
+
+        for i in (0..half).step_by(S::L) {
+            unsafe {
+                S::partition_multi_fast::<P, { simd::ABOVE_GT }>(
+                    S::simd_from_slice(layers[0].get_unchecked(i..i + S::L)),
+                    &thresholds[0..P - 1],
+                    // pivot_pos[0],
+                    &mut ptrs,
+                    &mut lens,
+                );
+            }
+        }
+
+        for i in (half..n2).step_by(S::L) {
+            unsafe {
+                S::partition_multi_fast::<P, { simd::ABOVE_GE }>(
+                    S::simd_from_slice(layers[0].get_unchecked(i..i + S::L)),
+                    &thresholds[0..P - 1],
+                    // pivot_pos[0],
+                    &mut ptrs,
+                    &mut lens,
+                );
+            }
+        }
+
+        if n2 < n {
+            unsafe {
+                S::partition_multi_slow::<P>(
+                    S::simd_from_slice(layers[0].get_unchecked(n2..n)),
+                    S::splat(S::from_usize(n - n2)),
+                    &thresholds[0..P - 1],
+                    pivot_pos[0],
+                    &mut ptrs,
+                    &mut lens,
+                );
+            }
+        }
+
+        for i in 0..P {
+            unsafe {
+                layers[i].set_len(lens[i]);
+            }
+        }
+
+        lens
     }
 }

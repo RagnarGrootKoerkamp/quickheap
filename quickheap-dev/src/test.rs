@@ -4,12 +4,13 @@ use std::ops::Sub;
 use quickheap::ElemT;
 
 use crate::{
-    ConfigurableSimdQuickHeap, ElemConstraint, SimdElem,
+    ConfigurableSimdQuickHeap, ElemConstraint, EqualSimdQuickHeap, SimdElem,
     buckets::{
         block_partitioning::{BlockedPartitioning, FlatPartitioning},
         list_block_bucket::ListBlockBucket,
         vec_bucket::VecBucket,
     },
+    multi_quickheap::MultiSimdQuickHeap,
     pivot_strategies::{EqualMultiMedianOfM, GeoMultiMedianOfM, MedianOfM},
     radix_quickheap::RadixSimdQuickHeap,
     rebalancing_strategies::{
@@ -154,8 +155,10 @@ where
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
         // let mut q = RadixSimdQuickHeap::<T, S, 2>::default();
+        // let mut q = MultiSimdQuickHeap::<T, S, 4, 1024>::default();
+        let mut q = EqualSimdQuickHeap::<T, S>::default();
 
-        let mut q = <ConfigurableSimdQuickHeap<
+        /* let mut q = <ConfigurableSimdQuickHeap<
             T,
             // VecBucket<T>,
             // FlatPartitioning<S>,
@@ -176,7 +179,7 @@ where
             false,
             2,
             0,
-        >>::default();
+        >>::default(); */
 
         for _ in 0..n {
             let t = g.get();
@@ -203,7 +206,7 @@ where
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        let mut q1 = <ConfigurableSimdQuickHeap<
+        /* let mut q1 = <ConfigurableSimdQuickHeap<
             T,
             // VecBucket<T>,
             // FlatPartitioning<S>,
@@ -224,9 +227,11 @@ where
             false,
             2,
             0,
-        >>::default();
+        >>::default(); */
 
+        // let mut q1 = MultiSimdQuickHeap::<T, S, 4, 1024>::default();
         // let mut q1 = RadixSimdQuickHeap::<T, S, 2>::default();
+        let mut q1 = EqualSimdQuickHeap::<T, S>::default();
 
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 

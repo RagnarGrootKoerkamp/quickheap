@@ -59,6 +59,13 @@ fn get_bucket<T: Elem, B: buckets::Bucket<T, K, CAP>, const K: usize, const CAP:
 }
 
 #[inline(always)]
+fn get_vec<T: Elem>(layer: &Vec<T>) -> (T, usize) {
+    let n = layer.len();
+    let pos = rand::random_range(0..n);
+    (layer[pos], pos)
+}
+
+#[inline(always)]
 fn get_m_median_const<T: Elem, const M: usize>(layer: &Vec<T>) -> T {
     let n = layer.len();
     let k = M / 2;
@@ -187,6 +194,8 @@ pub trait MultiPivotStrategy<const P: usize> {
     >(
         layer: &B,
     ) -> ([T; P], [usize; P]);
+
+    fn pick<T: Elem + ElemConstraint>(layer: &Vec<T>) -> ([T; P], [usize; P]);
 }
 
 pub struct GeoMultiMedianOfM<const M: usize>;
@@ -230,6 +239,36 @@ impl<const P: usize, const M: usize> MultiPivotStrategy<P> for GeoMultiMedianOfM
 
         (pivots, pivot_pos)
     }
+
+    fn pick<T: Elem + ElemConstraint>(layer: &Vec<T>) -> ([T; P], [usize; P]) {
+        let num_pivots: usize = <Self as MultiPivotStrategy<P>>::NUM_PIVOTS;
+        let num_samples: usize = <Self as MultiPivotStrategy<P>>::NUM_SAMPLES;
+
+        const {
+            assert!(P > 1);
+            assert!(<Self as MultiPivotStrategy<P>>::NUM_SAMPLES <= MAX_SAMPLES);
+        }
+
+        let mut pivots: [T; P] = [T::minimum(); P];
+        let mut pivot_pos: [usize; P] = [0; P];
+
+        let mut pivot_samples: [(T, usize); MAX_SAMPLES] = [(T::minimum(), 0); MAX_SAMPLES];
+
+        for i in 0..num_samples {
+            pivot_samples[i] = get_vec(layer);
+        }
+
+        pivot_samples[0..num_samples].sort_unstable_by_key(|&p| p.0);
+
+        for i in 0..(P - 1) {
+            let idx = ((num_pivots + 1) / 2usize.pow(i as u32 + 1)) - 1;
+            let piv = pivot_samples[M * idx];
+            pivots[i] = piv.0;
+            pivot_pos[i] = piv.1;
+        }
+
+        (pivots, pivot_pos)
+    }
 }
 
 pub struct EqualMultiMedianOfM<const M: usize>;
@@ -260,6 +299,35 @@ impl<const P: usize, const M: usize> MultiPivotStrategy<P> for EqualMultiMedianO
 
         for i in 0..num_samples {
             pivot_samples[i] = get_bucket(layer);
+        }
+
+        pivot_samples[0..num_samples].sort_unstable_by_key(|&p| std::cmp::Reverse(p.0));
+
+        for i in 0..(P - 1) {
+            let piv = pivot_samples[M * i];
+            pivots[i] = piv.0;
+            pivot_pos[i] = piv.1;
+        }
+
+        (pivots, pivot_pos)
+    }
+
+    fn pick<T: Elem + ElemConstraint>(layer: &Vec<T>) -> ([T; P], [usize; P]) {
+        let num_pivots: usize = <Self as MultiPivotStrategy<P>>::NUM_PIVOTS;
+        let num_samples: usize = <Self as MultiPivotStrategy<P>>::NUM_SAMPLES;
+
+        const {
+            assert!(P > 1);
+            assert!(<Self as MultiPivotStrategy<P>>::NUM_SAMPLES <= MAX_SAMPLES);
+        }
+
+        let mut pivots: [T; P] = [T::minimum(); P];
+        let mut pivot_pos: [usize; P] = [0; P];
+
+        let mut pivot_samples: [(T, usize); MAX_SAMPLES] = [(T::minimum(), 0); MAX_SAMPLES];
+
+        for i in 0..num_samples {
+            pivot_samples[i] = get_vec(layer);
         }
 
         pivot_samples[0..num_samples].sort_unstable_by_key(|&p| std::cmp::Reverse(p.0));

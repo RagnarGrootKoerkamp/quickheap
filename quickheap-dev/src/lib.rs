@@ -20,6 +20,11 @@ pub mod rebalancing_strategies;
 pub mod radix_quickheap;
 pub use radix_quickheap::RadixSimdQuickHeap;
 
+pub mod equal_quickheap;
+pub mod multi_quickheap;
+pub use equal_quickheap::EqualSimdQuickHeap;
+pub use multi_quickheap::MultiSimdQuickHeap;
+
 #[doc(hidden)]
 pub mod buckets;
 
