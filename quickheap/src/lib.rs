@@ -79,8 +79,10 @@ pub trait ElemT: PartialEq + PrimInt + BitAndAssign + BitOrAssign {}
 impl<T: PartialEq + PrimInt + BitAndAssign + BitOrAssign> ElemT for T {}
 
 /* Constants for development testing */
-const SIMD_INSERT: bool = false; // TODO: Test again
-const LOWEST_LAYER_SIZE: usize = 16;
+const SIMD_INSERT: bool = true;
+const LOWEST_LAYER_SIZE: usize = 128;
+
+const SIMD_MIN_UNSORTED: bool = false;
 
 /// The default Simd backend, decided at compile time based on the target architecture.
 #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
@@ -189,22 +191,32 @@ impl<T: ElemT + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
             }
 
             // Sort final layer decreasing.
-            let layer = &mut self.buckets[self.pivots.len()];
-            layer.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
+            if !SIMD_MIN_UNSORTED {
+                let layer = &mut self.buckets[self.pivots.len()];
+                layer.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
+            }
         }
 
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.pivots.len()];
         debug_assert!(!layer.is_empty());
 
-        let min = layer.pop().unwrap();
+        let min;
+        if !SIMD_MIN_UNSORTED {
+            min = layer.pop().unwrap();
+        } else {
+            // let (min_elem, pos) = simd::simd_min_pos::<T, S>(layer);
+            let pos = simd::position_min::<T, S>(layer);
+            min = layer[pos];
+            layer.swap_remove(pos);
+        }
 
         // Update the active layer.
         if layer.is_empty() && !self.pivots.is_empty() {
             self.pivots.pop();
 
             // Sort the new final layer decreasing if it's already small.
-            if self.buckets[self.pivots.len()].len() <= Self::N {
+            if !SIMD_MIN_UNSORTED && self.buckets[self.pivots.len()].len() <= Self::N {
                 let layer = &mut self.buckets[self.pivots.len()];
                 layer.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
             }

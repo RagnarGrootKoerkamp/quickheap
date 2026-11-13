@@ -1,0 +1,9 @@
+elem_type,simd_backend,n,workload,heap,nano_seconds
+i64,Avx2,262144,MonotoneConstantSize,"SimdQuickHeap",28.74
+i64,Avx2,1048576,MonotoneConstantSize,"SimdQuickHeap",30.00
+i64,Avx2,4194304,MonotoneConstantSize,"SimdQuickHeap",31.03
+i64,Avx2,16777216,MonotoneConstantSize,"SimdQuickHeap",32.52
+i64,Avx512,262144,MonotoneConstantSize,"SimdQuickHeap",26.02
+i64,Avx512,1048576,MonotoneConstantSize,"SimdQuickHeap",28.16
+i64,Avx512,4194304,MonotoneConstantSize,"SimdQuickHeap",36.06
+i64,Avx512,16777216,MonotoneConstantSize,"SimdQuickHeap",30.60

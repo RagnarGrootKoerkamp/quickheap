@@ -97,13 +97,9 @@ pub unsafe trait SimdElem<T>: 'static {
         threshold_val: Self::Simd,
     ) -> u64;
 
-    /*
     fn simd_min(a: Self::Simd, b: Self::Simd) -> Self::Simd;
     fn simd_eq_bitmask(a: Self::Simd, b: Self::Simd) -> u64;
     fn reduce_min(a: Self::Simd) -> T;
-    fn simd_max(a: Self::Simd, b: Self::Simd) -> Self::Simd;
-    fn reduce_max(a: Self::Simd) -> T;
-     */
 
     /// Partition all `L` lanes of `vals` against `threshold`.
     /// # Safety
@@ -283,13 +279,12 @@ pub fn position_min<T: Copy + Ord, S: SimdElem<T>>(v: &mut [T]) -> usize {
     }
 }
 
-/*
-/// Returns `(min, index of first occurrence)`. For an empty slice returns `(S::MAX, 0)`.
-#[inline(never)]
+#[inline(always)]
 pub fn simd_min_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> (T, usize) {
+    debug_assert!(!s.is_empty());
     let full = s.len() / S::L * S::L;
 
-    // Pass 1: minimum value.
+    // Pass 1: lane-wise min, then one horizontal reduce.
     let mut acc = S::splat(S::MAX);
     let mut i = 0;
     while i < full {
@@ -298,12 +293,10 @@ pub fn simd_min_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> (T, usize) {
     }
     let mut min = S::reduce_min(acc);
     for &x in &s[full..] {
-        if x < min {
-            min = x;
-        }
+        min = min.min(x);
     }
 
-    // Pass 2: first position equal to the minimum.
+    // Pass 2: first lane equal to min.
     let m = S::splat(min);
     let mut i = 0;
     while i < full {
@@ -313,55 +306,11 @@ pub fn simd_min_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> (T, usize) {
         }
         i += S::L;
     }
-    for (j, &x) in s[full..].iter().enumerate() {
-        if x == min {
-            return (min, full + j);
-        }
-    }
-    (min, 0)
-} */
-
-/*
-/// Returns `(max, index of first occurrence)`, or `None` for an empty slice.
-#[inline(never)]
-pub fn simd_max_pos<T: Copy + Ord, S: SimdElem<T>>(s: &[T]) -> Option<(T, usize)> {
-    if s.is_empty() {
-        return None;
-    }
-    let full = s.len() / S::L * S::L;
-
-    // Pass 1: maximum value. Seeding with s[0] avoids needing a MIN constant.
-    let mut acc = S::splat(s[0]);
-    let mut i = 0;
-    while i < full {
-        acc = S::simd_max(acc, unsafe { S::simd_from_ptr(s.as_ptr().add(i)) });
-        i += S::L;
-    }
-    let mut max = S::reduce_max(acc);
-    for &x in &s[full..] {
-        if x > max {
-            max = x;
-        }
-    }
-
-    // Pass 2: first position equal to the maximum.
-    let m = S::splat(max);
-    let mut i = 0;
-    while i < full {
-        let mask = S::simd_eq_bitmask(unsafe { S::simd_from_ptr(s.as_ptr().add(i)) }, m);
-        if mask != 0 {
-            return Some((max, i + mask.trailing_zeros() as usize));
-        }
-        i += S::L;
-    }
-    for (j, &x) in s[full..].iter().enumerate() {
-        if x == max {
-            return Some((max, full + j));
-        }
-    }
-    unreachable!()
+    // Must be in the scalar tail.
+    let j = s[full..].iter().position(|&x| x == min).unwrap();
+    (min, full + j)
 }
- */
+
 // ───────────────────────────── AVX2, 32-bit ─────────────────────────────
 
 #[cfg(target_feature = "avx2")]
@@ -371,6 +320,19 @@ macro_rules! impl_simd_elem_32 {
             const L: usize = 8;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
+
+            #[inline(always)]
+            fn simd_min(a: $simd, b: $simd) -> $simd {
+                a.min(b)
+            }
+            #[inline(always)]
+            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_eq(b).to_bitmask() as u64
+            }
+            #[inline(always)]
+            fn reduce_min(a: $simd) -> $t {
+                a.to_array().into_iter().min().unwrap()
+            }
 
             #[inline(always)]
             fn splat(v: $t) -> $simd {
@@ -651,6 +613,19 @@ macro_rules! impl_simd_elem_64 {
             const L: usize = 4;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
+
+            #[inline(always)]
+            fn simd_min(a: $simd, b: $simd) -> $simd {
+                a.min(b)
+            }
+            #[inline(always)]
+            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_eq(b).to_bitmask() as u64
+            }
+            #[inline(always)]
+            fn reduce_min(a: $simd) -> $t {
+                a.to_array().into_iter().min().unwrap()
+            }
 
             #[inline(always)]
             fn splat(v: $t) -> $simd {
@@ -934,6 +909,19 @@ macro_rules! impl_simd_elem_32_avx512 {
             const L: usize = 16;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
+
+            #[inline(always)]
+            fn simd_min(a: $simd, b: $simd) -> $simd {
+                a.min(b)
+            }
+            #[inline(always)]
+            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_eq(b).to_bitmask() as u64
+            }
+            #[inline(always)]
+            fn reduce_min(a: $simd) -> $t {
+                a.to_array().into_iter().min().unwrap()
+            }
 
             #[inline(always)]
             fn splat(v: $t) -> $simd {
@@ -1282,11 +1270,42 @@ macro_rules! impl_simd_elem_32_avx512 {
 
 #[cfg(target_feature = "avx512f")]
 macro_rules! impl_simd_elem_64_avx512 {
-    ($t:ty, $simd:ty) => {
+    ($t:ty, $simd:ty, $min: ident) => {
         unsafe impl<const CS: bool> SimdElem<$t> for Avx512<CS> {
             const L: usize = 8;
             const MAX: $t = <$t>::MAX;
             type Simd = $simd;
+
+            #[inline(always)]
+            fn simd_min(a: $simd, b: $simd) -> $simd {
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    transmute($min(transmute(a), transmute(b)))
+                }
+            }
+
+            #[inline(always)]
+            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    _mm512_cmpeq_epi64_mask(transmute(a), transmute(b)) as u64
+                }
+            }
+
+            #[inline(always)]
+            fn reduce_min(a: $simd) -> $t {
+                unsafe {
+                    use core::arch::x86_64::*;
+                    use std::mem::transmute;
+                    let v: __m512i = transmute(a);
+                    let t = $min(v, _mm512_shuffle_i64x2::<0x4E>(v, v)); // swap 256-bit halves
+                    let t = $min(t, _mm512_shuffle_i64x2::<0xB1>(t, t)); // swap 128-bit lanes
+                    let t = $min(t, _mm512_unpackhi_epi64(t, t)); // swap 64-bit elems
+                    _mm_cvtsi128_si64(_mm512_castsi512_si128(t)) as $t
+                }
+            }
 
             #[inline(always)]
             fn splat(v: $t) -> $simd {
@@ -1642,6 +1661,19 @@ macro_rules! impl_simd_elem_32_neon {
             type Simd = $simd;
 
             #[inline(always)]
+            fn simd_min(a: $simd, b: $simd) -> $simd {
+                a.min(b)
+            }
+            #[inline(always)]
+            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_eq(b).to_bitmask() as u64
+            }
+            #[inline(always)]
+            fn reduce_min(a: $simd) -> $t {
+                a.to_array().into_iter().min().unwrap()
+            }
+
+            #[inline(always)]
             fn splat(v: $t) -> $simd {
                 <$simd>::splat(v)
             }
@@ -1715,32 +1747,6 @@ macro_rules! impl_simd_elem_32_neon {
                     lt & lanes
                 }
             }
-
-            /*
-            #[inline(always)]
-            fn simd_min(a: $simd, b: $simd) -> $simd {
-                a.min(b)
-            }
-
-            #[inline(always)]
-            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
-                a.simd_eq(b).to_bitmask() as u64
-            }
-
-            #[inline(always)]
-            fn reduce_min(a: $simd) -> $t {
-                a.to_array().into_iter().min().unwrap()
-            }
-
-            #[inline(always)]
-            fn simd_max(a: $simd, b: $simd) -> $simd {
-                a.max(b)
-            }
-
-            #[inline(always)]
-            fn reduce_max(a: $simd) -> $t {
-                a.to_array().into_iter().max().unwrap()
-            } */
 
             #[inline(always)]
             unsafe fn partition_fast<const MODE: usize>(
@@ -1925,6 +1931,19 @@ macro_rules! impl_simd_elem_64_neon {
             type Simd = $simd;
 
             #[inline(always)]
+            fn simd_min(a: $simd, b: $simd) -> $simd {
+                a.min(b)
+            }
+            #[inline(always)]
+            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
+                a.simd_eq(b).to_bitmask() as u64
+            }
+            #[inline(always)]
+            fn reduce_min(a: $simd) -> $t {
+                a.to_array().into_iter().min().unwrap()
+            }
+
+            #[inline(always)]
             fn splat(v: $t) -> $simd {
                 <$simd>::splat(v)
             }
@@ -2006,32 +2025,6 @@ macro_rules! impl_simd_elem_64_neon {
                     lt & lanes
                 }
             }
-
-            /*
-            #[inline(always)]
-            fn simd_min(a: $simd, b: $simd) -> $simd {
-                a.min(b)
-            }
-
-            #[inline(always)]
-            fn simd_eq_bitmask(a: $simd, b: $simd) -> u64 {
-                a.simd_eq(b).to_bitmask() as u64
-            }
-
-            #[inline(always)]
-            fn reduce_min(a: $simd) -> $t {
-                a.to_array().into_iter().min().unwrap()
-            }
-
-            #[inline(always)]
-            fn simd_max(a: $simd, b: $simd) -> $simd {
-                a.max(b)
-            }
-
-            #[inline(always)]
-            fn reduce_max(a: $simd) -> $t {
-                a.to_array().into_iter().max().unwrap()
-            } */
 
             #[inline(always)]
             unsafe fn partition_fast<const MODE: usize>(
@@ -2672,10 +2665,15 @@ impl_simd_elem_64!(u64, wide::u64x4);
 impl_simd_elem_32_avx512!(i32, wide::i32x16);
 #[cfg(target_feature = "avx512f")]
 impl_simd_elem_32_avx512!(u32, wide::u32x16);
+// #[cfg(target_feature = "avx512f")]
+// impl_simd_elem_64_avx512!(i64, wide::i64x8);
+// #[cfg(target_feature = "avx512f")]
+// impl_simd_elem_64_avx512!(u64, wide::u64x8);
+
 #[cfg(target_feature = "avx512f")]
-impl_simd_elem_64_avx512!(i64, wide::i64x8);
+impl_simd_elem_64_avx512!(i64, wide::i64x8, _mm512_min_epi64);
 #[cfg(target_feature = "avx512f")]
-impl_simd_elem_64_avx512!(u64, wide::u64x8);
+impl_simd_elem_64_avx512!(u64, wide::u64x8, _mm512_min_epu64);
 
 #[cfg(target_arch = "aarch64")]
 impl_simd_elem_32_neon!(i32, wide::i32x4);

@@ -13,6 +13,7 @@ memory = []
 
 # Features for individual experiments
 simd_qhs = []
+simd_qh = []
 implicit_equal_buckets = ["layer_stats"]
 multiway = ["layer_stats"]
 radix = ["layer_stats"]
@@ -21,6 +22,12 @@ graphs = []
 decrease_key = ["memory"]
 pivots = ["layer_stats"]
 rebalancing = ["layer_stats"]
+
+# Features to reduce compile time of experiments
+wl_heapsort = []
+wl_random_cs = []
+wl_many_equal = []
+wl_mostly_push_decreasing = []
 
 # Enable SimdQuickHeap with AVX2 backend
 avx2 = []

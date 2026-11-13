@@ -408,10 +408,14 @@ pub enum HeapFamily {
 
 #[derive(Clone, Copy)]
 pub enum Work {
-    Heapsort,
     MonotoneCS,
+    #[cfg(feature = "wl_many_equal")]
     RandomManyEqual,
+    #[cfg(feature = "wl_heapsort")]
+    Heapsort,
+    #[cfg(feature = "wl_mostly_push_decreasing")]
     MostlyPushDecreasing,
+    #[cfg(feature = "wl_random_cs")]
     RandomCS,
     // MonotoneW,
     // RandomW,
@@ -580,13 +584,38 @@ pub struct Experiment {
     metrics: Vec<AnyMeasurement>,
 }
 
+#[cfg(feature = "simd_qh")]
+fn simd_qh() {
+    let heap_config = vec![HeapConfig {
+        family: HeapFamily::SimdQH,
+        config_simd: ConfigSimdQH::empty(),
+        config_radix: ConfigMulti::empty(),
+        config_multi: ConfigMulti::empty(),
+    }];
+
+    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+
+    let mut e = Experiment {
+        name: "SimdQuickHeaps".to_string(),
+        output_name: "simd_qh".to_string(),
+        ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        heaps: heap_config,
+        workloads: vec![Work::MonotoneCS],
+        types: vec![Type::I64],
+        metrics: vec![nano_timer],
+    };
+
+    run(&mut e);
+}
+
 #[cfg(feature = "simd_qhs")]
 fn simd_qhs() {
     let heap_config = vec![
         HeapConfig {
             family: HeapFamily::SimdQH,
             config_simd: ConfigSimdQH::empty(),
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
         },
         HeapConfig {
             family: HeapFamily::ConfigSimdQH,
@@ -1730,6 +1759,7 @@ macro_rules! dispatch_config_simdqh {
                 >($e, $writer);
             }
             /* Equal Buckets ConfigurableSimdQH */
+            #[cfg(feature = "implicit_equal_buckets")]
             (
                 Buckets::Vec,
                 Pivots::MedianOf3,
@@ -1764,6 +1794,7 @@ macro_rules! dispatch_config_simdqh {
                 >($e, $writer);
             }
             /* Multiway Splits */
+            #[cfg(any(feature = "implicit_equal_buckets", feature = "multiway"))]
             (
                 Buckets::Vec,
                 Pivots::MedianOf3,
@@ -1797,6 +1828,7 @@ macro_rules! dispatch_config_simdqh {
                     $w,
                 >($e, $writer);
             }
+            #[cfg(any(feature = "implicit_equal_buckets", feature = "multiway"))]
             (
                 Buckets::Vec,
                 Pivots::MedianOf3,
@@ -1911,13 +1943,17 @@ macro_rules! dispatch_workload {
         println!("Run for type {}", std::any::type_name::<$t>());
         for w in $e.workloads.clone() {
             match w {
+                Work::MonotoneCS => {dispatch_heap!($e, $t, workloads::MonotoneConstantSize, $simd, $writer);},
+                #[cfg(feature = "wl_heapsort")]
                 Work::Heapsort => {dispatch_heap!($e, $t, workloads::HeapSort, $simd, $writer);},
+                #[cfg(feature = "wl_random_cs")]
+                Work::RandomCS => {dispatch_heap!($e, $t, workloads::RandomConstantSize, $simd, $writer);},
+                #[cfg(feature = "wl_mostly_push_decreasing")]
+                Work::MostlyPushDecreasing => {dispatch_heap!($e, $t, workloads::MostlyPushDecreasing, $simd, $writer);},
+                #[cfg(feature = "wl_many_equal")]
+                Work::RandomManyEqual => {dispatch_heap!($e, $t, workloads::RandomConstantSizeManyEqual, $simd, $writer);},
                 // Work::MonotoneW => {dispatch_heap!($e, $t, workloads::MonotoneWiggle, $simd, $writer);},
                 // Work::RandomW => {dispatch_heap!($e, $t, workloads::RandomWiggle, $simd, $writer);},
-                Work::MonotoneCS => {dispatch_heap!($e, $t, workloads::MonotoneConstantSize, $simd, $writer);},
-                Work::RandomCS => {dispatch_heap!($e, $t, workloads::RandomConstantSize, $simd, $writer);},
-                Work::MostlyPushDecreasing => {dispatch_heap!($e, $t, workloads::MostlyPushDecreasing, $simd, $writer);},
-                Work::RandomManyEqual => {dispatch_heap!($e, $t, workloads::RandomConstantSizeManyEqual, $simd, $writer);},
             }
         }
     };
@@ -1967,6 +2003,9 @@ fn main() {
     // Benchmarks using different worklaods
     #[cfg(feature = "competitors")]
     competitors();
+
+    #[cfg(feature = "simd_qh")]
+    simd_qh();
 
     #[cfg(feature = "simd_qhs")]
     simd_qhs();
