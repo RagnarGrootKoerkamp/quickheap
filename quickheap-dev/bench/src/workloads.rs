@@ -300,7 +300,7 @@ impl Workload for RandomConstantSizeManyEqual {
     const NORMALIZATION: u64 = 10;
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
-        let stride = 2 << 10; // ~2 000
+        let stride = 2 << 9; // ~2 000
         let mut rng = fastrand::Rng::new();
         for _ in 0..(n + 50) {
             h.push(T::try_from(rng.u64(0..stride)));
