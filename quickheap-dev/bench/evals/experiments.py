@@ -5,6 +5,12 @@ Mode is selected per experiment:
   - "mode": "scaling" | "instance"  (explicit), otherwise
   - "baseline" in config -> instance mode (per-instance speedup, grouped bars)
   - else -> scaling mode (n on x-axis, line plots)
+
+Optional "plot_backends": ["Avx512", "Neon", ...] selects the backends to plot
+(default: all backends found in the data).
+
+Figures are a fixed width (FIG_W, fits the text width of an A4 page), so
+fonts stay readable when included at \\linewidth.
 """
 import json
 import sys
@@ -24,6 +30,18 @@ KEY_COLS = ["elem_type", "simd_backend", "n", "workload", "heap"]
 INST_KEY_COLS = ["simd_backend", "instance", "workload", "heap"]
 LINESTYLES = {"Avx512": "-", "Avx2": "--", "Neon": ":"}
 
+FIG_W = 6.3      # inches, ~ A4 text width
+FIG_H = 3.4      # inches, height of one row of subplots
+
+plt.rcParams.update({
+    "font.size": 8,
+    "axes.titlesize": 9,
+    "axes.labelsize": 8,
+    "xtick.labelsize": 7,
+    "ytick.labelsize": 7,
+    "legend.fontsize": 7,
+})
+
 TEX_ESC = {"\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$", "#": r"\#",
            "_": r"\_", "{": r"\{", "}": r"\}", "~": r"\textasciitilde{}",
            "^": r"\textasciicircum{}", "<": r"\textless{}", ">": r"\textgreater{}"}
@@ -37,6 +55,20 @@ def get_mode(cfg):
     if "mode" in cfg:
         return cfg["mode"]
     return "instance" if "baseline" in cfg else "scaling"
+
+
+def select_backends(df, cfg):
+    """Backends to plot: cfg['plot_backends'] (in the given order) or all in the data."""
+    available = [b for b in LINESTYLES if b in set(df["simd_backend"])] + \
+        sorted(set(df["simd_backend"]) - set(LINESTYLES))
+    wanted = cfg.get("plot_backends")
+    if not wanted:
+        return available
+    missing = [b for b in wanted if b not in available]
+    if missing:
+        print(f"[warn] plot_backends not in data: {missing} (available: {available})",
+              file=sys.stderr)
+    return [b for b in wanted if b in available]
 
 
 def load(cfg):
@@ -72,15 +104,18 @@ def make_plots(df, cfg):
     heaps = list(dict.fromkeys(df["heap"]))
     default_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     colors = {h: hc.get(h, default_colors[i % len(default_colors)]) for i, h in enumerate(heaps)}
-    backends = [b for b in LINESTYLES if b in set(df["simd_backend"])] + \
-               sorted(set(df["simd_backend"]) - set(LINESTYLES))
+    backends = select_backends(df, cfg)
+    if not backends:
+        print("[warn] no backends to plot", file=sys.stderr)
+        return
 
     for metric in cfg["plot_by"]:
         for workload in sorted(df["workload"].unique()):
-            fig, axes = plt.subplots(1, len(types), figsize=(5.5 * len(types), 4),
+            fig, axes = plt.subplots(1, len(types), figsize=(FIG_W, FIG_H),
                                      sharey=True, squeeze=False)
             for ax, t in zip(axes[0], types):
-                sub = df[(df["workload"] == workload) & (df["elem_type"] == t)]
+                sub = df[(df["workload"] == workload) & (df["elem_type"] == t) &
+                         (df["simd_backend"].isin(backends))]
                 for (heap, be), g in sub.groupby(["heap", "simd_backend"]):
                     g = g.sort_values("n")
                     ax.plot(g["n"], g[metric], color=colors[heap],
@@ -90,13 +125,16 @@ def make_plots(df, cfg):
                 ax.set_xlabel("n")
                 ax.grid(alpha=0.3)
             axes[0][0].set_ylabel(mm.get(metric, metric))
+
             handles = [Line2D([], [], color=colors[h], label=hm.get(h, h)) for h in heaps]
-            handles += [Line2D([], [], color="k", linestyle=LINESTYLES.get(b, "-"), label=b)
-                        for b in backends]
+            if len(backends) > 1:
+                handles += [Line2D([], [], color="k", linestyle=LINESTYLES.get(b, "-"), label=b) for b in backends]
             fig.suptitle(workload)
-            fig.legend(handles=handles, loc="lower center", ncol=min(len(handles), 3),
-                       fontsize=7, frameon=False)
-            fig.tight_layout(rect=(0, 0.12 + 0.04 * (len(handles) // 3), 1, 0.95))
+
+            fig.legend(handles=handles, loc="lower center", ncol=min(len(handles), 4),
+                       frameon=False)
+            nrows_leg = -(-len(handles) // 4)
+            fig.tight_layout(rect=(0, 0.07 + 0.045 * nrows_leg, 1, 0.94))
             OUT_DIR.mkdir(parents=True, exist_ok=True)
             stem = f"{cfg['name']}_{metric}_{workload}"
             for ext in ("pdf", "png"):
@@ -180,8 +218,7 @@ def _inst_setup(df, cfg):
     base = cfg["baseline"]
     instances = cfg.get("instance_order") or list(dict.fromkeys(df["instance"]))
     heaps = cfg.get("heap_order") or list(dict.fromkeys(df["heap"]))
-    backends = cfg.get("backends") or [b for b in LINESTYLES if b in set(df["simd_backend"])] + \
-        sorted(set(df["simd_backend"]) - set(LINESTYLES))
+    backends = select_backends(df, cfg)
     workloads = cfg.get("workloads") or sorted(df["workload"].unique())
     return metric, base, instances, heaps, backends, workloads
 
@@ -191,6 +228,9 @@ def make_instance_plots(df, cfg):
     hc = cfg.get("heap_colors", {})
     im = cfg.get("instance_mappings", {})
     metric, base, instances, heaps, backends, workloads = _inst_setup(df, cfg)
+    if not backends:
+        print("[warn] no backends to plot", file=sys.stderr)
+        return
     default_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     colors = {h: hc.get(h, default_colors[i % len(default_colors)]) for i, h in enumerate(heaps)}
     bars = [h for h in heaps if h != base]
@@ -199,8 +239,7 @@ def make_instance_plots(df, cfg):
     ylabel = cfg.get("ylabel", f"Speedup vs. {hm.get(base, base)} (higher = better)")
 
     for workload in workloads:
-        fig, axes = plt.subplots(1, len(backends),
-                                 figsize=(max(5, 0.9 * (len(instances) + 1)) * len(backends), 4.2),
+        fig, axes = plt.subplots(1, len(backends), figsize=(FIG_W, FIG_H + 0.4),
                                  sharey=True, squeeze=False)
         for ax, be in zip(axes[0], backends):
             piv = _pivot(df, workload, be, metric, instances)
@@ -226,7 +265,7 @@ def make_instance_plots(df, cfg):
             if log_y:
                 ax.set_yscale("log")
             ax.set_xticks(x)
-            ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=7)
+            ax.set_xticklabels(labels, rotation=45, ha="right")
             ax.set_title(be)
             ax.grid(axis="y", alpha=0.3)
         axes[0][0].set_ylabel(ylabel)
@@ -235,8 +274,9 @@ def make_instance_plots(df, cfg):
                               label=f"{hm.get(base, base)} (baseline)"))
         fig.suptitle(workload)
         fig.legend(handles=handles, loc="lower center", ncol=min(len(handles), 4),
-                   fontsize=7, frameon=False)
-        fig.tight_layout(rect=(0, 0.10 + 0.04 * (len(handles) // 4), 1, 0.95))
+                   frameon=False)
+        nrows_leg = -(-len(handles) // 4)
+        fig.tight_layout(rect=(0, 0.06 + 0.045 * nrows_leg, 1, 0.94))
         OUT_DIR.mkdir(parents=True, exist_ok=True)
         stem = f"{cfg['name']}_{metric}_{workload}"
         for ext in ("pdf", "png"):
@@ -255,7 +295,9 @@ def make_instance_tables(df, cfg):
     mm = cfg.get("metric_mappings", {})
     im = cfg.get("instance_mappings", {})
     metric, base, instances, heaps, backends, workloads = _inst_setup(df, cfg)
-    be = cfg.get("table_backend", backends[0])
+    be = cfg.get("table_backend") or (backends[0] if backends else None)
+    if be is None:
+        return
     unit = tex("ns" if metric == "nano_seconds" else mm.get(metric, metric))
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
