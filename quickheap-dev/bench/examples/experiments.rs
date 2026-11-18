@@ -879,6 +879,7 @@ fn implicit_equal_buckets() {
 
     let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
     let layer_measure = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+    let partition_measure = AnyMeasurement::String(Box::new(MeasurePartitionStats::new()));
 
     let mut e = Experiment {
         name: "Implicit Equal Buckets".to_string(),
@@ -887,7 +888,7 @@ fn implicit_equal_buckets() {
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS, Work::RandomManyEqual],
         types: vec![Type::I32, Type::I64],
-        metrics: vec![nano_timer, layer_measure],
+        metrics: vec![nano_timer, layer_measure, partition_measure],
     };
 
     run(&mut e);

@@ -19,8 +19,6 @@ use simd::SimdElem;
 use crate::stats;
 
 use crate::ElemConstraint;
-#[cfg(feature = "layer_stats")]
-use crate::stats;
 
 /* Constants for development testing */
 const SIMD_INSERT: bool = false;
