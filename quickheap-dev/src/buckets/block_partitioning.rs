@@ -116,7 +116,7 @@ impl<T: ElemT, B: FlatBucket<T>, S: simd::SimdElem<T>> Partition<T, B> for FlatP
         for i in (0..n2).step_by(S::L) {
             unsafe {
                 S::partition_fast::<MODE>(
-                    S::simd_from_slice(cur_layer.get_unchecked(i, S::L)),
+                    S::simd_from_slice(cur_layer.bucket_get_unchecked(i, S::L)),
                     threshold,
                     pivot_pos,
                     cur_layer_ptr,
@@ -130,7 +130,7 @@ impl<T: ElemT, B: FlatBucket<T>, S: simd::SimdElem<T>> Partition<T, B> for FlatP
         if n2 < n {
             unsafe {
                 S::partition_slow::<MODE>(
-                    S::simd_from_slice(cur_layer.get_unchecked(n2, n - n2)),
+                    S::simd_from_slice(cur_layer.bucket_get_unchecked(n2, n - n2)),
                     S::splat(S::from_usize(n - n2)),
                     threshold,
                     pivot_pos,
@@ -188,7 +188,7 @@ impl<T: ElemT + Debug, B: FlatBucket<T>, S: simd::SimdElem<T>> MultiPartition<T,
         for i in (0..half).step_by(S::L) {
             unsafe {
                 S::partition_multi_fast::<P, { simd::ABOVE_GT }>(
-                    S::simd_from_slice(layers[0].get_unchecked(i, S::L)),
+                    S::simd_from_slice(layers[0].bucket_get_unchecked(i, S::L)),
                     &thresholds[0..P - 1],
                     // pivot_pos[0],
                     &mut ptrs,
@@ -200,7 +200,7 @@ impl<T: ElemT + Debug, B: FlatBucket<T>, S: simd::SimdElem<T>> MultiPartition<T,
         for i in (half..n2).step_by(S::L) {
             unsafe {
                 S::partition_multi_fast::<P, { simd::ABOVE_GE }>(
-                    S::simd_from_slice(layers[0].get_unchecked(i, S::L)),
+                    S::simd_from_slice(layers[0].bucket_get_unchecked(i, S::L)),
                     &thresholds[0..P - 1],
                     // pivot_pos[0],
                     &mut ptrs,
@@ -212,7 +212,7 @@ impl<T: ElemT + Debug, B: FlatBucket<T>, S: simd::SimdElem<T>> MultiPartition<T,
         if n2 < n {
             unsafe {
                 S::partition_multi_slow::<P>(
-                    S::simd_from_slice(layers[0].get_unchecked(n2, n - n2)),
+                    S::simd_from_slice(layers[0].bucket_get_unchecked(n2, n - n2)),
                     S::splat(S::from_usize(n - n2)),
                     &thresholds[0..P - 1],
                     pivot_pos[0],

@@ -156,14 +156,15 @@ where
     for n in [10, 100, 1000, 10000, 100000] {
         // let mut q = RadixSimdQuickHeap::<T, S, 2>::default();
         // let mut q = MultiSimdQuickHeap::<T, S, 4, 1024>::default();
-        let mut q = EqualSimdQuickHeap::<T, S>::default();
+        // let mut q = EqualSimdQuickHeap::<T, S>::default();
 
-        /* let mut q = <ConfigurableSimdQuickHeap<
+        let mut q = <ConfigurableSimdQuickHeap<
             T,
+            Vec<T>,
             // VecBucket<T>,
-            // FlatPartitioning<S>,
-            ListBlockBucket<T, 224, 256>,
-            BlockedPartitioning<S, 224, 256>,
+            FlatPartitioning<S>,
+            // ListBlockBucket<T, 224, 256>,
+            // BlockedPartitioning<S, 224, 256>,
             S,
             MedianOfM<3>,
             EqualMultiMedianOfM<1>,
@@ -179,7 +180,7 @@ where
             false,
             2,
             0,
-        >>::default(); */
+        >>::default();
 
         for _ in 0..n {
             let t = g.get();
@@ -206,12 +207,13 @@ where
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        /* let mut q1 = <ConfigurableSimdQuickHeap<
+        let mut q1 = <ConfigurableSimdQuickHeap<
             T,
+            Vec<T>,
             // VecBucket<T>,
-            // FlatPartitioning<S>,
-            ListBlockBucket<T, 224, 256>,
-            BlockedPartitioning<S, 224, 256>,
+            FlatPartitioning<S>,
+            // ListBlockBucket<T, 224, 256>,
+            // BlockedPartitioning<S, 224, 256>,
             S,
             MedianOfM<3>,
             EqualMultiMedianOfM<1>,
@@ -227,11 +229,11 @@ where
             false,
             2,
             0,
-        >>::default(); */
+        >>::default();
 
         // let mut q1 = MultiSimdQuickHeap::<T, S, 4, 1024>::default();
         // let mut q1 = RadixSimdQuickHeap::<T, S, 2>::default();
-        let mut q1 = EqualSimdQuickHeap::<T, S>::default();
+        // let mut q1 = EqualSimdQuickHeap::<T, S>::default();
 
         let mut q2 = std::collections::binary_heap::BinaryHeap::default();
 

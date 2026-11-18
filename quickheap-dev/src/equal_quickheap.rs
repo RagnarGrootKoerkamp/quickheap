@@ -16,6 +16,8 @@ use simd::Avx512;
 use simd::Neon;
 use simd::SimdElem;
 
+use crate::stats;
+
 use crate::ElemConstraint;
 #[cfg(feature = "layer_stats")]
 use crate::stats;
@@ -197,6 +199,9 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
         let layer = self.pivots.len();
         let total_layers = layer + 1;
 
+        #[cfg(feature = "partition_stats")]
+        stats::partition_stats::partition(self.buckets[layer].data.len());
+
         // Reserve space for an additional L layers when needed.
         if total_layers + 2 * S::L >= self.pivots.capacity() {
             self.pivots.reserve(S::L);
@@ -257,6 +262,9 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
         // If all elements ended up in the current layer
         if next_layer.is_empty() {
             self.pivots.pop();
+
+            #[cfg(feature = "partition_stats")]
+            stats::partition_stats::redo_layer();
         }
 
         // If we extracted all elements to the next layer
@@ -266,6 +274,9 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
             std::mem::swap(cur_layer, next_layer);
 
             self.pivots.pop();
+
+            #[cfg(feature = "partition_stats")]
+            stats::partition_stats::redo_layer();
         }
     }
 }

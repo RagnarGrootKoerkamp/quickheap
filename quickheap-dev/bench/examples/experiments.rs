@@ -23,6 +23,9 @@ use quickheap::SimdElem;
 #[cfg(feature = "layer_stats")]
 use quickheap_dev::stats::layer_stats;
 
+#[cfg(feature = "partition_stats")]
+use quickheap_dev::stats::partition_stats;
+
 use quickheap::simd;
 use quickheap::{
     KvSimdQuickHeap, SimdQuickHeap,
@@ -328,49 +331,75 @@ impl MetricMeasurement<String> for MeasurePerfStats {
     }
 }
 
-/*
-struct PartitionStats {}
+#[cfg(feature = "partition_stats")]
 struct MeasurePartitionStats {
-    measurements: Vec<PartitionStats>,
-    result: f64,
+    num_partitions: Vec<usize>,
+    partitioned_elems: Vec<usize>,
+    equal_buckets: Vec<usize>,
+    redos: Vec<usize>,
+
+    result: String,
 }
-impl MetricMeasurement<PartitionStats> for MeasurePartitionStats {
+#[cfg(feature = "partition_stats")]
+impl MetricMeasurement<String> for MeasurePartitionStats {
     fn new() -> Self
     where
         Self: Sized,
     {
         Self {
-            result: 0f64,
-            measurements: vec![],
+            result: String::new(),
+            num_partitions: vec![],
+            partitioned_elems: vec![],
+            equal_buckets: vec![],
+            redos: vec![],
         }
     }
 
     fn reset(&mut self) {
-        self.measurements.clear();
-        self.result = 0f64;
+        partition_stats::reset();
+
+        self.num_partitions.clear();
+        self.partitioned_elems.clear();
+        self.equal_buckets.clear();
+        self.redos.clear();
     }
 
-    fn start(&mut self) {}
-
-    fn stop(&mut self, stats: &HeapStats) {
-        self.measurements.push(stats.capacity);
+    fn start(&mut self) {
+        partition_stats::reset();
     }
 
-    fn norm_by_ops(&mut self, ops: usize) {
-        self.measurements.sort();
-        let num_measures = self.measurements.len();
-        let median = self.measurements[num_measures / 2];
-        self.result = median as f64 / ops as f64;
+    fn stop(&mut self, _: &HeapStats) {
+        let r = partition_stats::result();
+        self.num_partitions.push(r.partitions);
+        self.partitioned_elems.push(r.avg_num_elem_partitioned);
+        self.redos.push(r.redos);
+        self.equal_buckets.push(r.equal_buckets_found);
     }
 
-    fn get(&self) -> f64 {
-        self.result
+    fn norm_by_ops(&mut self, _: usize) {
+        self.num_partitions.sort();
+        self.partitioned_elems.sort();
+        self.redos.sort();
+        self.equal_buckets.sort();
+
+        let num_measures = self.num_partitions.len();
+        let median_partitions = self.num_partitions[num_measures / 2];
+        let median_elems = self.partitioned_elems[num_measures / 2];
+        let median_redos = self.redos[num_measures / 2];
+        let median_equals = self.equal_buckets[num_measures / 2];
+
+        self.result =
+            format! {"{},{},{},{}", median_partitions, median_elems, median_redos, median_equals};
+    }
+
+    fn get(&self) -> String {
+        self.result.clone()
     }
 
     fn get_name(&self) -> String {
-        "bytes_per_elem".to_string()
+        "num_partitions,avg_partitioned_elems,redos,equal_buckets".to_string()
     }
-} */
+}
 
 /*
  * Possible Configuration Parameters
@@ -474,6 +503,7 @@ pub struct HeapConfig {
 pub enum Buckets {
     InvalBucket,
     Vec,
+    VecBucket,
     VecBlock,
     ListBlock,
 }
@@ -602,6 +632,90 @@ fn simd_qh() {
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
         types: vec![Type::I64],
+        metrics: vec![nano_timer],
+    };
+
+    run(&mut e);
+}
+
+#[cfg(feature = "buckets")]
+fn buckets() {
+    let heap_config = vec![
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::Vec,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::NoRebal,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::VecBucket,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::NoRebal,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::VecBlock,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::NoRebal,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+        HeapConfig {
+            family: HeapFamily::ConfigSimdQH,
+            config_simd: ConfigSimdQH {
+                bucket: Buckets::ListBlock,
+                pivot: MedianOf3,
+                multi_pivot: EqualMedianOf2,
+                rebal: Rebalancing::NoRebal,
+                n: 16,
+                sort: true,
+                equal: false,
+                p: 2,
+                multi_thresh: 0,
+            },
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },
+    ];
+
+    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+
+    let mut e = Experiment {
+        name: "Buckets".to_string(),
+        output_name: "buckets".to_string(),
+        ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        heaps: heap_config,
+        workloads: vec![Work::MonotoneCS],
+        types: vec![Type::I32, Type::I64],
         metrics: vec![nano_timer],
     };
 
@@ -769,7 +883,7 @@ fn implicit_equal_buckets() {
     let mut e = Experiment {
         name: "Implicit Equal Buckets".to_string(),
         output_name: "implicit_equal_buckets".to_string(),
-        ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS, Work::RandomManyEqual],
         types: vec![Type::I32, Type::I64],
@@ -1359,10 +1473,13 @@ fn decrease_key() {
 
 fn sanitize(s: String) -> String {
     s.replace("simd::", "")
+        .replace("alloc::vec::", "")
+        .replace("vec_block_bucket::", "")
         .replace(" ", "")
         .replace("input/", "")
         .replace("_graph.gr", "")
         .replace("sequence_heap::", "")
+        .replace("equal_quickheap::", "")
         .replace("multi_quickheap::", "")
         .replace("s3q::", "")
         .replace("radix_heap::", "")
@@ -1553,9 +1670,42 @@ macro_rules! dispatch_config_simdqh {
             $c.p,
             $c.multi_thresh,
         ) {
-            /* Default Config for ConfigurableSimdQH */
+            /* Default Configs for ConfigurableSimdQH */
             (
                 Buckets::Vec,
+                Pivots::MedianOf3,
+                Pivots::EqualMedianOf2,
+                Rebalancing::NoRebal,
+                16,
+                true,
+                false,
+                2,
+                0,
+            ) => {
+                run_config::<
+                    $t,
+                    $simd,
+                    ConfigurableSimdQuickHeap<
+                        $t,
+                        Vec<$t>,
+                        FlatPartitioning<$simd>,
+                        $simd,
+                        MedianOfM<3>,
+                        EqualMultiMedianOfM<2>,
+                        NoRebalancing,
+                        16,
+                        0,
+                        0,
+                        true,
+                        false,
+                        2,
+                        0,
+                    >,
+                    $w,
+                >($e, $writer);
+            }
+            (
+                Buckets::VecBucket,
                 Pivots::MedianOf3,
                 Pivots::EqualMedianOf2,
                 Rebalancing::NoRebal,
@@ -1587,6 +1737,72 @@ macro_rules! dispatch_config_simdqh {
                     $w,
                 >($e, $writer);
             }
+            (
+                Buckets::VecBlock,
+                Pivots::MedianOf3,
+                Pivots::EqualMedianOf2,
+                Rebalancing::NoRebal,
+                16,
+                true,
+                false,
+                2,
+                0,
+            ) => {
+                run_config::<
+                    $t,
+                    $simd,
+                    ConfigurableSimdQuickHeap<
+                        $t,
+                        VecBlockBucket<$t, 240, 256>,
+                        BlockedPartitioning<$simd, 240, 256>,
+                        $simd,
+                        MedianOfM<3>,
+                        EqualMultiMedianOfM<2>,
+                        NoRebalancing,
+                        16,
+                        240,
+                        256,
+                        true,
+                        false,
+                        2,
+                        0,
+                    >,
+                    $w,
+                >($e, $writer);
+            }
+            (
+                Buckets::ListBlock,
+                Pivots::MedianOf3,
+                Pivots::EqualMedianOf2,
+                Rebalancing::NoRebal,
+                16,
+                true,
+                false,
+                2,
+                0,
+            ) => {
+                run_config::<
+                    $t,
+                    $simd,
+                    ConfigurableSimdQuickHeap<
+                        $t,
+                        ListBlockBucket<$t, 240, 256>,
+                        BlockedPartitioning<$simd, 240, 256>,
+                        $simd,
+                        MedianOfM<3>,
+                        EqualMultiMedianOfM<2>,
+                        NoRebalancing,
+                        16,
+                        240,
+                        256,
+                        true,
+                        false,
+                        2,
+                        0,
+                    >,
+                    $w,
+                >($e, $writer);
+            }
             /* Rebalancing */
             #[cfg(feature = "rebalancing")]
             (
@@ -1605,7 +1821,7 @@ macro_rules! dispatch_config_simdqh {
                     $simd,
                     ConfigurableSimdQuickHeap<
                         $t,
-                        VecBucket<$t>,
+                        Vec<$t>,
                         FlatPartitioning<$simd>,
                         $simd,
                         MedianOfM<3>,
@@ -1673,7 +1889,7 @@ macro_rules! dispatch_config_simdqh {
                     $simd,
                     ConfigurableSimdQuickHeap<
                         $t,
-                        VecBucket<$t>,
+                        Vec<$t>,
                         FlatPartitioning<$simd>,
                         $simd,
                         MedianOfM<3>,
@@ -1707,7 +1923,7 @@ macro_rules! dispatch_config_simdqh {
                     $simd,
                     ConfigurableSimdQuickHeap<
                         $t,
-                        VecBucket<$t>,
+                        Vec<$t>,
                         FlatPartitioning<$simd>,
                         $simd,
                         MedianOfM<3>,
@@ -1776,7 +1992,7 @@ macro_rules! dispatch_config_simdqh {
                     $simd,
                     ConfigurableSimdQuickHeap<
                         $t,
-                        VecBucket<$t>,
+                        Vec<$t>,
                         FlatPartitioning<$simd>,
                         $simd,
                         MedianOfM<3>,
@@ -1811,7 +2027,7 @@ macro_rules! dispatch_config_simdqh {
                     $simd,
                     ConfigurableSimdQuickHeap<
                         $t,
-                        VecBucket<$t>,
+                        Vec<$t>,
                         FlatPartitioning<$simd>,
                         $simd,
                         MedianOfM<3>,
@@ -1845,7 +2061,7 @@ macro_rules! dispatch_config_simdqh {
                     $simd,
                     ConfigurableSimdQuickHeap<
                         $t,
-                        VecBucket<$t>,
+                        Vec<$t>,
                         FlatPartitioning<$simd>,
                         $simd,
                         MedianOfM<3>,
@@ -2009,6 +2225,9 @@ fn main() {
 
     #[cfg(feature = "simd_qhs")]
     simd_qhs();
+
+    #[cfg(feature = "buckets")]
+    buckets();
 
     #[cfg(feature = "implicit_equal_buckets")]
     implicit_equal_buckets();

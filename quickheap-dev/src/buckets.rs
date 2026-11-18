@@ -10,7 +10,7 @@ pub mod vec_bucket;
 
 pub trait FlatBucket<T: PartialEq> {
     unsafe fn set_len(&mut self, n: usize);
-    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T];
+    unsafe fn bucket_get_unchecked(&self, from: usize, len: usize) -> &[T];
     fn write_ptr(&mut self) -> *mut T;
     fn reserve(&mut self, n: usize);
     fn flat_len(&self) -> usize;

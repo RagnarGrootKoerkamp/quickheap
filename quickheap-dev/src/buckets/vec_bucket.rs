@@ -24,7 +24,7 @@ impl<T: Copy + Default + Ord + Debug> FlatBucket<T> for VecBucket<T> {
     }
 
     #[inline]
-    unsafe fn get_unchecked(&self, from: usize, len: usize) -> &[T] {
+    unsafe fn bucket_get_unchecked(&self, from: usize, len: usize) -> &[T] {
         unsafe { self.data.get_unchecked(from..from + len) }
     }
 
@@ -143,5 +143,142 @@ impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T
     #[inline]
     fn print(&self) {
         print!("{:?}\n", self.data);
+    }
+}
+
+impl<T: Copy + Default + Ord + Debug> FlatBucket<T> for Vec<T> {
+    #[inline]
+    fn reserve(&mut self, n: usize) {
+        self.reserve(n);
+    }
+
+    #[inline]
+    fn flat_len(&self) -> usize {
+        self.len()
+    }
+
+    #[inline]
+    unsafe fn set_len(&mut self, n: usize) {
+        unsafe {
+            self.set_len(n);
+        }
+    }
+
+    #[inline]
+    unsafe fn bucket_get_unchecked(&self, from: usize, len: usize) -> &[T] {
+        unsafe { self.get_unchecked(from..from + len) }
+    }
+
+    #[inline]
+    fn write_ptr(&mut self) -> *mut T {
+        self.as_mut_ptr()
+    }
+}
+
+impl<T: Copy + Default + Ord + Debug, const K: usize, const CAP: usize> Bucket<T, K, CAP>
+    for Vec<T>
+{
+    fn default(_: *mut BlockArena<T, K, CAP>) -> Self {
+        Vec::with_capacity(128)
+    }
+
+    fn min(&mut self) -> (T, usize) {
+        let min_pos = self
+            .iter()
+            .enumerate()
+            .min_by_key(|&(_, x)| x)
+            .map(|(i, _)| i)
+            .unwrap();
+
+        (self[min_pos], min_pos)
+    }
+
+    fn max(&mut self) -> (T, usize) {
+        let max_pos = self
+            .iter()
+            .enumerate()
+            .max_by_key(|&(_, x)| x)
+            .map(|(i, _)| i)
+            .unwrap();
+
+        (self[max_pos], max_pos)
+    }
+
+    fn recompute_min_max(&mut self) {
+        unimplemented!();
+    }
+
+    fn invalidate_min_max(&mut self) {
+        unimplemented!();
+    }
+
+    fn mark_equal(&mut self) {
+        unimplemented!();
+    }
+
+    #[inline]
+    fn push(&mut self, elem: T) {
+        self.push(elem);
+    }
+
+    #[inline]
+    fn concat(&mut self, other: Self) {
+        self.extend(other);
+    }
+
+    #[inline]
+    fn pop(&mut self) -> Option<T> {
+        debug_assert!(self.len() > 0);
+        self.pop()
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    #[inline]
+    fn capacity(&self) -> usize {
+        self.capacity()
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        self.flat_len()
+    }
+
+    #[inline]
+    fn insert(&mut self, pos: usize, elem: T) {
+        self.insert(pos, elem);
+    }
+
+    #[inline]
+    fn get(&self, i: usize) -> T {
+        self[i]
+    }
+
+    #[inline]
+    fn remove(&mut self, i: usize) -> T {
+        self.swap_remove(i)
+    }
+
+    #[inline]
+    fn sort_decreasing(&mut self) {
+        self.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
+    }
+
+    #[inline]
+    fn insert_index(&self, elem: T) -> usize {
+        self.partition_point(|&x| x > elem)
+    }
+
+    #[inline]
+    fn clear(&mut self) {
+        self.clear();
+    }
+
+    #[inline]
+    fn print(&self) {
+        print!("{:?}\n", self);
     }
 }

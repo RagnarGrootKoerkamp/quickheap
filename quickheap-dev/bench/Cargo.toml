@@ -14,7 +14,7 @@ memory = []
 # Features for individual experiments
 simd_qhs = []
 simd_qh = []
-implicit_equal_buckets = ["layer_stats"]
+implicit_equal_buckets = ["layer_stats", "wl_many_equal"]
 multiway = ["layer_stats"]
 radix = ["layer_stats"]
 competitors = ["perf"]
@@ -22,6 +22,7 @@ graphs = []
 decrease_key = ["memory"]
 pivots = ["layer_stats"]
 rebalancing = ["layer_stats"]
+buckets = []
 
 # Features to reduce compile time of experiments
 wl_heapsort = []
