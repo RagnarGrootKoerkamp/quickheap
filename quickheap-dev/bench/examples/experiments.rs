@@ -12,6 +12,9 @@ use std::{
     fs::File,
 };
 
+use bench::impls;
+
+#[cfg(feature = "ffi")]
 use bench::{
     impls, original_quickheap, radix_heap, s3q,
     scalar_quickheap::{self, Search},
@@ -887,7 +890,8 @@ fn implicit_equal_buckets() {
         ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS, Work::RandomManyEqual],
-        types: vec![Type::I32, Type::I64],
+        // types: vec![Type::I32, Type::I64],
+        types: vec![Type::I64],
         metrics: vec![nano_timer, layer_measure, partition_measure],
     };
 
@@ -1425,10 +1429,6 @@ fn decrease_key() {
             &graphs,
             &mut writer,
         );
-        /* run_kv_graph::<
-            simd::Avx2,
-            KvSimdQuickHeap<u64, simd::Avx2, DelTokenCountingBloom<u64, simd::Avx2, 16>>,
-        >(&graphs, &mut writer); */
 
         run_kv_graph::<simd::Avx512, KvSimdQuickHeap<u64, simd::Avx512, SimpleDK<u64>>>(
             &graphs,
@@ -1442,10 +1442,6 @@ fn decrease_key() {
             simd::Avx512,
             KvSimdQuickHeap<u64, simd::Avx512, DelTokenHash<u64, simd::Avx512>>,
         >(&graphs, &mut writer);
-        /* run_kv_graph::<
-            simd::Avx512,
-            KvSimdQuickHeap<u64, simd::Avx512, DelTokenCountingBloom<u64, simd::Avx512, 16>>,
-        >(&graphs, &mut writer); */
     }
 
     #[cfg(target_arch = "aarch64")]
@@ -1465,11 +1461,13 @@ fn decrease_key() {
             &graphs,
             &mut writer,
         );
-        /* run_kv_graph::<
-            simd::Neon,
-            KvSimdQuickHeap<u64, simd::Neon, DelTokenCountingBloom<u64, simd::Neon, 16>>,
-        >(&graphs, &mut writer); */
     }
+}
+
+fn sanitize_heap(s: String) -> String {
+    s.replace(",Avx2", "")
+        .replace(",Avx512", "")
+        .replace(",Neon", "")
 }
 
 fn sanitize(s: String) -> String {
@@ -1499,6 +1497,8 @@ fn sanitize(s: String) -> String {
         .replace("<i32>", "")
         .replace("<i64>", "")
         .replace("<Neon>", "")
+        .replace("<Avx2>", "")
+        .replace("<Avx512>", "")
         .replace("<Avx2>", "")
         .replace("<Avx512>", "")
         .replace("vec_bucket::", "")
@@ -1536,7 +1536,7 @@ fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
 ) {
     println!(
         "Run heap: {}",
-        sanitize(std::any::type_name::<H>().to_string())
+        sanitize_heap(sanitize(std::any::type_name::<H>().to_owned()))
     );
     for &n in e.ns.iter() {
         for metric in e.metrics.iter_mut() {
@@ -1576,15 +1576,9 @@ fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
         result.push_str(std::any::type_name::<W>());
         result.push_str(",");
         result.push_str("\"");
-        result.push_str(
-            &std::any::type_name::<H>()
-                .replace("<Avx2>", "")
-                .replace("<Avx512>", "")
-                .replace("<Neon>", "")
-                .replace("Avx2,", "")
-                .replace("Neon", "")
-                .replace("Avx512,", ""),
-        );
+        result.push_str(&sanitize_heap(sanitize(
+            std::any::type_name::<H>().to_owned(),
+        )));
         result.push_str("\"");
 
         for metric in e.metrics.iter_mut() {
@@ -1592,6 +1586,8 @@ fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
             let s = metric.get();
             result.push_str(",");
             result.push_str(&s);
+
+            metric.reset();
         }
 
         result.push_str("\n");
@@ -2106,38 +2102,46 @@ macro_rules! dispatch_heap {
                 }
 
                 HeapFamily::ScalarQH => {
-                    //
+                    #[cfg(feature = "ffi")]
                     run_config::<$t, $simd, scalar_quickheap::ScalarQuickHeap<$t, 3, false, { Search::LinearScan }>, $w>($e, $writer);
                 }
                 HeapFamily::OriginalQH => {
                     if TypeId::of::<$t>() == TypeId::of::<i32>() {
+                        #[cfg(feature = "ffi")]
                         run_config::<i32, $simd, original_quickheap::OriginalQuickHeapI32, $w>($e, $writer);
                     }
                     if TypeId::of::<$t>() == TypeId::of::<i64>() {
+                        #[cfg(feature = "ffi")]
                         run_config::<i64, $simd, original_quickheap::OriginalQuickHeapI64, $w>($e, $writer);
                     }
                 }
                 HeapFamily::SequenceHeap => {
                     if TypeId::of::<$t>() == TypeId::of::<i32>() {
+                        #[cfg(feature = "ffi")]
                         run_config::<i32, $simd, sequence_heap::SequenceHeapI32, $w>($e, $writer);
                     }
                     if TypeId::of::<$t>() == TypeId::of::<i64>() {
+                        #[cfg(feature = "ffi")]
                         run_config::<i64, $simd, sequence_heap::SequenceHeapI64, $w>($e, $writer);
                     }
                 }
                 HeapFamily::S3qHeap => {
                     if TypeId::of::<$t>() == TypeId::of::<i32>() {
+                        #[cfg(feature = "ffi")]
                         run_config::<i32, $simd, s3q::S3qHeapI32, $w>($e, $writer);
                     }
                     if TypeId::of::<$t>() == TypeId::of::<i64>() {
+                        #[cfg(feature = "ffi")]
                         run_config::<i64, $simd, s3q::S3qHeapI64, $w>($e, $writer);
                     }
                 }
                 HeapFamily::RadixHeap => {
                     if TypeId::of::<$t>() == TypeId::of::<i32>() {
+                        #[cfg(feature = "ffi")]
                         run_config::<i32, $simd, radix_heap::RadixHeapI32, $w>($e, $writer);
                     }
                     if TypeId::of::<$t>() == TypeId::of::<i64>() {
+                        #[cfg(feature = "ffi")]
                         run_config::<i64, $simd, radix_heap::RadixHeapI64, $w>($e, $writer);
                     }
                 }

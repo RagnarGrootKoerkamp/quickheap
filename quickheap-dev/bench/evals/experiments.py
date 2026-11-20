@@ -100,6 +100,7 @@ def make_plots(df, cfg):
     hm = cfg.get("heap_mappings", {})
     hc = cfg.get("heap_colors", {})
     mm = cfg.get("metric_mappings", {})
+    cache_sizes = cfg.get("cache_sizes")
     types = cfg["plot_types"]
     heaps = list(dict.fromkeys(df["heap"]))
     default_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
@@ -113,17 +114,27 @@ def make_plots(df, cfg):
         for workload in sorted(df["workload"].unique()):
             fig, axes = plt.subplots(1, len(types), figsize=(FIG_W, FIG_H),
                                      sharey=True, squeeze=False)
+            all_sub = df[(df["workload"] == workload) &
+                                     (df["elem_type"].isin(types)) &
+                                     (df["simd_backend"].isin(backends))]
+            ymax = all_sub[metric].max() if len(all_sub) else 1
             for ax, t in zip(axes[0], types):
-                sub = df[(df["workload"] == workload) & (df["elem_type"] == t) &
-                         (df["simd_backend"].isin(backends))]
-                for (heap, be), g in sub.groupby(["heap", "simd_backend"]):
-                    g = g.sort_values("n")
-                    ax.plot(g["n"], g[metric], color=colors[heap],
-                            linestyle=LINESTYLES.get(be, "-"))
-                ax.set_xscale("log", base=2)
-                ax.set_title(t)
-                ax.set_xlabel("n")
-                ax.grid(alpha=0.3)
+                            sub = df[(df["workload"] == workload) & (df["elem_type"] == t) &
+                                     (df["simd_backend"].isin(backends))]
+                            for (heap, be), g in sub.groupby(["heap", "simd_backend"]):
+                                g = g.sort_values("n")
+                                ax.plot(g["n"], g[metric], color=colors[heap],
+                                        linestyle=LINESTYLES.get(be, "-"))
+                            for c in cache_sizes or []:
+                                ax.axvline(c, color="lightgrey", linestyle="--",
+                                           linewidth=0.8, zorder=0)
+                            ax.set_xscale("log", base=2)
+                            if len(sub):
+                                ax.set_xlim(sub["n"].min() / 1.1, sub["n"].max() * 1.1)
+                            ax.set_ylim(0, ymax * 1.05)
+                            ax.set_title(t)
+                            ax.set_xlabel("n")
+                            ax.grid(alpha=0.3)
             axes[0][0].set_ylabel(mm.get(metric, metric))
 
             handles = [Line2D([], [], color=colors[h], label=hm.get(h, h)) for h in heaps]
@@ -150,15 +161,13 @@ def make_table(df, cfg):
     sp_metric = cfg.get("speedup_metric", "nano_seconds")
     sp_j = cols.index(sp_metric) if sp_metric in cols else None
 
-    sub = df[(df["n"] == cfg["table_n"]) & (df["elem_type"] == cfg["table_type"]) &
-             (df["workload"] == cfg["table_workload"]) &
-             (df["simd_backend"] == cfg["table_backend"])]
+    tb = cfg["table_backend"]
+    tbs = [tb] if isinstance(tb, str) else list(tb)
     heaps = list(dict.fromkeys(df["heap"]))
 
-    values = {}
-    for h in heaps:
-        row = sub[sub["heap"] == h]
-        values[h] = [float(row.iloc[0][c]) if len(row) else None for c in cols]
+    header = ["Backend", "Heap"] + [tex(mm.get(c, c)) for c in cols]
+    if speedup and sp_j is not None:
+        header.append("Speedup")
 
     def fmt(v, bold=False):
         if v is None:
@@ -166,36 +175,42 @@ def make_table(df, cfg):
         s = f"{v:.2f}"
         return rf"\textbf{{{s}}}" if bold else s
 
-    best = []
-    for j in range(len(cols)):
-        present = [values[h][j] for h in heaps if values[h][j] is not None]
-        best.append(min(present) if present else None)
+    lines = [r"\begin{table}[ht]", r"\centering",
+                r"\begin{tabular}{ll" + "r" * (len(header) - 2) + "}", r"\hline",
+                " & ".join(header) + r" \\", r"\hline"]
 
-    ref = None
-    if sp_j is not None:
-        ref = next((values[h][sp_j] for h in heaps if values[h][sp_j] is not None), None)
+    for be in tbs:
+        sub = df[(df["n"] == cfg["table_n"]) & (df["elem_type"] == cfg["table_type"]) &
+                    (df["workload"] == cfg["table_workload"]) & (df["simd_backend"] == be)]
+        values = {}
+        for h in heaps:
+            row = sub[sub["heap"] == h]
+            values[h] = [float(row.iloc[0][c]) if len(row) else None for c in cols]
 
-    header = [tex(mm.get(c, c)) for c in cols]
-    if speedup and sp_j is not None:
-        header.append("Speedup")
+        best = []
+        for j in range(len(cols)):
+            present = [values[h][j] for h in heaps if values[h][j] is not None]
+            best.append(min(present) if present else None)
+        ref = None
+        if sp_j is not None:
+            ref = next((values[h][sp_j] for h in heaps if values[h][sp_j] is not None), None)
+
+        for i, h in enumerate(heaps):
+            cells = [fmt(v, j == sp_j and v is not None and v == best[j])
+                        for j, v in enumerate(values[h])]
+            if speedup and sp_j is not None:
+                v = values[h][sp_j]
+                cells.append("--" if v is None or ref is None
+                                else rf"{ref / v:.2f}$\times$")
+            be_cell = tex(be) if i == 0 else ""
+            lines.append(f"{be_cell} & {tex(hm.get(h, h))} & " + " & ".join(cells) + r" \\")
+        lines.append(r"\hline")
 
     caption = (f"type: {cfg['table_type']}, $n = {cfg['table_n']}$, "
-               f"backend: {tex(cfg['table_backend'])}, "
-               f"workload: {tex(cfg['table_workload'])}")
-    lines = [r"\begin{table}[ht]", r"\centering",
-             r"\begin{tabular}{l" + "r" * len(header) + "}", r"\hline",
-             "Heap & " + " & ".join(header) + r" \\", r"\hline"]
-    for h in heaps:
-        cells = [fmt(v, j == sp_j and v is not None and v == best[j])
-                 for j, v in enumerate(values[h])]
-        if speedup and sp_j is not None:
-            v = values[h][sp_j]
-            cells.append("--" if v is None or ref is None
-                         else rf"{ref / v:.2f}$\times$")
-        lines.append(tex(hm.get(h, h)) + " & " + " & ".join(cells) + r" \\")
-    lines += [r"\hline", r"\end{tabular}",
-              rf"\caption{{{caption}}}", rf"\label{{tab:{cfg['name']}}}",
-              r"\end{table}"]
+                f"workload: {tex(cfg['table_workload'])}")
+    lines += [r"\end{tabular}",
+                rf"\caption{{{caption}}}", rf"\label{{tab:{cfg['name']}}}",
+                r"\end{table}"]
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / f"{cfg['name']}_table.tex").write_text("\n".join(lines) + "\n")
 

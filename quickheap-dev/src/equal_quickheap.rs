@@ -1,6 +1,6 @@
-//! # MultiSimdQuickHeap: A fast SIMD-based priority queue with multi partitioning
+//! # EqualSimdQuickHeap: A fast SIMD-based priority queue with equal buckets
 //!
-//! Implementation of the `MultiSimdQuickHeap`.
+//! Implementation of the `EqualSimdQuickHeap`.
 //!
 
 use quickheap::ElemT;
@@ -51,6 +51,10 @@ pub struct EqualSimdQuickHeap<T: ElemT, S: simd::SimdElem<T>> {
     ///
     /// This can be longer than `layer` to reuse allocations.
     buckets: Vec<Bucket<T>>,
+    /// Cached copy of `buckets[pivots.len()].equal`, the flag of the top layer.
+    /// Invariant: `equal_top == buckets[pivots.len()].equal`.
+    /// Buckets above the top layer always have `equal == false`.
+    equal_top: bool,
     size: usize,
     _backend: PhantomData<S>,
 }
@@ -66,6 +70,7 @@ impl<T: ElemT + Default, S: simd::SimdElem<T>> Default for EqualSimdQuickHeap<T,
                     data: vec![],
                 })
                 .collect(),
+            equal_top: false,
             size: 0,
             _backend: PhantomData,
         }
@@ -95,10 +100,18 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
         #[cfg(feature = "layer_stats")]
         stats::layer_stats::record(self.pivots.len() + 1);
 
+        debug_assert_eq!(self.equal_top, self.buckets[self.pivots.len()].equal); // CHANGED
+
         let mut target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, t) };
 
-        if target_layer > 0 && self.buckets[target_layer].equal && t < self.pivots[target_layer - 1]
-        {
+        // CHANGED: for the top layer use the cached flag, otherwise read it from the bucket.
+        let target_equal = if target_layer == self.pivots.len() {
+            self.equal_top
+        } else {
+            self.buckets[target_layer].equal
+        };
+
+        if target_layer > 0 && target_equal && t < self.pivots[target_layer - 1] {
             // The equal layer only holds values equal to pivots[target_layer - 1].
             if target_layer < self.pivots.len() {
                 // Not the top layer: t == pivots[target_layer], so it may go one layer down.
@@ -118,6 +131,7 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
                 new_layer.equal = false; // reused buckets may be stale
                 new_layer.data.clear();
                 new_layer.data.push(t);
+                self.equal_top = false; // CHANGED: the new top layer is never equal
 
                 self.size += 1;
                 return;
@@ -126,7 +140,9 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
 
         let layer = &mut self.buckets[target_layer];
 
-        if !layer.equal && target_layer == self.pivots.len() && layer.data.len() < Self::N {
+        // CHANGED: after the (possible) `target_layer += 1` this check still holds,
+        // because for target_layer == pivots.len() the flag of that layer is equal_top.
+        if target_layer == self.pivots.len() && !self.equal_top && layer.data.len() < Self::N {
             // Count the number of larger elements in the prefix and insert the new element after them.
             let pos;
             if SIMD_INSERT {
@@ -148,6 +164,8 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
         #[cfg(feature = "layer_stats")]
         stats::layer_stats::record(self.pivots.len() + 1);
 
+        debug_assert_eq!(self.equal_top, self.buckets[self.pivots.len()].equal); // CHANGED
+
         // If the total size is 0, return none
         if self.size == 0 {
             return None;
@@ -155,14 +173,13 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
 
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].data.len() > Self::N {
-            while !self.buckets[self.pivots.len()].equal
-                && self.buckets[self.pivots.len()].data.len() > Self::N
-            {
+            // CHANGED: use the cached flag; partition() keeps it up to date.
+            while !self.equal_top && self.buckets[self.pivots.len()].data.len() > Self::N {
                 self.partition();
             }
 
             // Sort final layer decreasing.
-            if !self.buckets[self.pivots.len()].equal {
+            if !self.equal_top {
                 let layer = &mut self.buckets[self.pivots.len()];
                 layer.data.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
             }
@@ -178,10 +195,10 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
         if layer.data.is_empty() && !self.pivots.is_empty() {
             layer.equal = false;
             self.pivots.pop();
+            self.equal_top = self.buckets[self.pivots.len()].equal; // CHANGED
 
             // Sort the new final layer decreasing if it's already small.
-            let buck = &self.buckets[self.pivots.len()];
-            if !buck.equal && buck.data.len() <= Self::N {
+            if !self.equal_top && self.buckets[self.pivots.len()].data.len() <= Self::N {
                 let layer = &mut self.buckets[self.pivots.len()];
                 layer.data.sort_unstable_by_key(|&x| std::cmp::Reverse(x));
             }
@@ -235,6 +252,7 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
             if pivot == T::minimum() {
                 cur_layer_buck.equal = true;
                 self.pivots.pop();
+                self.equal_top = true; // CHANGED: the current layer is the top layer again
 
                 #[cfg(feature = "partition_stats")]
                 stats::partition_stats::equal_bucket();
@@ -276,5 +294,9 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
             #[cfg(feature = "partition_stats")]
             stats::partition_stats::redo_layer();
         }
+
+        // CHANGED: single refresh covering the normal split (new top is not equal),
+        // the equal split, and both redo paths.
+        self.equal_top = self.buckets[self.pivots.len()].equal;
     }
 }

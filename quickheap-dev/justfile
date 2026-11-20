@@ -1,16 +1,10 @@
 default:
 
-profile-neon:
-    cd bench && samply record cargo run --profile profiling --example neon
-
-avx flags='':
-    cd bench && cargo run -r -F avx512 {{flags}} --example simd
+profile name flags='':
+    cd bench && samply record -o ./evals/data/experiments/perf/{{name}}.json.gz cargo run --profile profiling {{flags}} --example perf
 
 exp flags='':
     cd bench && cargo run -r {{flags}} --example experiments
-
-neon flag='':
-    cd bench && cargo run -r -F neon {{flag}} --example neon
 
 profile-avx:
     cd bench && RUSTFLAGS="-C target-cpu=native -C inline-threshold=0" cargo build --profile profiling -F perf --example simd

@@ -144,6 +144,7 @@ pub struct ConfigurableSimdQuickHeap<
     /// This can be longer than `layer` to reuse allocations.
     buckets: Vec<B>,
     equal_buckets: Vec<bool>,
+    top_equal: bool,
     free_arena: *mut BlockArena<T, K, CAP>,
 
     size: usize,
@@ -203,6 +204,7 @@ impl<
             pivots: Vec::with_capacity(128),
             buckets: (0..128).map(|_| B::default(free_arena)).collect(),
             equal_buckets: (0..128).map(|_| false).collect(),
+            top_equal: false,
             size: 0,
             global_deletions: 0,
             rebal_pop_iteration: 0,
@@ -279,6 +281,7 @@ impl<
             pivots,
             buckets,
             equal_buckets: (0..num_buckets).map(|_| false).collect(),
+            top_equal: false,
             size: size,
             global_deletions: 0,
             rebal_pop_iteration: 0,
@@ -315,10 +318,17 @@ impl<
         self.size == 0
     }
 
+    #[inline(always)]
+    fn refresh_top_equal(&mut self) {
+        self.top_equal = EQUAL && self.equal_buckets[self.pivots.len()];
+    }
+
     /// Push `t` onto the heap.
     pub fn push(&mut self, t: T) {
         #[cfg(feature = "layer_stats")]
         stats::layer_stats::record(self.pivots.len() + 1);
+
+        debug_assert!(!EQUAL || (self.top_equal == self.equal_buckets[self.pivots.len()]));
 
         self.rebal_push_iteration += 1;
         let target_layer = simd::push_position::<T, S>(&self.pivots, t);
@@ -326,7 +336,7 @@ impl<
         if EQUAL
             && target_layer > 0
             && target_layer == self.pivots.len()
-            && self.equal_buckets[target_layer]
+            && self.top_equal
             && t < self.pivots[target_layer - 1]
         {
             // Push to top layer, create a new layer to leave the equal layer intact
@@ -337,6 +347,7 @@ impl<
 
             self.pivots.push(self.pivots[target_layer - 1].dec());
             self.buckets[self.pivots.len()].push(t);
+            self.top_equal = false;
 
             self.size += 1;
             return;
@@ -344,7 +355,7 @@ impl<
 
         let layer = &mut self.buckets[target_layer];
 
-        if (!EQUAL || !self.equal_buckets[target_layer])
+        if (!EQUAL || !self.top_equal)
             && SORT
             && target_layer == self.pivots.len()
             && layer.len() < N
@@ -410,6 +421,11 @@ impl<
         #[cfg(feature = "layer_stats")]
         stats::layer_stats::record(self.pivots.len() + 1);
 
+        debug_assert_eq!(
+            self.top_equal,
+            EQUAL && self.equal_buckets[self.pivots.len()]
+        );
+
         self.rebal_pop_iteration += 1;
         self.global_deletions += 1;
 
@@ -448,12 +464,10 @@ impl<
 
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].len() > N {
-            while (!EQUAL || !self.equal_buckets[self.pivots.len()])
-                && self.buckets[self.pivots.len()].len() > N
-            {
+            while (!EQUAL || !self.top_equal) && self.buckets[self.pivots.len()].len() > N {
                 self.partition(self.pivots.len());
             }
-            if (!EQUAL || !self.equal_buckets[self.pivots.len()]) && SORT {
+            if (!EQUAL || !self.top_equal) && SORT {
                 // Sort final layer decreasing.
                 let layer = &mut self.buckets[self.pivots.len()];
                 layer.sort_decreasing();
@@ -462,7 +476,7 @@ impl<
         // Find and extract the minimum.
         let layer = &mut self.buckets[self.pivots.len()];
         debug_assert!(!layer.is_empty());
-        let min = if SORT || (EQUAL && self.equal_buckets[self.pivots.len()]) {
+        let min = if SORT || (EQUAL && self.top_equal) {
             layer.pop().unwrap()
         } else {
             let min_pos = simd_buckets::position_min_bucket::<T, S, B, K, CAP>(layer);
@@ -476,12 +490,10 @@ impl<
             }
 
             self.pivots.pop();
+            self.refresh_top_equal();
 
             // Sort the new final layer decreasing if it's already small.
-            if (!EQUAL || !self.equal_buckets[self.pivots.len()])
-                && SORT
-                && self.buckets[self.pivots.len()].len() <= N
-            {
+            if (!EQUAL || !self.top_equal) && SORT && self.buckets[self.pivots.len()].len() <= N {
                 let layer = &mut self.buckets[self.pivots.len()];
                 layer.sort_decreasing();
             }
@@ -508,17 +520,13 @@ impl<
         #[cfg(feature = "partition_stats")]
         stats::partition_stats::partition(self.buckets[layer].len());
 
-        if P == 2 {
-            self.dual_partition(layer);
-            return;
-        }
-
-        if self.buckets[layer].len() <= MULTI_THRESH {
+        if P == 2 || self.buckets[layer].len() <= MULTI_THRESH {
             self.dual_partition(layer);
         } else {
             debug_assert!(layer == self.pivots.len());
             self.multi_partition();
         }
+        self.refresh_top_equal();
     }
 
     #[inline(always)]
