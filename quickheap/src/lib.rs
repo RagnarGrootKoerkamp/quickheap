@@ -96,13 +96,17 @@ pub type Simd = simd::Neon;
 
 use crate::decrease_key::DecreaseKeyStrategy;
 use crate::decrease_key::NoDecreaseKey;
-use crate::{partitioning::VecPartitioning, pivots::MedianOfM};
+use crate::{partitioning::VecPartitioning, pivots::MedianOfM, pivots::VecPivotStrategy};
 
 /// The key-only SimdQuickHeap implementation
 ///
 /// - `T`: the element type: `u32`, `i32`, `u64`, or `i64`.
 /// - `S`: an optional tag to select the SIMD backend: [`Avx2`], [`Avx512`], or [`Neon`].
-pub struct SimdQuickHeap<T: ElemT, S: simd::SimdElem<T> = Simd> {
+pub struct SimdQuickHeap<
+    T: ElemT,
+    S: simd::SimdElem<T> = Simd,
+    P: VecPivotStrategy<T> = MedianOfM<3>,
+> {
     /// A decreasing array of the pivots for all layers.
     /// buckets[i] >= pivots[i] >= buckets[i+1]
     /// Values equal to pivots[i] can be in layer i or i+1.
@@ -120,21 +124,25 @@ pub struct SimdQuickHeap<T: ElemT, S: simd::SimdElem<T> = Simd> {
     buckets: Vec<Vec<T>>,
     size: usize,
     _backend: PhantomData<S>,
+    _pivots: PhantomData<P>,
 }
 
 /// Return a default instance with plenty (128) layers of empty buckets.
-impl<T: ElemT + Default, S: simd::SimdElem<T>> Default for SimdQuickHeap<T, S> {
+impl<T: ElemT + Default, S: simd::SimdElem<T>, P: VecPivotStrategy<T>> Default
+    for SimdQuickHeap<T, S, P>
+{
     fn default() -> Self {
         Self {
             pivots: Vec::with_capacity(128),
             buckets: (0..128).map(|_| vec![]).collect(),
             size: 0,
             _backend: PhantomData,
+            _pivots: PhantomData,
         }
     }
 }
 
-impl<T: ElemT + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
+impl<T: ElemT + Default, S: simd::SimdElem<T>, P: VecPivotStrategy<T>> SimdQuickHeap<T, S, P> {
     const N: usize = 16;
 
     /// Return the total capacity over all buckets.
@@ -249,7 +257,7 @@ impl<T: ElemT + Default, S: simd::SimdElem<T>> SimdQuickHeap<T, S> {
         let n = cur_layer.len();
 
         // Sample a pivot using the pivot strategy
-        let (pivot, pivot_pos) = MedianOfM::<3>::pick(cur_layer);
+        let (pivot, pivot_pos) = P::pick(cur_layer);
 
         self.pivots.push(pivot);
 

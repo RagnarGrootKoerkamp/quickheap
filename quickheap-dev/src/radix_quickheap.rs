@@ -8,7 +8,7 @@ use quickheap::ElemT;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use quickheap::pivots::MedianOfM;
+use quickheap::pivots::{MedianOfM, VecPivotStrategy};
 use quickheap::simd;
 
 use simd::SPLIT_PIVOTS_CUR_AND_NEXT;

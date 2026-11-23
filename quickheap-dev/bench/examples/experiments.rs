@@ -22,6 +22,7 @@ use bench::{
 };
 
 use quickheap::SimdElem;
+use quickheap::pivots::LayerSizeDependentPivot;
 
 #[cfg(feature = "layer_stats")]
 use quickheap_dev::stats::layer_stats;
@@ -501,7 +502,7 @@ pub enum Work {
     #[cfg(feature = "wl_many_equal")]
     RandomManyEqual,
     #[cfg(feature = "wl_heapsort")]
-    Heapsort,
+    HeapSort,
     #[cfg(feature = "wl_mostly_push_decreasing")]
     MostlyPushDecreasing,
     #[cfg(feature = "wl_random_cs")]
@@ -695,6 +696,30 @@ fn simd_qh() {
     let mut e = Experiment {
         name: "SimdQuickHeaps".to_string(),
         output_name: "simd_qh".to_string(),
+        ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        heaps: heap_config,
+        workloads: vec![Work::MonotoneCS],
+        types: vec![Type::I64],
+        metrics: vec![nano_timer],
+    };
+
+    run(&mut e);
+}
+
+#[cfg(feature = "pivots")]
+fn pivots() {
+    let heap_config = vec![HeapConfig {
+        family: HeapFamily::SimdQH,
+        config_simd: ConfigSimdQH::empty(),
+        config_radix: ConfigMulti::empty(),
+        config_multi: ConfigMulti::empty(),
+    }];
+
+    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+
+    let mut e = Experiment {
+        name: "Pivots".to_string(),
+        output_name: "pivots".to_string(),
         ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
@@ -1140,38 +1165,6 @@ fn multiway() {
             config_multi: ConfigMulti::empty(),
         },
         HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::NoRebal,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 2,
-                multi_thresh: 0,
-            },
-            config_radix: ConfigMulti::empty(),
-            config_multi: ConfigMulti::empty(),
-        },
-        HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::NoRebal,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 4,
-                multi_thresh: 1024,
-            },
-            config_radix: ConfigMulti::empty(),
-            config_multi: ConfigMulti::empty(),
-        },
-        HeapConfig {
             family: HeapFamily::MultiSimdQH,
             config_simd: ConfigSimdQH::empty(),
             config_radix: ConfigMulti::empty(),
@@ -1187,10 +1180,13 @@ fn multiway() {
             family: HeapFamily::MultiSimdQH,
             config_simd: ConfigSimdQH::empty(),
             config_radix: ConfigMulti::empty(),
-            config_multi: ConfigMulti {
-                b: 4,
-                thresh: 32768,
-            },
+            config_multi: ConfigMulti { b: 5, thresh: 1024 },
+        },
+        HeapConfig {
+            family: HeapFamily::MultiSimdQH,
+            config_simd: ConfigSimdQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti { b: 5, thresh: 2048 },
         },
     ];
 
@@ -1202,7 +1198,7 @@ fn multiway() {
         output_name: "multiway".to_string(),
         ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
-        workloads: vec![Work::MonotoneCS, Work::RandomCS],
+        workloads: vec![Work::MonotoneCS, Work::HeapSort],
         types: vec![Type::I64],
         metrics: vec![nano_timer, layer_measurement],
     };
@@ -1497,6 +1493,9 @@ fn sanitize_heap(s: String) -> String {
     s.replace(",Avx2", "")
         .replace(",Avx512", "")
         .replace(",Neon", "")
+        .replace("Neon,", "")
+        .replace("Avx2,", "")
+        .replace("Avx512,", "")
 }
 
 fn sanitize(s: String) -> String {
@@ -2124,6 +2123,8 @@ macro_rules! dispatch_heap {
             match h.family {
                 HeapFamily::SimdQH => {
                     run_config::<$t, $simd, SimdQuickHeap<$t, $simd>, $w>($e, $writer);
+                    #[cfg(feature = "pivots")]
+                    run_config::<$t, $simd, SimdQuickHeap<$t, $simd, LayerSizeDependentPivot>, $w>($e, $writer);
                 }
                 HeapFamily::ConfigSimdQH => {
                     dispatch_config_simdqh!($e, $t, $w, $simd, h.config_simd, $writer)
@@ -2203,7 +2204,7 @@ macro_rules! dispatch_workload {
             match w {
                 Work::MonotoneCS => {dispatch_heap!($e, $t, workloads::MonotoneConstantSize, $simd, $writer);},
                 #[cfg(feature = "wl_heapsort")]
-                Work::Heapsort => {dispatch_heap!($e, $t, workloads::HeapSort, $simd, $writer);},
+                Work::HeapSort => {dispatch_heap!($e, $t, workloads::HeapSort, $simd, $writer);},
                 #[cfg(feature = "wl_random_cs")]
                 Work::RandomCS => {dispatch_heap!($e, $t, workloads::RandomConstantSize, $simd, $writer);},
                 #[cfg(feature = "wl_mostly_push_decreasing")]

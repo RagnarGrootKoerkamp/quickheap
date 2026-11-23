@@ -92,11 +92,11 @@
     },
     "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
     "plot_by": ["nano_seconds"],
-    "plot_types": ["i32", "i64"],
+    "plot_types": ["i64"],
     "table_n": 33554432,
     "table_type": "i64",
     "table_workload": "MonotoneConstantSize",
-    "table_backend": "Avx512",
+    "table_backend": ["Avx512", "Neon"],
     "table_cols": ["nano_seconds", "median_layers"],
     "show_speedup": true,
     "speedup_metric": "nano_seconds"
@@ -133,7 +133,13 @@
     "name": "competitors",
     "heap_mappings":
       {
-        "SimdQuickHeap": "SQH"
+        "SimdQuickHeap": "SQH",
+        "ScalarQuickHeap<3,false,LinearScan>": "ScalarQH",
+        "OriginalQuickHeap": "OriginalQH",
+        "BinaryHeap<core::cmp::Reverse>": "BinaryHeap",
+        "DaryHeap<(),i32,8>": "8aryHeap",
+        "DaryHeap<(),i64,8>": "8aryHeap",
+        "WeakHeap<core::cmp::Reverse>": "WeakHeap"
       },
     "heap_colors": {
       "SimdQuickHeap": "xkcd:salmon"
@@ -141,6 +147,7 @@
     "metric_mappings": {"nano_seconds": "ns/op", "median_layers": "Median # layers"},
     "plot_by": ["nano_seconds"],
     "plot_types": ["i32", "i64"],
+    "plot_backends": ["Avx512"],
     "table_n": 32768,
     "table_type": "i64",
     "table_workload": "MonotoneConstantSize",

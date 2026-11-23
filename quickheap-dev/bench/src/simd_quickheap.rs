@@ -1,6 +1,6 @@
 use quickheap::decrease_key::DecreaseKeyStrategy;
 use quickheap::partitioning::{MultiPartition, Partition};
-use quickheap::{ElemT, KvSimdQuickHeap};
+use quickheap::{ElemT, KvSimdQuickHeap, pivots::VecPivotStrategy};
 
 use quickheap_dev::{ElemConstraint, EqualSimdQuickHeap, MultiSimdQuickHeap, RadixSimdQuickHeap};
 
@@ -59,8 +59,8 @@ impl<
     }
 }
 
-impl<T: ElemT + workloads::Elem + Default, S: quickheap::simd::SimdElem<T>> Heap<T>
-    for quickheap::SimdQuickHeap<T, S>
+impl<T: ElemT + workloads::Elem + Default, S: quickheap::simd::SimdElem<T>, P: VecPivotStrategy<T>>
+    Heap<T> for quickheap::SimdQuickHeap<T, S, P>
 {
     type CountedType = workloads::CountComparisons<T>;
     type CountedHeap = NoHeap;

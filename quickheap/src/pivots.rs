@@ -1,14 +1,64 @@
+use fastrand;
+use std::mem::MaybeUninit;
+
+pub trait VecPivotStrategy<T: Copy + Ord> {
+    fn pick(layer: &[T]) -> (T, usize);
+}
+
 pub struct MedianOfM<const M: usize>;
-impl<const M: usize> MedianOfM<M> {
+
+impl<T: Copy + Ord, const M: usize> VecPivotStrategy<T> for MedianOfM<M> {
     #[inline(always)]
-    pub fn pick<T: Copy + Ord>(layer: &[T]) -> (T, usize) {
+    fn pick(layer: &[T]) -> (T, usize) {
         let n = layer.len();
-        let k = M / 2;
+        let mut rng = fastrand::Rng::new();
         let mut pivots: [(T, usize); M] = std::array::from_fn(|_| {
-            let pos = rand::random_range(0..n);
+            let pos = rng.usize(..n);
             (layer[pos], pos)
         });
-        pivots.select_nth_unstable(k);
-        (pivots[k].0, pivots[k].1)
+        let (_, med, _) = pivots.select_nth_unstable(M / 2);
+        *med
+    }
+}
+
+pub struct LayerSizeDependentPivot;
+
+impl LayerSizeDependentPivot {
+    const S_MAX: usize = 1023;
+
+    #[inline(always)]
+    fn sample_size(n: usize) -> usize {
+        match n {
+            ..=256 => 3,
+            ..=4096 => 9,
+            _ => (((n as f64).sqrt() * 0.75) as usize | 1).clamp(15, Self::S_MAX),
+        }
+    }
+
+    #[inline(never)]
+    fn pick_large<T: Copy + Ord>(layer: &[T], s: usize) -> (T, usize) {
+        let n = layer.len();
+        let mut rng = fastrand::Rng::new();
+        let mut buf = [const { MaybeUninit::<(T, usize)>::uninit() }; Self::S_MAX];
+        for slot in &mut buf[..s] {
+            let pos = rng.usize(..n);
+            slot.write((layer[pos], pos));
+        }
+        // SAFETY: the first `s` slots were initialised above.
+        let sample =
+            unsafe { std::slice::from_raw_parts_mut(buf.as_mut_ptr().cast::<(T, usize)>(), s) };
+        let (_, med, _) = sample.select_nth_unstable(s / 2);
+        *med
+    }
+}
+
+impl<T: Copy + Ord> VecPivotStrategy<T> for LayerSizeDependentPivot {
+    #[inline]
+    fn pick(layer: &[T]) -> (T, usize) {
+        match Self::sample_size(layer.len()) {
+            3 => MedianOfM::<3>::pick(layer),
+            9 => MedianOfM::<9>::pick(layer),
+            s => Self::pick_large(layer, s),
+        }
     }
 }

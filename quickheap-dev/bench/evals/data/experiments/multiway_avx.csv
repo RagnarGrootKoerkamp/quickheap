@@ -19,10 +19,6 @@ i64,Avx2,524288,MonotoneConstantSize,"MultiSimdQuickHeap<4,2048>",33.66,15
 i64,Avx2,2097152,MonotoneConstantSize,"MultiSimdQuickHeap<4,2048>",35.01,17
 i64,Avx2,8388608,MonotoneConstantSize,"MultiSimdQuickHeap<4,2048>",36.00,19
 i64,Avx2,33554432,MonotoneConstantSize,"MultiSimdQuickHeap<4,2048>",38.08,21
-i64,Avx2,524288,MonotoneConstantSize,"MultiSimdQuickHeap<4,32768>",32.60,13
-i64,Avx2,2097152,MonotoneConstantSize,"MultiSimdQuickHeap<4,32768>",34.35,15
-i64,Avx2,8388608,MonotoneConstantSize,"MultiSimdQuickHeap<4,32768>",35.57,17
-i64,Avx2,33554432,MonotoneConstantSize,"MultiSimdQuickHeap<4,32768>",36.66,19
 i64,Avx2,524288,RandomConstantSize,"SimdQuickHeap",14.59,0
 i64,Avx2,2097152,RandomConstantSize,"SimdQuickHeap",14.97,0
 i64,Avx2,8388608,RandomConstantSize,"SimdQuickHeap",15.00,0
@@ -43,10 +39,6 @@ i64,Avx2,524288,RandomConstantSize,"MultiSimdQuickHeap<4,2048>",21.08,15
 i64,Avx2,2097152,RandomConstantSize,"MultiSimdQuickHeap<4,2048>",20.93,17
 i64,Avx2,8388608,RandomConstantSize,"MultiSimdQuickHeap<4,2048>",21.19,19
 i64,Avx2,33554432,RandomConstantSize,"MultiSimdQuickHeap<4,2048>",21.87,20
-i64,Avx2,524288,RandomConstantSize,"MultiSimdQuickHeap<4,32768>",20.17,13
-i64,Avx2,2097152,RandomConstantSize,"MultiSimdQuickHeap<4,32768>",20.26,15
-i64,Avx2,8388608,RandomConstantSize,"MultiSimdQuickHeap<4,32768>",20.70,17
-i64,Avx2,33554432,RandomConstantSize,"MultiSimdQuickHeap<4,32768>",20.93,18
 i64,Avx512,524288,MonotoneConstantSize,"SimdQuickHeap",26.28,0
 i64,Avx512,2097152,MonotoneConstantSize,"SimdQuickHeap",28.25,0
 i64,Avx512,8388608,MonotoneConstantSize,"SimdQuickHeap",28.55,0
@@ -67,10 +59,6 @@ i64,Avx512,524288,MonotoneConstantSize,"MultiSimdQuickHeap<4,2048>",30.95,14
 i64,Avx512,2097152,MonotoneConstantSize,"MultiSimdQuickHeap<4,2048>",32.41,17
 i64,Avx512,8388608,MonotoneConstantSize,"MultiSimdQuickHeap<4,2048>",31.79,19
 i64,Avx512,33554432,MonotoneConstantSize,"MultiSimdQuickHeap<4,2048>",34.10,21
-i64,Avx512,524288,MonotoneConstantSize,"MultiSimdQuickHeap<4,32768>",30.05,13
-i64,Avx512,2097152,MonotoneConstantSize,"MultiSimdQuickHeap<4,32768>",32.02,15
-i64,Avx512,8388608,MonotoneConstantSize,"MultiSimdQuickHeap<4,32768>",32.16,17
-i64,Avx512,33554432,MonotoneConstantSize,"MultiSimdQuickHeap<4,32768>",34.20,19
 i64,Avx512,524288,RandomConstantSize,"SimdQuickHeap",14.30,0
 i64,Avx512,2097152,RandomConstantSize,"SimdQuickHeap",15.31,0
 i64,Avx512,8388608,RandomConstantSize,"SimdQuickHeap",14.82,0
@@ -91,7 +79,3 @@ i64,Avx512,524288,RandomConstantSize,"MultiSimdQuickHeap<4,2048>",19.35,16
 i64,Avx512,2097152,RandomConstantSize,"MultiSimdQuickHeap<4,2048>",19.69,16
 i64,Avx512,8388608,RandomConstantSize,"MultiSimdQuickHeap<4,2048>",19.45,19
 i64,Avx512,33554432,RandomConstantSize,"MultiSimdQuickHeap<4,2048>",19.60,20
-i64,Avx512,524288,RandomConstantSize,"MultiSimdQuickHeap<4,32768>",18.93,14
-i64,Avx512,2097152,RandomConstantSize,"MultiSimdQuickHeap<4,32768>",19.17,15
-i64,Avx512,8388608,RandomConstantSize,"MultiSimdQuickHeap<4,32768>",18.87,17
-i64,Avx512,33554432,RandomConstantSize,"MultiSimdQuickHeap<4,32768>",19.10,18
