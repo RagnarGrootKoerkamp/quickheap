@@ -16,7 +16,7 @@ use bench::impls;
 
 #[cfg(feature = "ffi")]
 use bench::{
-    impls, original_quickheap, radix_heap, s3q,
+    original_quickheap, radix_heap, s3q,
     scalar_quickheap::{self, Search},
     sequence_heap,
 };
