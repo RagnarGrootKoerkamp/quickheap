@@ -21,12 +21,21 @@ use quickheap_dev::buckets::{
 
 const REPEATS: usize = 5;
 
+const EQUAL: bool = false;
+
 fn generate_layer_input<T: Elem>(n: usize) -> (Vec<T>, T, usize) {
     let mut rng = fastrand::Rng::new();
     let stride = T::stride();
-    let values = std::iter::repeat_with(|| <T as Elem>::clamp(T::from(rng.u64(..stride))))
-        .take(n)
-        .collect::<Vec<_>>();
+
+    let values: Vec<T>;
+    if EQUAL {
+        let val = <T as Elem>::clamp(T::from(rng.u64(..stride)));
+        values = vec![val; n];
+    } else {
+        values = std::iter::repeat_with(|| <T as Elem>::clamp(T::from(rng.u64(..stride))))
+            .take(n)
+            .collect::<Vec<_>>();
+    }
 
     let (pivot, pivot_pos) = MedianOfM::<3>::pick(&values);
 
@@ -251,8 +260,16 @@ fn run<T: Default + ElemConstraint + ElemT + Elem, S: SimdElem<T>>(writer: &mut 
 }
 
 fn main() {
-    let path =
-        String::from(env!("CARGO_MANIFEST_DIR")) + "/evals/data/experiments/partitions_avx.csv";
+    #[cfg(target_arch = "aarch64")]
+    let suff = "_neon";
+
+    #[cfg(not(target_arch = "aarch64"))]
+    let suff = "_avx";
+
+    let path = String::from(env!("CARGO_MANIFEST_DIR"))
+        + "/evals/data/experiments/partitions"
+        + suff
+        + ".csv";
     let file = File::create(path).unwrap();
     let mut writer = BufWriter::with_capacity(1 << 15, file);
 
@@ -260,8 +277,21 @@ fn main() {
         .write_all("elem_type,simd_backend,workload,n,heap,nano_seconds\n".as_bytes())
         .unwrap();
 
-    run::<i32, simd::Avx2>(&mut writer);
-    run::<i64, simd::Avx2>(&mut writer);
-    run::<i32, simd::Avx512>(&mut writer);
-    run::<i64, simd::Avx512>(&mut writer);
+    #[cfg(target_feature = "avx2")]
+    {
+        run::<i32, simd::Avx2>(&mut writer);
+        run::<i64, simd::Avx2>(&mut writer);
+    }
+
+    #[cfg(target_feature = "avx512f")]
+    {
+        run::<i32, simd::Avx512>(&mut writer);
+        run::<i64, simd::Avx512>(&mut writer);
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        run::<i32, simd::Neon>(&mut writer);
+        run::<i64, simd::Neon>(&mut writer);
+    }
 }

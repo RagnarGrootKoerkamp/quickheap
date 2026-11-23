@@ -6,6 +6,12 @@ profile name flags='':
 exp flags='':
     cd bench && cargo run -r {{flags}} --example experiments
 
+partition flags='':
+    cd bench && cargo run -r {{flags}} --example partitions
+
+plot-exp:
+    cd bench/evals && ./experiments.py ./experiments.json
+
 profile-avx:
     cd bench && RUSTFLAGS="-C target-cpu=native -C inline-threshold=0" cargo build --profile profiling -F perf --example simd
     samply record --save-only --unstable-presymbolicate -o ./perf/profile.json.gz ./target/profiling/examples/simd
@@ -13,15 +19,6 @@ profile-avx:
 # Run the one-off testing binary.
 run:
     cd bench && cargo run -r --example run
-
-bench-simd:
-    cd bench && cargo run -r --example bench_simd > evals/data/simd.csv
-
-pivots:
-    cd bench && cargo run -r --example pivots -F pivots > evals/data/pivots.csv
-
-rebalancing:
-    cd bench && cargo run -r --example rebalancing -F rebalancing > evals/data/rebal.csv
 
 # Run all benchmarks. Takes a bunch of hours.
 bench-all:

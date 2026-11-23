@@ -204,6 +204,7 @@ impl ExponentialUpperBoundRebalancing {
         buckets: &mut Vec<B>,
     ) {
         debug_assert!(bucket_to_push.len() > 0);
+        println!("push layer");
         let bucket_max = bucket_to_push.max().0;
         let bucket_min = bucket_to_push.min().0;
 

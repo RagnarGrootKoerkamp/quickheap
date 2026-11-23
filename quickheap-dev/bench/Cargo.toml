@@ -21,7 +21,7 @@ competitors = ["perf"]
 graphs = []
 decrease_key = ["memory"]
 pivots = ["layer_stats"]
-rebalancing = ["layer_stats"]
+rebalancing = ["layer_stats", "wl_mostly_push_decreasing"]
 buckets = []
 
 # Features to reduce compile time of experiments

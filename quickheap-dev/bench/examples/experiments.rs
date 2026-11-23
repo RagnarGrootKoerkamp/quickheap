@@ -83,6 +83,9 @@ pub trait MetricMeasurement<T> {
     fn get(&self) -> T;
     fn get_name(&self) -> String;
     fn norm_by_ops(&mut self, ops: usize);
+    fn okay(&self) -> bool {
+        true
+    }
 }
 
 struct NanoTimer {
@@ -107,6 +110,10 @@ impl MetricMeasurement<f64> for NanoTimer {
     fn reset(&mut self) {
         self.measurements.clear();
         self.result = 0f64;
+    }
+
+    fn okay(&self) -> bool {
+        self.result < 200f64
     }
 
     fn start(&mut self) {
@@ -236,10 +243,19 @@ struct MeasurePerfStats {
     instructions: PerfCounter,
     cycles: PerfCounter,
 
+    branches: PerfCounter,
+    branch_misses: PerfCounter,
+
     cache_measures: Vec<f64>,
     ipc_measures: Vec<f64>,
 
+    branch_measures: Vec<f64>,
+    branch_miss_measures: Vec<f64>,
+
     cache_misses: f64,
+    branch_misses: f64,
+    branches: f64,
+
     ipc: f64,
 }
 #[cfg(feature = "perf")]
@@ -263,8 +279,22 @@ impl MetricMeasurement<String> for MeasurePerfStats {
                 .exclude_kernel()
                 .finish()
                 .expect("Could not create the cycle counter."),
+            branches: PerfCounterBuilderLinux::from_hardware_event(
+                HardwareEventType::BranchInstructions,
+            )
+            .exclude_kernel()
+            .finish()
+            .expect("Could not create the branches counter."),
+            branch_misses: PerfCounterBuilderLinux::from_hardware_event(
+                HardwareEventType::BranchMisses,
+            )
+            .exclude_kernel()
+            .finish()
+            .expect("Could not create the branch miss counter."),
             cache_measures: vec![],
             ipc_measures: vec![],
+            branch_measures: vec![],
+            branch_miss_measures: vec![],
             cache_misses: 0f64,
             ipc: 0f64,
         }
@@ -278,6 +308,12 @@ impl MetricMeasurement<String> for MeasurePerfStats {
             .start()
             .expect("Could not start instructions counter");
         self.cycles.start().expect("Could not start cycle counter");
+        self.branches
+            .start()
+            .expect("Could not start branches counter");
+        self.branch_misses
+            .start()
+            .expect("Could not start branch miss counter");
     }
 
     fn reset(&mut self) {
@@ -291,6 +327,12 @@ impl MetricMeasurement<String> for MeasurePerfStats {
             .reset()
             .expect("Could not reset instructions counter");
         self.cycles.reset().expect("Could not reset cycle counter");
+        self.branches
+            .reset()
+            .expect("Could not reset branches counter");
+        self.branch_misses
+            .reset()
+            .expect("Could not reset branch miss counter");
     }
 
     fn stop(&mut self, _: &HeapStats) {
@@ -301,6 +343,8 @@ impl MetricMeasurement<String> for MeasurePerfStats {
             .stop()
             .expect("Could not stop instructions counter");
         self.cycles.stop().expect("Could not stop cycle counter");
+        self.branches.stop().expect("Could not stop counter");
+        self.branch_misses.stop().expect("Could not stop counter");
 
         let cache_misses = self
             .cache
@@ -312,25 +356,38 @@ impl MetricMeasurement<String> for MeasurePerfStats {
             .expect("Could not read instructions counter") as f64;
         let cycles = self.cycles.read().expect("Could not read cycle counter") as f64;
 
+        let branch_misses = self.branch_misses.read().expect("Could not read counter") as f64;
+        let branches = self.branches.read().expect("Could not read counter") as f64;
+
+        self.branch_miss_measures.push(branch_misses);
+        self.branch_measures.push(branches);
         self.cache_measures.push(cache_misses);
         self.ipc_measures.push(instructions / cycles);
     }
 
     fn get(&self) -> String {
-        format!("{:.2},{:.1}", self.cache_misses, self.ipc)
+        format!(
+            "{:.2},{:.1},{:.2},{:.2}",
+            self.cache_misses, self.ipc, self.branches, self.branch_misses
+        )
     }
 
     fn get_name(&self) -> String {
-        "cache_misses,ipc".to_string()
+        "cache_misses,ipc,branches,branch_misses".to_string()
     }
 
     fn norm_by_ops(&mut self, ops: usize) {
         let num_measures = self.cache_measures.len();
         self.cache_measures.sort_by(|a, b| a.total_cmp(b));
         self.ipc_measures.sort_by(|a, b| a.total_cmp(b));
+        self.branch_measures.sort_by(|a, b| a.total_cmp(b));
+        self.branch_miss_measures.sort_by(|a, b| a.total_cmp(b));
 
         self.ipc = self.ipc_measures[num_measures / 2];
         self.cache_misses = self.cache_measures[num_measures / 2] / ops as f64;
+
+        self.branches = self.branch_measures[num_measures / 2] / ops as f64;
+        self.branch_misses = self.branch_miss_measures[num_measures / 2] / ops as f64;
     }
 }
 
@@ -605,6 +662,13 @@ impl AnyMeasurement {
             Self::String(b) => b.get_name(),
         }
     }
+
+    fn okay(&self) -> bool {
+        match self {
+            Self::F64(b) => b.okay(),
+            _ => true,
+        }
+    }
 }
 
 pub struct Experiment {
@@ -645,25 +709,15 @@ fn simd_qh() {
 fn buckets() {
     let heap_config = vec![
         HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::NoRebal,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 2,
-                multi_thresh: 0,
-            },
+            family: HeapFamily::SimdQH,
+            config_simd: ConfigSimdQH::empty(),
             config_radix: ConfigMulti::empty(),
             config_multi: ConfigMulti::empty(),
         },
         HeapConfig {
             family: HeapFamily::ConfigSimdQH,
             config_simd: ConfigSimdQH {
-                bucket: Buckets::VecBucket,
+                bucket: Buckets::Vec,
                 pivot: MedianOf3,
                 multi_pivot: EqualMedianOf2,
                 rebal: Rebalancing::NoRebal,
@@ -904,7 +958,8 @@ fn rebalancing() {
         HeapConfig {
             family: HeapFamily::SimdQH,
             config_simd: ConfigSimdQH::empty(),
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
         },
         HeapConfig {
             family: HeapFamily::ConfigSimdQH,
@@ -919,7 +974,8 @@ fn rebalancing() {
                 p: 2,
                 multi_thresh: 0,
             },
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
         },
         HeapConfig {
             family: HeapFamily::ConfigSimdQH,
@@ -934,22 +990,8 @@ fn rebalancing() {
                 p: 2,
                 multi_thresh: 0,
             },
-            config_radix: ConfigRadixQH::empty(),
-        },
-        HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::ListBlock,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::PivotForgetting,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 2,
-                multi_thresh: 0,
-            },
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
         },
         /* HeapConfig {
             family: HeapFamily::ConfigSimdQH,
@@ -964,8 +1006,9 @@ fn rebalancing() {
                 p: 2,
                 multi_thresh: 0,
             },
-            config_radix: ConfigRadixQH::empty(),
-        }, */
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
+        },*/
         HeapConfig {
             family: HeapFamily::ConfigSimdQH,
             config_simd: ConfigSimdQH {
@@ -979,22 +1022,8 @@ fn rebalancing() {
                 p: 2,
                 multi_thresh: 0,
             },
-            config_radix: ConfigRadixQH::empty(),
-        },
-        HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::ListBlock,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::RandomizedRebalancing,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 2,
-                multi_thresh: 0,
-            },
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
         },
     ];
 
@@ -1010,7 +1039,7 @@ fn rebalancing() {
     let mut e = Experiment {
         name: "Rebalancing".to_string(),
         output_name: "rebalancing".to_string(),
-        ns: (16..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        ns: (10..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS, Work::MostlyPushDecreasing],
         types: vec![Type::I32, Type::I64],
@@ -1581,11 +1610,14 @@ fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
         )));
         result.push_str("\"");
 
+        let mut okay = true;
         for metric in e.metrics.iter_mut() {
             metric.norm_by_ops(n * W::NORMALIZATION as usize);
             let s = metric.get();
             result.push_str(",");
             result.push_str(&s);
+
+            okay = okay && metric.okay();
 
             metric.reset();
         }
@@ -1598,6 +1630,11 @@ fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
         writer
             .flush()
             .expect("Something went wrong writing to the file.");
+
+        if !okay {
+            println!("Exit config early.");
+            return;
+        }
     }
 }
 

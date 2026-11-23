@@ -3,10 +3,6 @@ i32,Avx2,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitio
 i32,Avx2,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",20.66
 i32,Avx2,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",21.78
 i32,Avx2,16777216,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",22.50
-i32,Avx2,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",19.83
-i32,Avx2,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",20.37
-i32,Avx2,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",21.73
-i32,Avx2,16777216,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",22.59
 i32,Avx2,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",28.14
 i32,Avx2,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",29.30
 i32,Avx2,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",32.20
@@ -19,10 +15,6 @@ i64,Avx2,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitio
 i64,Avx2,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",25.78
 i64,Avx2,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",27.32
 i64,Avx2,16777216,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",29.40
-i64,Avx2,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",24.20
-i64,Avx2,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",25.72
-i64,Avx2,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",27.52
-i64,Avx2,16777216,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",29.53
 i64,Avx2,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",32.67
 i64,Avx2,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",34.75
 i64,Avx2,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",39.49
@@ -35,10 +27,6 @@ i32,Avx512,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartit
 i32,Avx512,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",18.51
 i32,Avx512,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",19.47
 i32,Avx512,16777216,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",20.28
-i32,Avx512,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",17.94
-i32,Avx512,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",18.52
-i32,Avx512,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",19.56
-i32,Avx512,16777216,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",20.33
 i32,Avx512,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",24.72
 i32,Avx512,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",25.39
 i32,Avx512,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",27.63
@@ -51,10 +39,6 @@ i64,Avx512,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartit
 i64,Avx512,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",22.44
 i64,Avx512,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",24.14
 i64,Avx512,16777216,MonotoneConstantSize,"ConfigurableSimdQuickHeap<Vec,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",25.94
-i64,Avx512,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",20.87
-i64,Avx512,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",22.54
-i64,Avx512,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",24.15
-i64,Avx512,16777216,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBucket,FlatPartitioning,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,0,0,true,false,2,0>",25.76
 i64,Avx512,262144,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",28.03
 i64,Avx512,1048576,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",29.59
 i64,Avx512,4194304,MonotoneConstantSize,"ConfigurableSimdQuickHeap<VecBlockBucket<240,256>,BlockedPartitioning<240,256>,MedianOfM<3>,EqualMultiMedianOfM<2>,NoRebalancing,16,240,256,true,false,2,0>",33.38

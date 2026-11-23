@@ -22,8 +22,10 @@ pub use radix_quickheap::RadixSimdQuickHeap;
 
 pub mod equal_quickheap;
 pub mod multi_quickheap;
+// pub mod rebal_quickheap;
 pub use equal_quickheap::EqualSimdQuickHeap;
 pub use multi_quickheap::MultiSimdQuickHeap;
+// pub use rebal_quickheap::RebalSimdQuickHeap;
 
 #[doc(hidden)]
 pub mod buckets;
@@ -384,6 +386,7 @@ impl<
     }
 
     fn pull(&mut self, layer: usize) {
+        println!("pull");
         // Semantic: Pull elements into layer
 
         // If the bucket to pull from is also empty, recurse

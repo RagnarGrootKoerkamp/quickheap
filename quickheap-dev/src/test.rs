@@ -153,12 +153,12 @@ where
     G: Generator<T>,
 {
     let g = &mut G::new();
-    for n in [10, 100, 1000, 10000, 100000] {
+    for n in [10, 100, 1000, 1024, 10000, 100000] {
         // let mut q = RadixSimdQuickHeap::<T, S, 2>::default();
         // let mut q = MultiSimdQuickHeap::<T, S, 4, 1024>::default();
-        let mut q = EqualSimdQuickHeap::<T, S>::default();
+        // let mut q = EqualSimdQuickHeap::<T, S>::default();
 
-        /* let mut q = <ConfigurableSimdQuickHeap<
+        let mut q = <ConfigurableSimdQuickHeap<
             T,
             Vec<T>,
             // VecBucket<T>,
@@ -168,19 +168,19 @@ where
             S,
             MedianOfM<3>,
             EqualMultiMedianOfM<1>,
-            NoRebalancing,
+            // NoRebalancing,
             // NaiveLogRebalancing<4, 2048>,
             // PivotForgetting<3, 2048>,
-            // ExponentialUpperBoundRebalancing,
+            ExponentialUpperBoundRebalancing,
             // RandomizedRebalancing<128>,
             16,
             224,
             256,
             true,
-            true,
+            false,
             2,
             0,
-        >>::default(); */
+        >>::default();
 
         for _ in 0..n {
             let t = g.get();
@@ -207,7 +207,7 @@ where
 {
     let g = &mut G::new();
     for n in [10, 100, 1000, 10000, 100000] {
-        /* let mut q1 = <ConfigurableSimdQuickHeap<
+        let mut q1 = <ConfigurableSimdQuickHeap<
             T,
             Vec<T>,
             // VecBucket<T>,
@@ -217,19 +217,19 @@ where
             S,
             MedianOfM<3>,
             EqualMultiMedianOfM<1>,
-            NoRebalancing,
+            // NoRebalancing,
             // NaiveLogRebalancing<4, 2048>,
             // PivotForgetting<3, 2048>,
-            // ExponentialUpperBoundRebalancing,
+            ExponentialUpperBoundRebalancing,
             // RandomizedRebalancing<128>,
             16,
             224,
             256,
             true,
-            true,
+            false,
             2,
             0,
-        >>::default(); */
+        >>::default();
 
         // let mut q1 = MultiSimdQuickHeap::<T, S, 4, 1024>::default();
         // let mut q1 = RadixSimdQuickHeap::<T, S, 2>::default();

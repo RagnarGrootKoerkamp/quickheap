@@ -202,12 +202,31 @@
     },
     "metric_mappings": {"nano_seconds": "ns/op"},
     "plot_by": ["nano_seconds"],
-    "plot_backends": ["Avx512"],
+    "plot_backends": ["Neon"],
     "plot_types": ["i32", "i64"],
     "table_n": 67108864,
     "table_type": "i64",
     "table_workload": "OnlyPartition",
-    "table_backend": "Avx512",
+    "table_backend": ["Neon"],
+    "table_cols": ["nano_seconds"],
+    "show_speedup": true,
+    "speedup_metric": "nano_seconds"
+  },
+  {
+    "name": "equal_partitions",
+    "heap_mappings":
+      {
+      },
+    "heap_colors": {
+    },
+    "metric_mappings": {"nano_seconds": "ns/op"},
+    "plot_by": ["nano_seconds"],
+    "plot_backends": ["Neon"],
+    "plot_types": ["i32", "i64"],
+    "table_n": 67108864,
+    "table_type": "i64",
+    "table_workload": "OnlyPartition",
+    "table_backend": ["Neon"],
     "table_cols": ["nano_seconds"],
     "show_speedup": true,
     "speedup_metric": "nano_seconds"

@@ -417,46 +417,6 @@ impl Workload for RandomWiggle {
     }
 }
 
-pub struct WorstCaseDescending<const K: usize = 16>;
-
-impl<const K: usize> Workload for WorstCaseDescending<K> {
-    const NORMALIZATION: u64 = K as u64 / 2 + 1;
-
-    fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
-        let mut h = H::default();
-        let range = (0..(n * (K as u64 / 2 + 1))).rev();
-
-        let mut rand = rand::rng();
-
-        const PROB: f64 = 0.5;
-
-        let mut values = range
-            .map(|v| {
-                if rand.random_bool(PROB) {
-                    let n: u64 = rand.random();
-                    T::from(n)
-                } else {
-                    T::from(v as u64)
-                }
-            })
-            .collect::<Vec<T>>()
-            .into_iter();
-
-        move || {
-            for _ in 0..n {
-                for _ in 0..(K / 2 + 1) {
-                    h.push(values.next().unwrap());
-                }
-                h.pop().unwrap().get();
-            }
-            for _ in 0..n * K as u64 / 2 {
-                h.pop().unwrap().get();
-            }
-            h
-        }
-    }
-}
-
 pub struct MostlyPushDecreasing {}
 impl Workload for MostlyPushDecreasing {
     const NORMALIZATION: u64 = 10;
