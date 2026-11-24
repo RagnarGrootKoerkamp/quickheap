@@ -1507,6 +1507,7 @@ fn sanitize(s: String) -> String {
         .replace("_graph.gr", "")
         .replace("sequence_heap::", "")
         .replace("equal_quickheap::", "")
+        .replace("pivots::", "")
         .replace("multi_quickheap::", "")
         .replace("s3q::", "")
         .replace("radix_heap::", "")

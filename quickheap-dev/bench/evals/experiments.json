@@ -237,5 +237,27 @@
     "table_cols": ["nano_seconds"],
     "show_speedup": true,
     "speedup_metric": "nano_seconds"
+  },
+  {
+    "name": "pivots",
+    "heap_mappings":
+      {
+        "SimdQuickHeap": "SQH",
+        "SimdQuickHeap<LayerSizeDependentPivot>": "SQH LayerSizeDependent Pivots"
+      },
+    "heap_colors": {
+      "SimdQuickHeap": "xkcd:peach",
+      "SimdQuickHeap<LayerSizeDependentPivot>": "xkcd:orange"
+    },
+    "metric_mappings": {"nano_seconds": "ns/op"},
+    "plot_by": ["nano_seconds"],
+    "plot_types": ["i64"],
+    "table_n": 16777216,
+    "table_type": "i64",
+    "table_workload": "MonotoneConstantSize",
+    "table_backend": ["Avx512", "Neon"],
+    "table_cols": ["nano_seconds"],
+    "show_speedup": true,
+    "speedup_metric": "nano_seconds"
   }
 ]

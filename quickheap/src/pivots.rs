@@ -24,18 +24,19 @@ impl<T: Copy + Ord, const M: usize> VecPivotStrategy<T> for MedianOfM<M> {
 pub struct LayerSizeDependentPivot;
 
 impl LayerSizeDependentPivot {
-    const S_MAX: usize = 1023;
+    const S_MAX: usize = 512;
 
     #[inline(always)]
     fn sample_size(n: usize) -> usize {
         match n {
             ..=256 => 3,
+            ..=1024 => 7,
             ..=4096 => 9,
-            _ => (((n as f64).sqrt() * 0.75) as usize | 1).clamp(15, Self::S_MAX),
+            _ => (((n as f64).cbrt() * 0.75) as usize | 1).clamp(13, Self::S_MAX),
         }
     }
 
-    #[inline(never)]
+    #[inline(always)]
     fn pick_large<T: Copy + Ord>(layer: &[T], s: usize) -> (T, usize) {
         let n = layer.len();
         let mut rng = fastrand::Rng::new();
@@ -53,11 +54,11 @@ impl LayerSizeDependentPivot {
 }
 
 impl<T: Copy + Ord> VecPivotStrategy<T> for LayerSizeDependentPivot {
-    #[inline]
+    #[inline(always)]
     fn pick(layer: &[T]) -> (T, usize) {
         match Self::sample_size(layer.len()) {
             3 => MedianOfM::<3>::pick(layer),
-            9 => MedianOfM::<9>::pick(layer),
+            7 => MedianOfM::<7>::pick(layer),
             s => Self::pick_large(layer, s),
         }
     }

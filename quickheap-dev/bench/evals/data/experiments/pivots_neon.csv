@@ -1,9 +1,9 @@
 elem_type,simd_backend,n,workload,heap,nano_seconds
-i64,Neon,262144,MonotoneConstantSize,"SimdQuickHeap",33.67
-i64,Neon,1048576,MonotoneConstantSize,"SimdQuickHeap",36.38
-i64,Neon,4194304,MonotoneConstantSize,"SimdQuickHeap",40.29
-i64,Neon,16777216,MonotoneConstantSize,"SimdQuickHeap",43.27
-i64,Neon,262144,MonotoneConstantSize,"SimdQuickHeap<pivots::LayerSizeDependentPivot>",32.90
-i64,Neon,1048576,MonotoneConstantSize,"SimdQuickHeap<pivots::LayerSizeDependentPivot>",35.43
-i64,Neon,4194304,MonotoneConstantSize,"SimdQuickHeap<pivots::LayerSizeDependentPivot>",37.58
-i64,Neon,16777216,MonotoneConstantSize,"SimdQuickHeap<pivots::LayerSizeDependentPivot>",39.83
+i64,Neon,262144,MonotoneConstantSize,"SimdQuickHeap",33.40
+i64,Neon,1048576,MonotoneConstantSize,"SimdQuickHeap",35.68
+i64,Neon,4194304,MonotoneConstantSize,"SimdQuickHeap",38.82
+i64,Neon,16777216,MonotoneConstantSize,"SimdQuickHeap",41.73
+i64,Neon,262144,MonotoneConstantSize,"SimdQuickHeap<LayerSizeDependentPivot>",33.00
+i64,Neon,1048576,MonotoneConstantSize,"SimdQuickHeap<LayerSizeDependentPivot>",35.26
+i64,Neon,4194304,MonotoneConstantSize,"SimdQuickHeap<LayerSizeDependentPivot>",37.55
+i64,Neon,16777216,MonotoneConstantSize,"SimdQuickHeap<LayerSizeDependentPivot>",39.79
