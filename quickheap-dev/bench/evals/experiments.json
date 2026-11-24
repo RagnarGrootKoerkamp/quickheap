@@ -242,12 +242,14 @@
     "name": "pivots",
     "heap_mappings":
       {
-        "SimdQuickHeap": "SQH",
-        "SimdQuickHeap<LayerSizeDependentPivot>": "SQH LayerSizeDependent Pivots"
+        "SimdQuickHeap": "SQH MedianOf3",
+        "SimdQuickHeap<MedianOfM<7>>": "SQH MedianOf7",
+        "SimdQuickHeap<LayerSizeDependentPivot>": "SQH LayerSizeDependent"
       },
     "heap_colors": {
       "SimdQuickHeap": "xkcd:peach",
-      "SimdQuickHeap<LayerSizeDependentPivot>": "xkcd:orange"
+      "SimdQuickHeap<LayerSizeDependentPivot>": "xkcd:orange",
+      "SimdQuickHeap<MedianOfM<7>>": "xkcd:brown orange"
     },
     "metric_mappings": {"nano_seconds": "ns/op"},
     "plot_by": ["nano_seconds"],
@@ -255,7 +257,7 @@
     "table_n": 16777216,
     "table_type": "i64",
     "table_workload": "MonotoneConstantSize",
-    "table_backend": ["Avx512", "Neon"],
+    "table_backend": ["Avx512", "Avx2", "Neon"],
     "table_cols": ["nano_seconds"],
     "show_speedup": true,
     "speedup_metric": "nano_seconds"

@@ -40,6 +40,8 @@ use quickheap_dev::EqualSimdQuickHeap;
 use quickheap_dev::MultiSimdQuickHeap;
 use quickheap_dev::RadixSimdQuickHeap;
 
+use quickheap::pivots;
+
 use quickheap_dev::{
     buckets::{
         block_partitioning::{BlockedPartitioning, FlatPartitioning},
@@ -2126,6 +2128,8 @@ macro_rules! dispatch_heap {
                     run_config::<$t, $simd, SimdQuickHeap<$t, $simd>, $w>($e, $writer);
                     #[cfg(feature = "pivots")]
                     run_config::<$t, $simd, SimdQuickHeap<$t, $simd, LayerSizeDependentPivot>, $w>($e, $writer);
+                    #[cfg(feature = "pivots")]
+                    run_config::<$t, $simd, SimdQuickHeap<$t, $simd, quickheap::pivots::MedianOfM<7>>, $w>($e, $writer);
                 }
                 HeapFamily::ConfigSimdQH => {
                     dispatch_config_simdqh!($e, $t, $w, $simd, h.config_simd, $writer)
