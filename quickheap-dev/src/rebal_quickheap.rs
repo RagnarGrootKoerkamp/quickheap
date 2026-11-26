@@ -3,17 +3,21 @@
 //! Implementation of the `RebalSimdQuickHeap`.
 //!
 
+use fastrand;
+use std::ops::Sub;
+
 use quickheap::ElemT;
+
+use crate::{Elem, ElemConstraint};
 
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use quickheap::pivots::MedianOfM;
+use quickheap::pivots::{MedianOfM, VecPivotStrategy};
 use quickheap::simd;
 
 use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
 
-use crate::ElemConstraint;
 use crate::pivot_strategies::EqualMultiMedianOfM;
 use crate::pivot_strategies::MultiPivotStrategy;
 #[cfg(feature = "layer_stats")]
@@ -55,7 +59,7 @@ pub struct RebalSimdQuickHeap<T: ElemT, S: simd::SimdElem<T>, R: VecRebalancingS
 
 /// Return a default instance with plenty (128) layers of empty buckets.
 impl<T: ElemT + Default, S: simd::SimdElem<T>, R: VecRebalancingStrategy<T>> Default
-    for RebalSimdQuickHeapu<T, S, B, L>
+    for RebalSimdQuickHeap<T, S, R>
 {
     fn default() -> Self {
         Self {
@@ -65,6 +69,7 @@ impl<T: ElemT + Default, S: simd::SimdElem<T>, R: VecRebalancingStrategy<T>> Def
             pop_it: 0,
             size: 0,
             _backend: PhantomData,
+            _rebal: PhantomData,
         }
     }
 }
@@ -72,9 +77,8 @@ impl<T: ElemT + Default, S: simd::SimdElem<T>, R: VecRebalancingStrategy<T>> Def
 impl<
     T: ElemConstraint + ElemT + Default + Debug,
     S: simd::SimdElem<T>,
-    const B: usize,
-    const L: usize,
-> RebalSimdQuickHeap<T, S, B, L>
+    R: VecRebalancingStrategy<T>,
+> RebalSimdQuickHeap<T, S, R>
 {
     const N: usize = LOWEST_LAYER_SIZE;
 
@@ -120,7 +124,12 @@ impl<
 
         self.size += 1;
 
-        if R::on_push() {}
+        if self.push_it < R::MAX_REBAL_ITERATIONS {
+            self.push_it += 1;
+        } else {
+            self.push_it = 0;
+            R::on_push(self.size, target_layer, &mut self.pivots, &mut self.buckets);
+        }
     }
 
     /// Pop the smallest element from the priority queue.
@@ -162,6 +171,13 @@ impl<
         }
 
         self.size -= 1;
+
+        if self.pop_it < R::MAX_REBAL_ITERATIONS {
+            self.pop_it += 1;
+        } else {
+            self.pop_it = 0;
+            R::on_pop(self.size, &mut self.pivots, &mut self.buckets);
+        }
 
         Some(min)
     }
@@ -220,5 +236,77 @@ impl<
 pub trait VecRebalancingStrategy<T: Ord> {
     const MAX_REBAL_ITERATIONS: usize;
     fn on_pop(size: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
-    fn on_push(total_size: usize, layer: usize, pivots: &mut Vec<T>, buckets: &mut Vec<B>);
+    fn on_push(total_size: usize, layer: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>);
+}
+
+#[inline]
+fn one_in(s: usize) -> bool {
+    fastrand::usize(0..=s) == 0
+}
+
+pub struct VecRandomizedRebalancing<const IT: usize> {}
+impl<T: Ord + ElemConstraint + Sub<Output = T>, const IT: usize> VecRebalancingStrategy<T>
+    for VecRandomizedRebalancing<IT>
+{
+    const MAX_REBAL_ITERATIONS: usize = IT;
+
+    fn on_pop(_: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
+
+    #[inline(always)]
+    fn on_push(total_size: usize, _: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
+        let mut size: usize = total_size;
+
+        for i in 0..pivots.len() {
+            if one_in(size / 8) {
+                let last = pivots.len();
+                let (head, tail) = buckets.split_at_mut(i + 1);
+                for b in &mut tail[..last - i] {
+                    head[i].extend(b.drain(..));
+                }
+                pivots.truncate(i);
+                break;
+            }
+
+            size -= buckets[i].len();
+        }
+
+        if buckets[pivots.len()].len() <= LOWEST_LAYER_SIZE {
+            buckets[pivots.len()].sort_unstable_by(|a, b| b.cmp(a));
+        }
+    }
+}
+
+pub struct VecPivotForgetting<const F: usize, const IT: usize>;
+impl<T: Elem, const F: usize, const IT: usize> VecRebalancingStrategy<T>
+    for VecPivotForgetting<F, IT>
+{
+    const MAX_REBAL_ITERATIONS: usize = IT;
+
+    #[inline(always)]
+    fn on_pop(_: usize, pivots: &mut Vec<T>, buckets: &mut Vec<Vec<T>>) {
+        let mut total: usize = 0;
+        let mut layer: usize = pivots.len();
+        loop {
+            if layer > 0 && buckets[layer].len() + buckets[layer - 1].len() < F * total {
+                // Merge bucket with next one, forget the pivot of the layer
+                if buckets[layer].len() > buckets[layer - 1].len() {
+                    let (a, b) = buckets.split_at_mut(layer);
+                    b[0].extend(a[layer - 1].drain(..));
+                    buckets[layer - 1..].rotate_left(1);
+                } else {
+                    let (a, b) = buckets.split_at_mut(layer);
+                    a[layer - 1].extend(b[0].drain(..));
+                    buckets[layer..].rotate_left(1);
+                }
+                pivots.remove(layer - 1);
+            } else if layer == 0 {
+                break;
+            } else {
+                total += buckets[layer].len();
+            }
+            layer -= 1;
+        }
+    }
+
+    fn on_push(_: usize, _: usize, _: &mut Vec<T>, _: &mut Vec<Vec<T>>) {}
 }

@@ -2,7 +2,10 @@ use quickheap::decrease_key::DecreaseKeyStrategy;
 use quickheap::partitioning::{MultiPartition, Partition};
 use quickheap::{ElemT, KvSimdQuickHeap, pivots::VecPivotStrategy};
 
-use quickheap_dev::{ElemConstraint, EqualSimdQuickHeap, MultiSimdQuickHeap, RadixSimdQuickHeap};
+use quickheap_dev::rebal_quickheap::VecRebalancingStrategy;
+use quickheap_dev::{
+    ElemConstraint, EqualSimdQuickHeap, MultiSimdQuickHeap, RadixSimdQuickHeap, RebalSimdQuickHeap,
+};
 
 use crate::{Heap, KvHeap, impls::NoHeap, workloads};
 
@@ -196,6 +199,32 @@ impl<
 
 impl<T: ElemConstraint + ElemT + workloads::Elem + Default, S: quickheap::simd::SimdElem<T>> Heap<T>
     for EqualSimdQuickHeap<T, S>
+{
+    type CountedType = workloads::CountComparisons<T>;
+    type CountedHeap = NoHeap;
+
+    fn default() -> Self {
+        Default::default()
+    }
+
+    fn push(&mut self, t: T) {
+        self.push(t);
+    }
+
+    fn pop(&mut self) -> Option<T> {
+        self.pop()
+    }
+
+    fn capacity(&self) -> usize {
+        self.capacity()
+    }
+}
+
+impl<
+    T: ElemConstraint + ElemT + workloads::Elem + Default,
+    S: quickheap::simd::SimdElem<T>,
+    R: VecRebalancingStrategy<T>,
+> Heap<T> for RebalSimdQuickHeap<T, S, R>
 {
     type CountedType = workloads::CountComparisons<T>;
     type CountedHeap = NoHeap;

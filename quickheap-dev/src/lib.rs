@@ -22,10 +22,10 @@ pub use radix_quickheap::RadixSimdQuickHeap;
 
 pub mod equal_quickheap;
 pub mod multi_quickheap;
-// pub mod rebal_quickheap;
+pub mod rebal_quickheap;
 pub use equal_quickheap::EqualSimdQuickHeap;
 pub use multi_quickheap::MultiSimdQuickHeap;
-// pub use rebal_quickheap::RebalSimdQuickHeap;
+pub use rebal_quickheap::RebalSimdQuickHeap;
 
 #[doc(hidden)]
 pub mod buckets;
