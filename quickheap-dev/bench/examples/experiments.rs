@@ -310,6 +310,20 @@ impl MetricMeasurement<String> for MeasurePerfStats {
 
     fn start(&mut self) {
         self.cache
+            .reset()
+            .expect("Could not start cache miss counter");
+        self.instructions
+            .reset()
+            .expect("Could not start instructions counter");
+        self.cycles.reset().expect("Could not start cycle counter");
+        self.branches
+            .reset()
+            .expect("Could not start branches counter");
+        self.branch_misses
+            .reset()
+            .expect("Could not start branch miss counter");
+
+        self.cache
             .start()
             .expect("Could not start cache miss counter");
         self.instructions
@@ -327,6 +341,8 @@ impl MetricMeasurement<String> for MeasurePerfStats {
     fn reset(&mut self) {
         self.cache_measures.clear();
         self.ipc_measures.clear();
+        self.branch_measures.clear();
+        self.branch_miss_measures.clear();
 
         self.cache
             .reset()
@@ -403,6 +419,7 @@ impl MetricMeasurement<String> for MeasurePerfStats {
 struct MeasurePartitionStats {
     num_partitions: Vec<usize>,
     partitioned_elems: Vec<usize>,
+    total_partitioned_elems: Vec<usize>,
     equal_buckets: Vec<usize>,
     redos: Vec<usize>,
 
@@ -418,6 +435,7 @@ impl MetricMeasurement<String> for MeasurePartitionStats {
             result: String::new(),
             num_partitions: vec![],
             partitioned_elems: vec![],
+            total_partitioned_elems: vec![],
             equal_buckets: vec![],
             redos: vec![],
         }
@@ -427,6 +445,7 @@ impl MetricMeasurement<String> for MeasurePartitionStats {
         partition_stats::reset();
 
         self.num_partitions.clear();
+        self.total_partitioned_elems.clear();
         self.partitioned_elems.clear();
         self.equal_buckets.clear();
         self.redos.clear();
@@ -440,6 +459,8 @@ impl MetricMeasurement<String> for MeasurePartitionStats {
         let r = partition_stats::result();
         self.num_partitions.push(r.partitions);
         self.partitioned_elems.push(r.avg_num_elem_partitioned);
+        self.total_partitioned_elems
+            .push(r.partitions * r.avg_num_elem_partitioned);
         self.redos.push(r.redos);
         self.equal_buckets.push(r.equal_buckets_found);
     }
@@ -447,17 +468,18 @@ impl MetricMeasurement<String> for MeasurePartitionStats {
     fn norm_by_ops(&mut self, _: usize) {
         self.num_partitions.sort();
         self.partitioned_elems.sort();
+        self.total_partitioned_elems.sort();
         self.redos.sort();
         self.equal_buckets.sort();
 
         let num_measures = self.num_partitions.len();
         let median_partitions = self.num_partitions[num_measures / 2];
         let median_elems = self.partitioned_elems[num_measures / 2];
+        let median_total = self.total_partitioned_elems[num_measures / 2];
         let median_redos = self.redos[num_measures / 2];
         let median_equals = self.equal_buckets[num_measures / 2];
 
-        self.result =
-            format! {"{},{},{},{}", median_partitions, median_elems, median_redos, median_equals};
+        self.result = format! {"{},{},{},{},{}", median_partitions, median_elems, median_total, median_redos, median_equals};
     }
 
     fn get(&self) -> String {
@@ -465,7 +487,8 @@ impl MetricMeasurement<String> for MeasurePartitionStats {
     }
 
     fn get_name(&self) -> String {
-        "num_partitions,avg_partitioned_elems,redos,equal_buckets".to_string()
+        "num_partitions,avg_partitioned_elems,total_partitioned_elems,redos,equal_buckets"
+            .to_string()
     }
 }
 
@@ -901,6 +924,13 @@ fn implicit_equal_buckets() {
     let partition_measure = AnyMeasurement::String(Box::new(MeasurePartitionStats::new()));
     let perf_measure = AnyMeasurement::String(Box::new(MeasurePerfStats::new()));
 
+    let metrics;
+    #[cfg(not(feature = "stats"))]
+    metrics = vec![nano_timer, perf_measure];
+
+    #[cfg(feature = "stats")]
+    metrics = vec![layer_measure, partition_measure];
+
     let mut e = Experiment {
         name: "Implicit Equal Buckets".to_string(),
         output_name: "implicit_equal_buckets".to_string(),
@@ -909,7 +939,7 @@ fn implicit_equal_buckets() {
         workloads: vec![Work::MonotoneCS, Work::RandomManyEqual],
         // types: vec![Type::I32, Type::I64],
         types: vec![Type::I64],
-        metrics: vec![nano_timer, layer_measure, partition_measure, perf_measure],
+        metrics,
     };
 
     run(&mut e);
@@ -1520,6 +1550,11 @@ fn run_config<T: Elem, S: SimdElem<T>, H: Heap<T>, W: Workload>(
         sanitize_heap(sanitize(std::any::type_name::<H>().to_owned()))
     );
     for &n in e.ns.iter() {
+        // Warm up run
+        let f = W::setup::<T, H>(n as u64);
+        f();
+
+        // Reset all metrics
         for metric in e.metrics.iter_mut() {
             metric.reset();
         }
@@ -2288,8 +2323,18 @@ fn run(e: &mut Experiment) {
         backend_name = "_avx";
     }
 
+    let suff;
+    #[cfg(feature = "stats")]
+    {
+        suff = "_stats";
+    }
+    #[cfg(not(feature = "stats"))]
+    {
+        suff = "";
+    }
+
     // Create and open the file for the experiment
-    let name = e.output_name.to_owned() + backend_name;
+    let name = e.output_name.to_owned() + backend_name + suff;
     let mut writer = build_writer(&name);
     let mut top_line = "elem_type,simd_backend,n,workload,heap".to_string();
 

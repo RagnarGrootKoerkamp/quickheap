@@ -100,7 +100,7 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
         #[cfg(feature = "layer_stats")]
         stats::layer_stats::record(self.pivots.len() + 1);
 
-        debug_assert_eq!(self.equal_top, self.buckets[self.pivots.len()].equal); // CHANGED
+        debug_assert_eq!(self.equal_top, self.buckets[self.pivots.len()].equal);
 
         let mut target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, t) };
 
@@ -131,7 +131,7 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
                 new_layer.equal = false; // reused buckets may be stale
                 new_layer.data.clear();
                 new_layer.data.push(t);
-                self.equal_top = false; // CHANGED: the new top layer is never equal
+                self.equal_top = false; // the new top layer is never equal
 
                 self.size += 1;
                 return;
@@ -173,7 +173,7 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
 
         // Split the current layer as long as it is too large.
         if self.buckets[self.pivots.len()].data.len() > Self::N {
-            // CHANGED: use the cached flag; partition() keeps it up to date.
+            // use the cached flag; partition() keeps it up to date.
             while !self.equal_top && self.buckets[self.pivots.len()].data.len() > Self::N {
                 self.partition();
             }
@@ -252,7 +252,7 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
             if pivot == T::minimum() {
                 cur_layer_buck.equal = true;
                 self.pivots.pop();
-                self.equal_top = true; // CHANGED: the current layer is the top layer again
+                self.equal_top = true; // the current layer is the top layer again
 
                 #[cfg(feature = "partition_stats")]
                 stats::partition_stats::equal_bucket();
@@ -295,7 +295,7 @@ impl<T: ElemConstraint + ElemT + Default + Debug, S: simd::SimdElem<T>> EqualSim
             stats::partition_stats::redo_layer();
         }
 
-        // CHANGED: single refresh covering the normal split (new top is not equal),
+        // single refresh covering the normal split (new top is not equal),
         // the equal split, and both redo paths.
         self.equal_top = self.buckets[self.pivots.len()].equal;
     }
