@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = []
+default = ["avx2"]
 
 layer_stats = ["quickheap-dev/layer_stats"]
 partition_stats = ["quickheap-dev/partition_stats"]
@@ -13,17 +13,19 @@ memory = []
 
 # Features for individual experiments
 simd_qh = []
-implicit_equal_buckets = ["perf", "wl_many_equal"]
+implicit_equal_buckets = ["wl_many_equal"]
 multiway = ["wl_heapsort"]
 radix = ["wl_heapsort"]
-competitors = ["perf", "ffi"]
+competitors = ["ffi"]
 graphs = ["ffi"]
 decrease_key = ["memory"]
 pivots = []
-rebalancing = ["perf", "wl_mostly_push_decreasing"]
-buckets = ["perf"]
+rebalancing = ["wl_mostly_push_decreasing"]
+buckets = []
 
 stats = ["layer_stats", "partition_stats"]
+
+only_equals = []
 
 # Features to reduce compile time of experiments
 wl_heapsort = []

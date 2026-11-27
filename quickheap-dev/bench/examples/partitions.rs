@@ -7,31 +7,34 @@ use std::time;
 use bench::workloads::Elem;
 use quickheap::partitioning::Partition;
 use quickheap::partitioning::VecPartitioning;
-use quickheap::pivots::MedianOfM;
+use quickheap::pivots::{MedianOfM, VecPivotStrategy};
 use quickheap::simd::{self, SPLIT_PIVOTS_CUR_AND_NEXT};
 use quickheap::{ElemT, SimdElem};
 use quickheap_dev::ElemConstraint;
+use quickheap_dev::buckets::Bucket;
 use quickheap_dev::buckets::block_arena::BlockArena;
 use quickheap_dev::buckets::block_partitioning::FlatPartitioning;
-use quickheap_dev::buckets::{BlockedBucket, Bucket};
 use quickheap_dev::buckets::{
     block_partitioning::BlockedPartitioning, list_block_bucket::ListBlockBucket,
     vec_block_bucket::VecBlockBucket, vec_bucket::VecBucket,
 };
 
-const REPEATS: usize = 5;
-
-const EQUAL: bool = false;
+const REPEATS: usize = 201;
 
 fn generate_layer_input<T: Elem>(n: usize) -> (Vec<T>, T, usize) {
     let mut rng = fastrand::Rng::new();
     let stride = T::stride();
 
     let values: Vec<T>;
-    if EQUAL {
+
+    #[cfg(feature = "only_equals")]
+    {
         let val = <T as Elem>::clamp(T::from(rng.u64(..stride)));
         values = vec![val; n];
-    } else {
+    }
+
+    #[cfg(not(feature = "only_equals"))]
+    {
         values = std::iter::repeat_with(|| <T as Elem>::clamp(T::from(rng.u64(..stride))))
             .take(n)
             .collect::<Vec<_>>();
@@ -172,6 +175,8 @@ fn bench_partition<T: Elem + Copy, S, P, R, O>(
 {
     let mut samples: Vec<f64> = Vec::with_capacity(REPEATS);
 
+    println!("Run {} for {}", n, name);
+
     for _ in 0..REPEATS {
         // Setup (not timed)
         let f = prep(data.to_vec(), pivot, pivot_pos, arena);
@@ -205,7 +210,7 @@ fn bench_partition<T: Elem + Copy, S, P, R, O>(
 
 fn run<T: Default + ElemConstraint + ElemT + Elem, S: SimdElem<T>>(writer: &mut BufWriter<File>) {
     let mut free_arena = BlockArena::<T, 240, 256>::new();
-    let ns: Vec<usize> = (10..=26).step_by(2).map(|i| (2usize).pow(i)).collect();
+    let ns: Vec<usize> = (10..=24).step_by(2).map(|i| (2usize).pow(i)).collect();
 
     for n in ns {
         let (data, pivot, pivot_pos) = generate_layer_input::<T>(n);
@@ -260,15 +265,31 @@ fn run<T: Default + ElemConstraint + ElemT + Elem, S: SimdElem<T>>(writer: &mut 
 }
 
 fn main() {
+    let mut suff: String;
+
+    #[cfg(feature = "only_equals")]
+    {
+        suff = "_equal".to_string();
+    }
+
+    #[cfg(not(feature = "only_equals"))]
+    {
+        suff = "_equal".to_string();
+    }
+
     #[cfg(target_arch = "aarch64")]
-    let suff = "_neon";
+    {
+        suff += "_neon";
+    }
 
     #[cfg(not(target_arch = "aarch64"))]
-    let suff = "_avx";
+    {
+        suff += "_avx";
+    }
 
     let path = String::from(env!("CARGO_MANIFEST_DIR"))
         + "/evals/data/experiments/partitions"
-        + suff
+        + &suff
         + ".csv";
     let file = File::create(path).unwrap();
     let mut writer = BufWriter::with_capacity(1 << 15, file);

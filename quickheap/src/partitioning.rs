@@ -18,10 +18,6 @@ pub trait MultiPartition<T, B> {
     fn multi_partition<const P: usize>(layers: &mut [B], pivot: &[T], pivot_pos: [usize; P]);
 }
 
-use simd::PIVOTS_LE;
-use simd::PIVOTS_LT;
-use simd::SPLIT_PIVOTS_CUR_AND_NEXT;
-
 /// Implementation for a plain vector
 pub struct VecPartitioning<T: ElemT, S>(PhantomData<T>, PhantomData<S>);
 impl<T: ElemT, S: simd::SimdElem<T>> VecPartitioning<T, S> {

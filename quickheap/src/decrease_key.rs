@@ -1,7 +1,6 @@
 use crate::ElemT;
 use crate::KvCore;
 use crate::partitioning::VecPartitioning;
-use crate::simd;
 use crate::simd::SimdElem;
 use crate::util::CountingBloomFilter;
 use crate::util::ToBytes;
@@ -114,7 +113,6 @@ where
 
         // Insert the deletion token into the separate buffer
         let target_layer = heap.layer_of(old_key, val);
-        // let target_layer = simd::push_position::<T, S>(&heap.pivots, old_key);
         debug_assert!(target_layer < self.deleted_keys.len());
         debug_assert!(target_layer < self.deleted_vals.len());
 
@@ -272,7 +270,6 @@ where
         heap.insert_elem(new_key, val);
 
         // Insert the deletion token into the separate buffer
-        // let target_layer = simd::push_position::<T, S>(&heap.pivots, old_key);
         let target_layer = heap.layer_of(old_key, val);
         debug_assert!(target_layer < self.deleted_keys.len());
         debug_assert!(target_layer < self.deleted_vals.len());
@@ -421,7 +418,6 @@ where
         heap.insert_elem(new_key, val);
 
         // Insert the deletion token into the separate buffer
-        // let target_layer = simd::push_position::<T, S>(&heap.pivots, old_key);
         let target_layer = heap.layer_of(old_key, val);
         debug_assert!(target_layer < self.deleted_keys.len());
         debug_assert!(target_layer < self.deleted_vals.len());

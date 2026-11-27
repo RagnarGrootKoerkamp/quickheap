@@ -1,9 +1,7 @@
-use quickheap::ElemT;
 use rand_distr::num_traits::ToPrimitive;
 
 use crate::graph::{Edge, Graph};
 use crate::graph_util::{pack_id_key_tuple_to_u64, unpack_id_key_tuple_from_u64};
-use crate::workloads::Elem;
 use crate::{Heap, KvHeap};
 
 pub struct DijkstraQuery<'g, HeapT: Heap<u64>> {

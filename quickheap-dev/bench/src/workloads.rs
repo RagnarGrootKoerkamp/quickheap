@@ -1,5 +1,4 @@
 use radix_heap::Radix;
-use rand::RngExt;
 use rand_distr::{Distribution, Geometric};
 
 use crate::impls::NoHeap;
@@ -269,7 +268,6 @@ impl Workload for RandomConstantSize {
     fn setup<T: Elem, H: Heap<T>>(n: u64) -> impl FnOnce() -> H {
         let mut h = H::default();
         let stride = T::stride();
-        let stride = 2 << 14;
         let mut rng = fastrand::Rng::new();
         for _ in 0..(n + 50) {
             // TODO: Think of better solution

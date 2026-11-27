@@ -77,7 +77,7 @@ impl_bytes_tup!(u64);
 
 pub struct BloomFilter<
     HASHER,
-    ELEM_T,
+    ElemT,
     const K: usize,
     const FILTER_BYTES: usize,
     const ELEM_BYTES: usize,
@@ -85,16 +85,16 @@ pub struct BloomFilter<
     data: Vec<u64>,
     seed: u64,
     _hash: PhantomData<HASHER>,
-    _elem: PhantomData<ELEM_T>,
+    _elem: PhantomData<ElemT>,
 }
 
 impl<
     HASHER: KHash<FILTER_BYTES>,
-    ELEM_T: ToBytes<ELEM_BYTES>,
+    ElemT: ToBytes<ELEM_BYTES>,
     const FILTER_BYTES: usize,
     const ELEM_BYTES: usize,
     const K: usize,
-> BloomFilter<HASHER, ELEM_T, K, FILTER_BYTES, ELEM_BYTES>
+> BloomFilter<HASHER, ElemT, K, FILTER_BYTES, ELEM_BYTES>
 {
     const VALID: () = assert!(
         FILTER_BYTES >= 1 && K >= 1,
@@ -115,7 +115,7 @@ impl<
         self.data.fill(0);
     }
 
-    pub fn insert(&mut self, x: ELEM_T) {
+    pub fn insert(&mut self, x: ElemT) {
         let h = HASHER::new(&x.to_bytes(), self.seed);
         for i in 0..K {
             let pos = h.index(i as u64);
@@ -123,7 +123,7 @@ impl<
         }
     }
 
-    pub fn contains(&self, x: ELEM_T) -> bool {
+    pub fn contains(&self, x: ElemT) -> bool {
         let h = HASHER::new(&x.to_bytes(), self.seed);
         (0..K).all(|i| {
             let pos = h.index(i as u64);
@@ -134,7 +134,7 @@ impl<
 
 pub struct CountingBloomFilter<
     HASHER,
-    ELEM_T,
+    ElemT,
     const K: usize,
     const FILTER_BYTES: usize,
     const COUNTER_BITS: usize,
@@ -143,17 +143,17 @@ pub struct CountingBloomFilter<
     data: Vec<u64>,
     seed: u64,
     _hash: PhantomData<HASHER>,
-    _elem: PhantomData<ELEM_T>,
+    _elem: PhantomData<ElemT>,
 }
 
 impl<
     HASHER: KHash<FILTER_BYTES>,
-    ELEM_T: Copy + ToBytes<ELEM_BYTES>,
+    ElemT: Copy + ToBytes<ELEM_BYTES>,
     const FILTER_BYTES: usize,
     const COUNTER_BITS: usize,
     const ELEM_BYTES: usize,
     const K: usize,
-> CountingBloomFilter<HASHER, ELEM_T, K, FILTER_BYTES, COUNTER_BITS, ELEM_BYTES>
+> CountingBloomFilter<HASHER, ElemT, K, FILTER_BYTES, COUNTER_BITS, ELEM_BYTES>
 {
     // Power of two <= 64 => counters never straddle a word boundary.
     const VALID: () = assert!(
@@ -193,7 +193,7 @@ impl<
         *w = (*w & !(Self::MASK << sh)) | (v << sh);
     }
 
-    pub fn insert(&mut self, x: ELEM_T) {
+    pub fn insert(&mut self, x: ElemT) {
         let h = HASHER::new(&x.to_bytes(), self.seed);
         for i in 0..K {
             let pos = h.index(i as u64);
@@ -205,7 +205,7 @@ impl<
     }
 
     /// Returns false (and changes nothing) if x is definitely not contained.
-    pub fn remove(&mut self, x: ELEM_T) -> bool {
+    pub fn remove(&mut self, x: ElemT) -> bool {
         if !self.contains(x) {
             return false;
         }
@@ -220,7 +220,7 @@ impl<
         true
     }
 
-    pub fn contains(&self, x: ELEM_T) -> bool {
+    pub fn contains(&self, x: ElemT) -> bool {
         let h = HASHER::new(&x.to_bytes(), self.seed);
         (0..K).all(|i| self.get(h.index(i as u64)) > 0)
     }

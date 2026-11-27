@@ -1,7 +1,5 @@
 use std::hint::black_box;
 
-use clap::builder::styling::AnsiColor::BrightBlack;
-
 use crate::dijkstra::{DijkstraQuery, KvDijkstraQuery};
 use crate::graph::Graph;
 use crate::prim::PrimMST;

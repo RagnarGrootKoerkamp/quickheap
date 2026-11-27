@@ -162,7 +162,7 @@ impl<T: ElemT + Default, S: simd::SimdElem<T>, P: VecPivotStrategy<T>> SimdQuick
 
     /// Push `t` onto the priority queue.
     pub fn push(&mut self, t: T) {
-        let target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, t) };
+        let target_layer = simd::push_position::<T, S>(&self.pivots, t);
 
         let layer = &mut self.buckets[target_layer];
 
@@ -451,7 +451,7 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
     #[inline(always)]
     fn layer_of(&self, key: T, val: T) -> usize {
         // pivots with p > key (SIMD, as before)
-        let mut l = unsafe { simd::push_position::<T, S>(&self.pivots, key) };
+        let mut l = simd::push_position::<T, S>(&self.pivots, key);
         // ties on the key: pair (key,val) < (pivot,pivot_val) -> lower layer
         while l < self.pivots.len() && self.pivots[l] == key && val < self.pivot_vals[l] {
             l += 1;
@@ -461,7 +461,6 @@ impl<T: ElemT + Debug, S: simd::SimdElem<T>> KvCore<T, S> {
 
     /// Method to insert a helper element without increasing the heaps size
     fn insert_elem(&mut self, key: T, value: T) {
-        // let target_layer = unsafe { simd::push_position::<T, S>(&self.pivots, key) };
         let target_layer = self.layer_of(key, value);
 
         let key_layer = &mut self.keys[target_layer];

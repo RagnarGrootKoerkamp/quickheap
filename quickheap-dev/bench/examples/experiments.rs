@@ -1,7 +1,7 @@
 #[cfg(feature = "perf")]
 use perfcnt::{
     AbstractPerfCounter, PerfCounter,
-    linux::{HardwareEventType, PerfCounterBuilderLinux},
+    linux::{CacheId, CacheOpId, CacheOpResultId, HardwareEventType, PerfCounterBuilderLinux},
 };
 
 use std::io::{BufWriter, Write};
@@ -245,20 +245,20 @@ impl MetricMeasurement<usize> for MeasureLayerStats {
 
 #[cfg(feature = "perf")]
 struct MeasurePerfStats {
-    cache: PerfCounter,
+    cache_l2: PerfCounter,
     instructions: PerfCounter,
     cycles: PerfCounter,
 
     branches: PerfCounter,
     branch_misses: PerfCounter,
 
-    cache_measures: Vec<f64>,
+    cache_l2_measures: Vec<f64>,
     ipc_measures: Vec<f64>,
 
     branch_measures: Vec<f64>,
     branch_miss_measures: Vec<f64>,
 
-    cache_miss_result: f64,
+    cache_miss_l2_result: f64,
     branch_miss_result: f64,
     branches_result: f64,
 
@@ -271,7 +271,7 @@ impl MetricMeasurement<String> for MeasurePerfStats {
         Self: Sized,
     {
         Self {
-            cache: PerfCounterBuilderLinux::from_hardware_event(HardwareEventType::CacheMisses)
+            cache_l2: PerfCounterBuilderLinux::from_hardware_event(HardwareEventType::CacheMisses)
                 .exclude_kernel()
                 .finish()
                 .expect("Could not create the cache counter."),
@@ -297,11 +297,11 @@ impl MetricMeasurement<String> for MeasurePerfStats {
             .exclude_kernel()
             .finish()
             .expect("Could not create the branch miss counter."),
-            cache_measures: vec![],
+            cache_l2_measures: vec![],
             ipc_measures: vec![],
             branch_measures: vec![],
             branch_miss_measures: vec![],
-            cache_miss_result: 0f64,
+            cache_miss_l2_result: 0f64,
             branch_miss_result: 0f64,
             branches_result: 0f64,
             ipc: 0f64,
@@ -309,7 +309,7 @@ impl MetricMeasurement<String> for MeasurePerfStats {
     }
 
     fn start(&mut self) {
-        self.cache
+        self.cache_l2
             .reset()
             .expect("Could not start cache miss counter");
         self.instructions
@@ -323,7 +323,7 @@ impl MetricMeasurement<String> for MeasurePerfStats {
             .reset()
             .expect("Could not start branch miss counter");
 
-        self.cache
+        self.cache_l2
             .start()
             .expect("Could not start cache miss counter");
         self.instructions
@@ -339,12 +339,12 @@ impl MetricMeasurement<String> for MeasurePerfStats {
     }
 
     fn reset(&mut self) {
-        self.cache_measures.clear();
+        self.cache_l2_measures.clear();
         self.ipc_measures.clear();
         self.branch_measures.clear();
         self.branch_miss_measures.clear();
 
-        self.cache
+        self.cache_l2
             .reset()
             .expect("Could not reset cache miss counter");
         self.instructions
@@ -360,7 +360,7 @@ impl MetricMeasurement<String> for MeasurePerfStats {
     }
 
     fn stop(&mut self, _: &HeapStats) {
-        self.cache
+        self.cache_l2
             .stop()
             .expect("Could not stop cache miss counter");
         self.instructions
@@ -370,8 +370,8 @@ impl MetricMeasurement<String> for MeasurePerfStats {
         self.branches.stop().expect("Could not stop counter");
         self.branch_misses.stop().expect("Could not stop counter");
 
-        let cache_misses = self
-            .cache
+        let cache_misses_l2 = self
+            .cache_l2
             .read()
             .expect("Could not read cache miss counter") as f64;
         let instructions = self
@@ -385,30 +385,30 @@ impl MetricMeasurement<String> for MeasurePerfStats {
 
         self.branch_miss_measures.push(branch_misses);
         self.branch_measures.push(branches);
-        self.cache_measures.push(cache_misses);
+        self.cache_l2_measures.push(cache_misses_l2);
         self.ipc_measures.push(instructions / cycles);
     }
 
     fn get(&self) -> String {
         format!(
             "{:.2},{:.1},{:.2},{:.2}",
-            self.cache_miss_result, self.ipc, self.branches_result, self.branch_miss_result
+            self.cache_miss_l2_result, self.ipc, self.branches_result, self.branch_miss_result
         )
     }
 
     fn get_name(&self) -> String {
-        "cache_misses,ipc,branches,branch_misses".to_string()
+        "cache_misses_l2,ipc,branches,branch_misses".to_string()
     }
 
     fn norm_by_ops(&mut self, ops: usize) {
-        let num_measures = self.cache_measures.len();
-        self.cache_measures.sort_by(|a, b| a.total_cmp(b));
+        let num_measures = self.cache_l2_measures.len();
+        self.cache_l2_measures.sort_by(|a, b| a.total_cmp(b));
         self.ipc_measures.sort_by(|a, b| a.total_cmp(b));
         self.branch_measures.sort_by(|a, b| a.total_cmp(b));
         self.branch_miss_measures.sort_by(|a, b| a.total_cmp(b));
 
         self.ipc = self.ipc_measures[num_measures / 2];
-        self.cache_miss_result = self.cache_measures[num_measures / 2] / ops as f64;
+        self.cache_miss_l2_result = self.cache_l2_measures[num_measures / 2] / ops as f64;
 
         self.branches_result = self.branch_measures[num_measures / 2] / ops as f64;
         self.branch_miss_result = self.branch_miss_measures[num_measures / 2] / ops as f64;
@@ -728,7 +728,7 @@ fn simd_qh() {
     let mut e = Experiment {
         name: "SimdQuickHeaps".to_string(),
         output_name: "simd_qh".to_string(),
-        ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        ns: (10..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
         types: vec![Type::I64],
@@ -752,7 +752,7 @@ fn pivots() {
     let mut e = Experiment {
         name: "Pivots".to_string(),
         output_name: "pivots".to_string(),
-        ns: (18..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        ns: (10..=24).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
         types: vec![Type::I64],
@@ -822,7 +822,12 @@ fn buckets() {
     ];
 
     let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
-    let perf_measure = AnyMeasurement::String(Box::new(MeasurePerfStats::new()));
+    let mut metrics = vec![nano_timer];
+    #[cfg(feature = "perf")]
+    {
+        let perf_measure = AnyMeasurement::String(Box::new(MeasurePerfStats::new()));
+        metrics.push(perf_measure)
+    }
 
     let mut e = Experiment {
         name: "Buckets".to_string(),
@@ -831,7 +836,7 @@ fn buckets() {
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
         types: vec![Type::I32, Type::I64],
-        metrics: vec![nano_timer, perf_measure],
+        metrics,
     };
 
     run(&mut e);
@@ -919,22 +924,30 @@ fn implicit_equal_buckets() {
         },
     ];
 
-    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
-    let layer_measure = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
-    let partition_measure = AnyMeasurement::String(Box::new(MeasurePartitionStats::new()));
-    let perf_measure = AnyMeasurement::String(Box::new(MeasurePerfStats::new()));
-
-    let metrics;
+    let mut metrics;
     #[cfg(not(feature = "stats"))]
-    metrics = vec![nano_timer, perf_measure];
+    {
+        let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+        metrics = vec![nano_timer];
+    }
 
     #[cfg(feature = "stats")]
-    metrics = vec![layer_measure, partition_measure];
+    {
+        let partition_measure = AnyMeasurement::String(Box::new(MeasurePartitionStats::new()));
+        let layer_measure = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+        metrics = vec![layer_measure, partition_measure];
+    }
+
+    #[cfg(feature = "perf")]
+    {
+        let perf_measure = AnyMeasurement::String(Box::new(MeasurePerfStats::new()));
+        metrics.push(perf_measure);
+    }
 
     let mut e = Experiment {
         name: "Implicit Equal Buckets".to_string(),
         output_name: "implicit_equal_buckets".to_string(),
-        ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        ns: (11..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS, Work::RandomManyEqual],
         // types: vec![Type::I32, Type::I64],
@@ -966,39 +979,6 @@ fn rebalancing() {
             config_radix: ConfigMulti::empty(),
             config_multi: ConfigMulti::empty(),
         },
-        /*
-        HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::NoRebal,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 2,
-                multi_thresh: 0,
-            },
-            config_radix: ConfigMulti::empty(),
-            config_multi: ConfigMulti::empty(),
-        },
-        HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::PivotForgetting,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 2,
-                multi_thresh: 0,
-            },
-            config_radix: ConfigMulti::empty(),
-            config_multi: ConfigMulti::empty(),
-        }, */
         /* HeapConfig {
             family: HeapFamily::ConfigSimdQH,
             config_simd: ConfigSimdQH {
@@ -1015,22 +995,6 @@ fn rebalancing() {
             config_radix: ConfigMulti::empty(),
             config_multi: ConfigMulti::empty(),
         },*/
-        /* HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::RandomizedRebalancing,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 2,
-                multi_thresh: 0,
-            },
-            config_radix: ConfigMulti::empty(),
-            config_multi: ConfigMulti::empty(),
-        },*/
     ];
 
     // NoRebalancing,
@@ -1038,9 +1002,19 @@ fn rebalancing() {
     // ExponentialUpperBoundRebalancing,
     // RandomizedRebalancing<128>,
 
-    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
-    let layer_measure = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
-    let memory_measure = AnyMeasurement::F64(Box::new(MemoryConsumption::new()));
+    let metrics;
+    #[cfg(not(feature = "stats"))]
+    {
+        let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+        let memory_measure = AnyMeasurement::F64(Box::new(MemoryConsumption::new()));
+        metrics = vec![nano_timer, memory_measure];
+    }
+
+    #[cfg(feature = "stats")]
+    {
+        let layer_measure = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+        metrics = vec![layer_measure];
+    }
 
     let mut e = Experiment {
         name: "Rebalancing".to_string(),
@@ -1049,7 +1023,7 @@ fn rebalancing() {
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS, Work::MostlyPushDecreasing],
         types: vec![Type::I64],
-        metrics: vec![nano_timer, layer_measure, memory_measure],
+        metrics,
     };
 
     run(&mut e);
@@ -1061,76 +1035,50 @@ fn radix() {
         HeapConfig {
             family: HeapFamily::SimdQH,
             config_simd: ConfigSimdQH::empty(),
-            config_radix: ConfigRadixQH::empty(),
-        },
-        HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::NoRebal,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 2,
-                multi_thresh: 0,
-            },
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti::empty(),
+            config_multi: ConfigMulti::empty(),
         },
         HeapConfig {
             family: HeapFamily::RadixSimdQH,
             config_simd: ConfigSimdQH::empty(),
-            config_radix: ConfigRadixQH { b: 2, thresh: 1024 },
+            config_radix: ConfigMulti { b: 2, thresh: 1024 },
+            config_multi: ConfigMulti::empty(),
         },
         HeapConfig {
             family: HeapFamily::RadixSimdQH,
             config_simd: ConfigSimdQH::empty(),
-            config_radix: ConfigRadixQH { b: 2, thresh: 2048 },
-        },
-        HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::NoRebal,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 4,
-                multi_thresh: 1024,
-            },
-            config_radix: ConfigRadixQH::empty(),
-        },
-        HeapConfig {
-            family: HeapFamily::ConfigSimdQH,
-            config_simd: ConfigSimdQH {
-                bucket: Buckets::Vec,
-                pivot: MedianOf3,
-                multi_pivot: EqualMedianOf2,
-                rebal: Rebalancing::NoRebal,
-                n: 16,
-                sort: true,
-                equal: false,
-                p: 4,
-                multi_thresh: 2048,
-            },
-            config_radix: ConfigRadixQH::empty(),
+            config_radix: ConfigMulti { b: 2, thresh: 2048 },
+            config_multi: ConfigMulti::empty(),
         },
     ];
 
-    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
-    let layer_measurement = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+    let mut metrics;
+    #[cfg(feature = "stats")]
+    {
+        let layer_measurement = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+        metrics = vec![layer_measurement];
+    }
+
+    #[cfg(not(feature = "stats"))]
+    {
+        let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+        metrics = vec![nano_timer];
+    }
+
+    #[cfg(feature = "perf")]
+    {
+        let perf_measure = AnyMeasurement::String(Box::new(MeasurePerfStats::new()));
+        metrics.push(perf_measure);
+    }
 
     let mut e = Experiment {
         name: "Radix Partitioning".to_string(),
-        output_name: "raidx".to_string(),
-        ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        output_name: "radix".to_string(),
+        ns: (11..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS],
         types: vec![Type::I32, Type::I64],
-        metrics: vec![nano_timer, layer_measurement],
+        metrics,
     };
 
     run(&mut e);
@@ -1171,22 +1119,39 @@ fn multiway() {
         },
     ];
 
-    let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
-    let layer_measurement = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+    let mut metrics;
+    #[cfg(feature = "stats")]
+    {
+        let layer_measurement = AnyMeasurement::Usize(Box::new(MeasureLayerStats::new()));
+        metrics = vec![layer_measurement]
+    }
+
+    #[cfg(not(feature = "stats"))]
+    {
+        let nano_timer = AnyMeasurement::F64(Box::new(NanoTimer::new()));
+        metrics = vec![nano_timer];
+    }
+
+    #[cfg(feature = "stats")]
+    {
+        let perf_measures = AnyMeasurement::String(Box::new(MeasurePerfStats::new()));
+        metrics.push(perf_measure);
+    }
 
     let mut e = Experiment {
         name: "Multiway Partitioning".to_string(),
         output_name: "multiway".to_string(),
-        ns: (19..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
+        ns: (11..=25).step_by(2).map(|i| (2usize).pow(i)).collect(),
         heaps: heap_config,
         workloads: vec![Work::MonotoneCS, Work::HeapSort],
         types: vec![Type::I64],
-        metrics: vec![nano_timer, layer_measurement],
+        metrics,
     };
 
     run(&mut e);
 }
 
+#[cfg(any(feature = "graphs", feature = "decrease_key"))]
 fn read_paths() -> Vec<PathBuf> {
     // Scan `path` for all input files.
     let path = PathBuf::from("input/");
@@ -1202,6 +1167,7 @@ fn read_paths() -> Vec<PathBuf> {
     paths
 }
 
+#[cfg(any(feature = "graphs", feature = "decrease_key"))]
 fn read_graphs_u64() -> Vec<(String, Graph<u64>)> {
     let paths = read_paths();
     let mut graphs: Vec<(String, Graph<u64>)> = vec![];
@@ -1220,6 +1186,7 @@ fn read_graphs_u64() -> Vec<(String, Graph<u64>)> {
     graphs
 }
 
+#[cfg(any(feature = "graphs", feature = "decrease_key"))]
 fn read_graphs_u32() -> Vec<(String, Graph<u32>)> {
     let paths = read_paths();
     let mut graphs: Vec<(String, Graph<u32>)> = vec![];
@@ -1238,6 +1205,7 @@ fn read_graphs_u32() -> Vec<(String, Graph<u32>)> {
     graphs
 }
 
+#[cfg(feature = "graphs")]
 fn run_graph<S: SimdElem<u64>, H: Heap<u64>>(
     graphs: &Vec<(String, Graph<u32>)>,
     writer: &mut BufWriter<File>,
@@ -1308,6 +1276,7 @@ fn run_graph<S: SimdElem<u64>, H: Heap<u64>>(
     }
 }
 
+#[cfg(feature = "decrease_key")]
 fn run_kv_graph<S: SimdElem<u64>, H: KvHeap<u64>>(
     graphs: &Vec<(String, Graph<u64>)>,
     writer: &mut BufWriter<File>,
@@ -2236,13 +2205,7 @@ macro_rules! dispatch_type {
                 }
                 Type::I64 => {
                     dispatch_workload!($e, i64, $simd, $writer);
-                } /*
-                  Type::U32 => {
-                      dispatch_workload!($e, u32, $simd, $writer);
-                  }
-                  Type::U64 => {
-                      dispatch_workload!($e, u64, $simd, $writer);
-                  } */
+                }
             }
         }
     };
@@ -2273,9 +2236,6 @@ fn main() {
 
     #[cfg(feature = "simd_qh")]
     simd_qh();
-
-    #[cfg(feature = "simd_qhs")]
-    simd_qhs();
 
     #[cfg(feature = "buckets")]
     buckets();

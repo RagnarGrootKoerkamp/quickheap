@@ -1,9 +1,24 @@
 #!/bin/sh
-cargo run -r --package bench --example experiments -F implicit_equal_buckets
 
-# cargo run -r --package bench --example bench_graph -F avx512 >./bench/evals/data/graphs.csv
-# cargo run -r --package bench --example bench -F avx512 -- --memory 2>./bench/evals/data/memory.txt
-# cargo run -r --package bench --example bench -F avx512 -- --ablation >./bench/evals/data/ablation.csv
-# cargo run -r --package bench --example bench -F avx512 -- --comparisons >./bench/evals/data/comparisons.csv
-# cargo run -r --package bench --example bench -F avx512 >./bench/evals/data/plot.csv
-# cargo run -r --package bench --example bench -F avx512,boost,perf -- --table >./bench/evals/data/table.csv
+# Setup for the specific architectures
+arch=$(uname -m)
+export RUSTUP_HOME=$HOME/.rustup-$arch
+export CARGO_HOME=$HOME/.cargo-$arch
+export PATH=$CARGO_HOME/bin:$PATH
+export CARGO_TARGET_DIR=$HOME/target-$(uname -m)
+
+# Run all experiments
+# cargo run -r -q  --package bench --example experiments -F implicit_equal_buckets
+# cargo run -r -q  --package bench --example experiments -F pivots
+# cargo run -r -q --package bench --example experiments -F buckets
+# cargo run -r -q --package bench --example experiments -F simd_qh
+# cargo run -r -q  --package bench --example experiments -F multiway
+# cargo run -r -q  --package bench --example experiments -F radix
+# cargo run -r -q  --package bench --example experiments -F rebalancing
+
+cargo run -r -q --package bench --example partitions -F only_equals
+cargo run -r -q --package bench --example partitions
+
+# cargo run -r --package bench --example experiments -F graphs
+# cargo run -r --package bench --example experiments -F decrease_key
+# cargo run -r --package bench --example experiments -F competitors

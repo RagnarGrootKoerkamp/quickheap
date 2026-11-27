@@ -120,7 +120,7 @@ pub struct ConfigurableSimdQuickHeap<
     PART: Partition<T, B>,
     S: simd::SimdElem<T> = Simd,
     PIVOT: pivot_strategies::PivotStrategy = pivot_strategies::MedianOfM<3>,
-    MULTI_PIVOT: pivot_strategies::MultiPivotStrategy<P> = pivot_strategies::GeoMultiMedianOfM<2>,
+    MultiPivot: pivot_strategies::MultiPivotStrategy<P> = pivot_strategies::GeoMultiMedianOfM<2>,
     R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP> = rebalancing_strategies::NoRebalancing,
     const N: usize = 16,
     const K: usize = 128,
@@ -160,7 +160,7 @@ pub struct ConfigurableSimdQuickHeap<
     rebal_pop_iteration: usize,
     #[allow(dead_code)]
     _p: PhantomData<PIVOT>,
-    _mp: PhantomData<MULTI_PIVOT>,
+    _mp: PhantomData<MultiPivot>,
     _r: PhantomData<R>,
     _part: PhantomData<PART>,
     _backend: PhantomData<S>,
@@ -173,7 +173,7 @@ impl<
     PART: Partition<T, B>,
     S: simd::SimdElem<T>,
     PIVOT: pivot_strategies::PivotStrategy,
-    MULTI_PIVOT: pivot_strategies::MultiPivotStrategy<P>,
+    MultiPivot: pivot_strategies::MultiPivotStrategy<P>,
     R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
     const N: usize,
     const K: usize,
@@ -189,7 +189,7 @@ impl<
         PART,
         S,
         PIVOT,
-        MULTI_PIVOT,
+        MultiPivot,
         R,
         N,
         K,
@@ -228,7 +228,7 @@ impl<
     S: simd::SimdElem<T>,
     R: rebalancing_strategies::RebalancingStrategy<T, B, K, CAP>,
     PIVOT: pivot_strategies::PivotStrategy,
-    MULTI_PIVOT: pivot_strategies::MultiPivotStrategy<P>,
+    MultiPivot: pivot_strategies::MultiPivotStrategy<P>,
     const N: usize,
     const K: usize,
     const CAP: usize,
@@ -243,7 +243,7 @@ impl<
         PART,
         S,
         PIVOT,
-        MULTI_PIVOT,
+        MultiPivot,
         R,
         N,
         K,
@@ -673,7 +673,7 @@ impl<
         let n = layers[0].len();
 
         // Sample pivots using the pivot strategy
-        let (pivots, pivot_pos) = MULTI_PIVOT::pick_bucket(&layers[0]);
+        let (pivots, pivot_pos) = MultiPivot::pick_bucket(&layers[0]);
 
         for i in 0..(P - 1) {
             self.pivots.push(pivots[i]);
